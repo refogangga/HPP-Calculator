@@ -99,7 +99,18 @@ export default function Home() {
     const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
     const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
     const py = getPenyusutanBulanan(m.ops);
-    const ops = num(m.ops.listrik) + num(m.ops.gaji) + py + num(m.ops.lainLain);
+    const expensesList = m.ops.expenses || [
+      { id: 'listrik', name: '⚡ Listrik & Air', value: num(m.ops.listrik) },
+      { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
+      { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
+    ];
+    const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
+    const ops = totalExpenses + py;
+    
+    const expenseLines = expensesList.map(exp => {
+      return `  ${(exp.name || 'Pengeluaran').padEnd(28)} : ${fmtRp(num(exp.value))}`;
+    }).join('\n');
+    
     const opsPerCup = num(m.ops.estimasiCup) > 0 ? ops / num(m.ops.estimasiCup) : 0;
     const hpp = bb + km + opsPerCup;
     const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
@@ -122,10 +133,8 @@ ${pkgLines}
   Sub-total Kemasan            : ${fmtRp(km)}
 
   ──── OPERASIONAL (Bulanan) ──────────────────
-  Listrik & Air                : ${fmtRp(m.ops.listrik)}
-  Gaji Karyawan                : ${fmtRp(m.ops.gaji)}
+${expenseLines}
   Penyusutan Aset              : ${fmtRp(py)}
-  Lain-lain                    : ${fmtRp(m.ops.lainLain)}
   ────────────────────────────────────────────
   Total Ops Bulanan            : ${fmtRp(ops)}
   Estimasi Penjualan           : ${num(m.ops.estimasiCup).toLocaleString('id-ID')} cup/bln

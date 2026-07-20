@@ -37,8 +37,13 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
 
   const penyusutanBulanan = useMemo(() => getPenyusutanBulanan(ops), [ops]);
 
+  const expensesList = ops.expenses || [];
+  const totalExpenses = useMemo(() => {
+    return expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
+  }, [expensesList]);
+
   const totalOpsBulanan = useMemo(() =>
-    num(ops.listrik) + num(ops.gaji) + penyusutanBulanan + num(ops.lainLain), [ops, penyusutanBulanan]);
+    totalExpenses + penyusutanBulanan, [totalExpenses, penyusutanBulanan]);
 
   const hppOps = useMemo(() =>
     num(ops.estimasiCup) > 0 ? totalOpsBulanan / num(ops.estimasiCup) : 0, [totalOpsBulanan, ops.estimasiCup]);
@@ -144,23 +149,44 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              {[
-                { label: '⚡ Listrik & Air', field: 'listrik', placeholder: '800000' },
-                { label: '👤 Gaji Karyawan', field: 'gaji', placeholder: '2500000', optional: true },
-                { label: '🌐 Lain-lain (sewa, dll)', field: 'lainLain', placeholder: '0', optional: true },
-              ].map(({ label, field, placeholder, optional }) => (
-                <div key={field}>
-                  <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>
-                    {label} {optional && <span style={{ fontWeight: 400, color: '#94a3b8' }}>opsional</span>}
-                  </label>
-                  <div className="input-prefix-wrap">
-                    <span className="prefix">Rp</span>
-                    <FormatInput className="hpp-input sm" placeholder={placeholder}
-                      value={ops[field] || ''} onChange={v => setOps(field, v)} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
+              {expensesList.map(exp => (
+                <div key={exp.id} style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 10, alignItems: 'end', background: '#f8fafc', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div>
+                    <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Nama Pengeluaran</label>
+                    <input className="hpp-input sm" 
+                      value={exp.name} onChange={e => {
+                        const updated = expensesList.map(x => x.id === exp.id ? { ...x, name: e.target.value } : x);
+                        setOps('expenses', updated);
+                      }} placeholder="Misal: Sewa Tempat..." style={{ fontWeight: 600 }} />
                   </div>
+                  <div>
+                    <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Biaya Bulanan</label>
+                    <div className="input-prefix-wrap">
+                      <span className="prefix">Rp</span>
+                      <FormatInput className="hpp-input sm" placeholder="0"
+                        value={exp.value || ''} onChange={v => {
+                          const updated = expensesList.map(x => x.id === exp.id ? { ...x, value: v } : x);
+                          setOps('expenses', updated);
+                        }} />
+                    </div>
+                  </div>
+                  <button className="btn btn-danger" onClick={() => {
+                    const updated = expensesList.filter(x => x.id !== exp.id);
+                    setOps('expenses', updated);
+                  }} title="Hapus" style={{ height: 31, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="trash" size={11} />
+                  </button>
                 </div>
               ))}
+              
+              <button className="btn btn-add" onClick={() => {
+                const updated = [...expensesList, { id: uid(), name: 'Pengeluaran Baru', value: 0 }];
+                setOps('expenses', updated);
+              }} style={{ marginTop: 4 }}>
+                <Icon name="plus" size={13} /> Tambah Pengeluaran Bulanan
+              </button>
+            </div>
 
               {/* Penyusutan */}
               <div style={{ gridColumn: '1/-1', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px' }}>
@@ -247,22 +273,20 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
                   </div>
                 )}
               </div>
-            </div>
 
             {/* Ops summary */}
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px', marginTop: 14 }}>
               <div className="label-xs" style={{ color: '#059669', marginBottom: 8 }}>Rincian Biaya Operasional Bulanan</div>
-              {[
-                ['Listrik & Air', ops.listrik],
-                ['Gaji Karyawan', ops.gaji],
-                ['Penyusutan Aset', penyusutanBulanan],
-                ['Lain-lain', ops.lainLain],
-              ].map(([label, val]) => (
-                <div key={label} className="flex-between" style={{ fontSize: 12, color: '#475569', padding: '2px 0' }}>
-                  <span>{label}</span>
-                  <span className="mono" style={{ fontWeight: 600 }}>{fmtRp(val)}</span>
+              {expensesList.map(exp => (
+                <div key={exp.id} className="flex-between" style={{ fontSize: 12, color: '#475569', padding: '2px 0' }}>
+                  <span>{exp.name || 'Pengeluaran'}</span>
+                  <span className="mono" style={{ fontWeight: 600 }}>{fmtRp(num(exp.value))}</span>
                 </div>
               ))}
+              <div className="flex-between" style={{ fontSize: 12, color: '#475569', padding: '2px 0' }}>
+                <span>Penyusutan Aset</span>
+                <span className="mono" style={{ fontWeight: 600 }}>{fmtRp(penyusutanBulanan)}</span>
+              </div>
               <div style={{ height: 1, background: '#bbf7d0', margin: '6px 0' }} />
               <div className="flex-between" style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>
                 <span>Total Bulanan</span>

@@ -41,13 +41,14 @@ export const mkPackaging = () => [
 
 export const mkOps = () => ({
   estimasiCup: 600,
-  listrik: 800000,
-  gaji: 2500000,
-  penyusutan: 0,
   usePenyusutan: true,
-  lainLain: 0,
   assets: [
     { id: uid(), name: 'Mesin Espresso', harga: 12000000, tahun: 5, enabled: true }
+  ],
+  expenses: [
+    { id: uid(), name: '⚡ Listrik & Air', value: 800000 },
+    { id: uid(), name: '👤 Gaji Karyawan', value: 2500000 },
+    { id: uid(), name: '🌐 Lain-lain (sewa, dll)', value: 0 }
   ]
 });
 
@@ -74,12 +75,28 @@ export const loadDB = () => {
   try {
     const db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
     return db.map(menu => {
+      if (!menu.ops) {
+        menu.ops = mkOps();
+      }
+      // Migrate assets
       if (menu.ops && !menu.ops.assets) {
         const legacyHarga = num(menu.ops.assetHarga || menu.ops.penyusutan);
         const legacyTahun = num(menu.ops.assetTahun) || 5;
         menu.ops.assets = [
           { id: uid(), name: 'Aset Lama', harga: legacyHarga, tahun: legacyTahun, enabled: true }
         ];
+      }
+      // Migrate expenses
+      if (menu.ops && !menu.ops.expenses) {
+        menu.ops.expenses = [
+          { id: uid(), name: '⚡ Listrik & Air', value: num(menu.ops.listrik) },
+          { id: uid(), name: '👤 Gaji Karyawan', value: num(menu.ops.gaji) },
+          { id: uid(), name: '🌐 Lain-lain (sewa, dll)', value: num(menu.ops.lainLain) }
+        ];
+        // Clean up legacy fields to avoid pollution
+        delete menu.ops.listrik;
+        delete menu.ops.gaji;
+        delete menu.ops.lainLain;
       }
       return menu;
     });

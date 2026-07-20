@@ -22,7 +22,13 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
     }, 0);
     const km = menu.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
     const py = getPenyusutanBulanan(menu.ops);
-    const totalOps = num(menu.ops.listrik) + num(menu.ops.gaji) + py + num(menu.ops.lainLain);
+    const expensesList = menu.ops.expenses || [
+      { id: 'listrik', name: '⚡ Listrik & Air', value: num(menu.ops.listrik) },
+      { id: 'gaji', name: '👤 Gaji Karyawan', value: num(menu.ops.gaji) },
+      { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(menu.ops.lainLain) }
+    ];
+    const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
+    const totalOps = totalExpenses + py;
     const opsPerCup = num(menu.ops.estimasiCup) > 0 ? totalOps / num(menu.ops.estimasiCup) : 0;
     const hpp = bb + km + opsPerCup;
     const hargaJual = menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100);
