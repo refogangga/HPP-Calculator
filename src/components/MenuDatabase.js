@@ -373,7 +373,7 @@ ${expenseLines}
           <div style={{ fontSize: 12, marginTop: 4 }}>Klik "Tambah Menu Baru" untuk mulai</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(380px,1fr))', gap: 14 }}>
           {filtered.map(menu => {
             const { hpp, hargaJual } = getHPP(menu);
             const profit = hargaJual - hpp;
@@ -405,18 +405,18 @@ ${expenseLines}
                   <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
                     {menu.category} &bull; {new Date(menu.updatedAt).toLocaleDateString('id-ID')}
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 14 }}>
                     <div>
                       <div className="label-xs" style={{ color: '#94a3b8' }}>HPP</div>
-                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#6366f1' }}>{fmtRp(hpp)}</div>
+                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', whiteSpace: 'nowrap' }}>{fmtRp(hpp)}</div>
                     </div>
                     <div>
                       <div className="label-xs" style={{ color: '#94a3b8' }}>Jual</div>
-                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>{fmtRp(hargaJual)}</div>
+                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmtRp(hargaJual)}</div>
                     </div>
                     <div>
                       <div className="label-xs" style={{ color: '#94a3b8' }}>Profit</div>
-                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>{fmtRp(profit)}</div>
+                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#10b981', whiteSpace: 'nowrap' }}>{fmtRp(profit)}</div>
                     </div>
                   </div>
                 </div>

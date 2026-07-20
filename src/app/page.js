@@ -264,7 +264,7 @@ ${expenseLines}
   };
 
   // Hydration fallback
-  if (!isMounted || menus.length === 0) {
+  if (!isMounted) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 16, background: '#f1f5f9' }}>
         <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 16px rgba(99,102,241,0.4)' }}>☕</div>
