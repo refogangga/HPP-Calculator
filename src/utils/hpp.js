@@ -75,33 +75,58 @@ export const loadDB = () => {
   try {
     const db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
     return db.map(menu => {
-      if (!menu.ops) {
+      if (!menu || typeof menu !== 'object') {
+        return mkMenu();
+      }
+      
+      // Ensure basic arrays exist
+      if (!Array.isArray(menu.ingredients)) menu.ingredients = [];
+      if (!Array.isArray(menu.packaging)) menu.packaging = [];
+      
+      // Ensure ops exists
+      if (!menu.ops || typeof menu.ops !== 'object') {
         menu.ops = mkOps();
       }
+      
       // Migrate assets
-      if (menu.ops && !menu.ops.assets) {
+      if (!Array.isArray(menu.ops.assets)) {
         const legacyHarga = num(menu.ops.assetHarga || menu.ops.penyusutan);
         const legacyTahun = num(menu.ops.assetTahun) || 5;
         menu.ops.assets = [
           { id: uid(), name: 'Aset Lama', harga: legacyHarga, tahun: legacyTahun, enabled: true }
         ];
       }
+      
       // Migrate expenses
-      if (menu.ops && !menu.ops.expenses) {
+      if (!Array.isArray(menu.ops.expenses)) {
         menu.ops.expenses = [
           { id: uid(), name: '⚡ Listrik & Air', value: num(menu.ops.listrik) },
           { id: uid(), name: '👤 Gaji Karyawan', value: num(menu.ops.gaji) },
           { id: uid(), name: '🌐 Lain-lain (sewa, dll)', value: num(menu.ops.lainLain) }
         ];
-        // Clean up legacy fields to avoid pollution
-        delete menu.ops.listrik;
-        delete menu.ops.gaji;
-        delete menu.ops.lainLain;
       }
+      
+      // Clean up legacy fields to avoid pollution
+      delete menu.ops.listrik;
+      delete menu.ops.gaji;
+      delete menu.ops.lainLain;
+      delete menu.ops.assetHarga;
+      delete menu.ops.assetTahun;
+      delete menu.ops.penyusutan;
+      
+      // Ensure target units and margin
+      if (menu.margin === undefined) menu.margin = 50;
+      if (!menu.targetUnit) menu.targetUnit = 'cup';
+      if (!menu.pcsPerPortion) menu.pcsPerPortion = 1;
+      if (!menu.subUnitLabel) menu.subUnitLabel = 'pcs';
+      
       return menu;
     });
   }
-  catch { return []; }
+  catch (err) {
+    console.error("Failed to load HPP database:", err);
+    return [];
+  }
 };
 
 export const saveDB = (menus) => {

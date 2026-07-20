@@ -29,7 +29,7 @@ export default function Home() {
 
   // Save to DB whenever menus change
   useEffect(() => {
-    if (isMounted && menus.length > 0) {
+    if (isMounted) {
       saveDB(menus);
     }
   }, [menus, isMounted]);
@@ -62,7 +62,9 @@ export default function Home() {
     if (!window.confirm('Hapus menu ini dari database?')) return;
     setMenus(prev => {
       const next = prev.filter(m => m.id !== id);
-      if (id === activeId && next.length > 0) setActiveId(next[0].id);
+      if (id === activeId) {
+        setActiveId(next.length > 0 ? next[0].id : null);
+      }
       return next;
     });
     showToast('Menu dihapus', 'info');
@@ -87,7 +89,9 @@ export default function Home() {
     if (!window.confirm(`Hapus ${ids.length} menu yang dipilih dari database?`)) return;
     setMenus(prev => {
       const next = prev.filter(m => !ids.includes(m.id));
-      if (ids.includes(activeId) && next.length > 0) setActiveId(next[0].id);
+      if (ids.includes(activeId)) {
+        setActiveId(next.length > 0 ? next[0].id : null);
+      }
       return next;
     });
     showToast(`${ids.length} menu dihapus`, 'info');
@@ -96,6 +100,10 @@ export default function Home() {
   const handleExportSingleExcel = () => {
     if (!activeMenu) return;
     const m = activeMenu;
+    const targetUnit = m.targetUnit || 'cup';
+    const pcsPerPortion = m.pcsPerPortion || 1;
+    const subUnitLabel = m.subUnitLabel || 'pcs';
+
     const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
     const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
     const py = getPenyusutanBulanan(m.ops);
@@ -116,13 +124,18 @@ export default function Home() {
       'Nama Menu': m.name,
       'Kategori': m.category,
       'Target Margin': m.margin + '%',
-      'HPP Bahan Baku (per Cup)': bb,
-      'HPP Kemasan (per Cup)': km,
-      'HPP Operasional (per Cup)': opsPerCup,
-      'Total HPP (per Cup)': hpp,
-      'Rekomendasi Harga Jual': hargaJualBulat,
-      'Profit per Cup': profit,
-      'Estimasi Penjualan (Cup/bln)': num(m.ops.estimasiCup),
+      'Satuan Utama': targetUnit,
+      'HPP Bahan Baku (per Satuan Utama)': bb,
+      'HPP Kemasan (per Satuan Utama)': km,
+      'HPP Operasional (per Satuan Utama)': opsPerCup,
+      'Total HPP (per Satuan Utama)': hpp,
+      'Rekomendasi Harga Jual (Satuan Utama)': hargaJualBulat,
+      'Profit per Satuan Utama': profit,
+      'Rasio Bagi Porsi': pcsPerPortion,
+      'Satuan Kecil': pcsPerPortion > 1 ? subUnitLabel : '-',
+      'HPP per Satuan Kecil': pcsPerPortion > 1 ? (hpp / pcsPerPortion) : '-',
+      'Harga Jual per Satuan Kecil': pcsPerPortion > 1 ? roundPrice(hargaJual / pcsPerPortion) : '-',
+      'Estimasi Penjualan (Porsi Utama/bln)': num(m.ops.estimasiCup),
       'Estimasi Profit Bulanan': profit * num(m.ops.estimasiCup)
     }];
 
@@ -178,9 +191,17 @@ export default function Home() {
     details.push({});
 
     details.push({ A: 'RINGKASAN AKHIR' });
-    details.push({ A: 'TOTAL HPP per Cup', F: hpp });
-    details.push({ A: 'Harga Jual Rekomendasi', F: hargaJualBulat });
-    details.push({ A: 'Profit per Cup', F: profit });
+    details.push({ A: `TOTAL HPP per ${targetUnit}`, F: hpp });
+    details.push({ A: `Harga Jual per ${targetUnit}`, F: hargaJualBulat });
+    details.push({ A: `Profit per ${targetUnit}`, F: profit });
+    
+    if (pcsPerPortion > 1) {
+      details.push({ A: `Bagi Porsi: 1 ${targetUnit} = ${pcsPerPortion} ${subUnitLabel}` });
+      details.push({ A: `TOTAL HPP per ${subUnitLabel}`, F: hpp / pcsPerPortion });
+      details.push({ A: `Harga Jual per ${subUnitLabel}`, F: roundPrice(hargaJual / pcsPerPortion) });
+      details.push({ A: `Profit per ${subUnitLabel}`, F: roundPrice(hargaJual / pcsPerPortion) - (hpp / pcsPerPortion) });
+    }
+    
     details.push({ A: 'Estimasi Profit Bulanan', F: profit * num(m.ops.estimasiCup) });
 
     const wsDetail = XLSX.utils.json_to_sheet(details, { skipHeader: true });
@@ -201,6 +222,10 @@ export default function Home() {
       return `  ${(ing.name || '-').padEnd(22)} ${fmtRp(perUnit * num(ing.takaranPerCup))}`;
     }).join('\n');
     const pkgLines = m.packaging.filter(p => p.enabled).map(p => `  ${p.name.padEnd(22)} ${fmtRp(p.harga)}`).join('\n');
+
+    const targetUnit = m.targetUnit || 'cup';
+    const pcsPerPortion = m.pcsPerPortion || 1;
+    const subUnitLabel = m.subUnitLabel || 'pcs';
 
     // Recalculate for print
     const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
@@ -223,6 +248,24 @@ export default function Home() {
     const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
     const hjb = roundPrice(hj);
 
+    let finalPortionLines = `
+  TOTAL HPP / ${targetUnit.toUpperCase().padEnd(16)}: ${fmtRp(hpp)}
+  Target Margin                : ${m.margin}%
+  HARGA JUAL / ${targetUnit.toUpperCase().padEnd(16)}: ${fmtRp(hjb)}
+  Profit per ${targetUnit.padEnd(18)}: ${fmtRp(hjb - hpp)}
+  Estimasi Profit Bulanan      : ${fmtRp((hjb - hpp) * num(m.ops.estimasiCup))}`;
+
+    if (pcsPerPortion > 1) {
+      const hppPcs = hpp / pcsPerPortion;
+      const hjbPcs = roundPrice(hj / pcsPerPortion);
+      finalPortionLines += `
+  ────────────────────────────────────────────
+  1 ${targetUnit} = ${pcsPerPortion} ${subUnitLabel}
+  TOTAL HPP / ${subUnitLabel.toUpperCase().padEnd(16)}: ${fmtRp(hppPcs)}
+  HARGA JUAL / ${subUnitLabel.toUpperCase().padEnd(16)}: ${fmtRp(hjbPcs)}
+  Profit per ${subUnitLabel.padEnd(18)}: ${fmtRp(hjbPcs - hppPcs)}`;
+    }
+
     const body = `
   ╔══════════════════════════════════════════╗
   ║         LAPORAN HPP F&B                  ║
@@ -244,15 +287,11 @@ ${expenseLines}
   Penyusutan Aset              : ${fmtRp(py)}
   ────────────────────────────────────────────
   Total Ops Bulanan            : ${fmtRp(ops)}
-  Estimasi Penjualan           : ${num(m.ops.estimasiCup).toLocaleString('id-ID')} cup/bln
-  Beban Ops per Cup            : ${fmtRp(opsPerCup)}
+  Estimasi Penjualan           : ${num(m.ops.estimasiCup).toLocaleString('id-ID')} ${targetUnit}/bln
+  Beban Ops per ${targetUnit.padEnd(15)}: ${fmtRp(opsPerCup)}
 
   ════════════════════════════════════════════
-  TOTAL HPP / CUP              : ${fmtRp(hpp)}
-  Target Margin                : ${m.margin}%
-  HARGA JUAL (dibulatkan)      : ${fmtRp(hjb)}
-  Profit per Cup               : ${fmtRp(hjb - hpp)}
-  Estimasi Profit Bulanan      : ${fmtRp((hjb - hpp) * num(m.ops.estimasiCup))}
+${finalPortionLines.trim()}
   ════════════════════════════════════════════
 
   ${m.notes ? '📝 CATATAN:\n  ' + m.notes : ''}

@@ -7,7 +7,7 @@ import { SectionHeader, IngredientRow, PackagingCard } from './HppSubComponents'
 import { num, fmtRp, roundPrice, uid, getPenyusutanBulanan } from '../utils/hpp';
 
 export default function HppCalculator({ menu, onUpdate, showToast }) {
-  const { ingredients, packaging, ops, margin } = menu;
+  const { ingredients, packaging, ops, margin, targetUnit = 'cup', pcsPerPortion = 1, subUnitLabel = 'pcs' } = menu;
 
   const setIng = (upd) => onUpdate({ ingredients: upd(ingredients) });
   const setPkg = (upd) => onUpdate({ packaging: upd(packaging) });
@@ -21,7 +21,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
   const updateIng = (id, f, v) => setIng(p => p.map(i => i.id === id ? (typeof f === 'object' ? { ...i, ...f } : { ...i, [f]: v }) : i));
   const removeIng = (id) => setIng(p => p.filter(i => i.id !== id));
 
-  const addPkg = () => setPkg(p => [...p, { id: uid(), name: '', icon: '📦', enabled: true, harga: 0, packQty: 0, packPrice: 0 }]);
+  const addPkg = () => setPkg(p => [...p, { id: uid(), name: '', icon: '📦', enabled: true, harga: 0, packQty: 0, packPrice: 0, usage: 1 }]);
   const updatePkg = (id, f, v) => setPkg(p => p.map(x => x.id === id ? (typeof f === 'object' ? { ...x, ...f } : { ...x, [f]: v }) : x));
   const removePkg = (id) => setPkg(p => p.filter(x => x.id !== id));
 
@@ -85,12 +85,12 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
             <div className="ing-grid-header">
               <span>Nama Bahan</span><span>Harga Beli</span>
               <span>Ukuran Kemasan</span><span>Satuan</span>
-              <span>Takaran/Cup</span><span>HPP/Cup</span><span></span>
+              <span>Takaran/{targetUnit}</span><span>HPP/{targetUnit}</span><span></span>
             </div>
 
             {ingredients.map((ing, idx) => (
               <IngredientRow key={ing.id} ing={ing} idx={idx} total={ingredients.length}
-                onUpdate={updateIng} onRemove={removeIng} />
+                onUpdate={updateIng} onRemove={removeIng} targetUnit={targetUnit} />
             ))}
 
             <button className="btn btn-add" onClick={addIng} style={{ marginTop: 8 }}>
@@ -113,7 +113,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
           <div className="section-body">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: 10 }}>
               {packaging.map(pkg => (
-                <PackagingCard key={pkg.id} pkg={pkg} onUpdate={updatePkg} onRemove={removePkg} />
+                <PackagingCard key={pkg.id} pkg={pkg} onUpdate={updatePkg} onRemove={removePkg} targetUnit={targetUnit} />
               ))}
             </div>
             <button className="btn btn-add" onClick={addPkg} style={{ marginTop: 10 }}>
@@ -136,15 +136,15 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
           <div className="section-body">
             {/* Estimasi cup */}
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-              <div className="label-xs" style={{ color: '#059669', marginBottom: 6 }}>🏪 Estimasi Penjualan Bulanan</div>
+              <div className="label-xs" style={{ color: '#059669', marginBottom: 6 }}>🏪 Estimasi Penjualan Bulanan ({targetUnit})</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input className="hpp-input large" type="number" placeholder="600"
                   value={ops.estimasiCup || ''}
                   onChange={e => setOps('estimasiCup', e.target.value)}
                   style={{ maxWidth: 160 }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>cup / bulan</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>{targetUnit} / bulan</span>
                 <span style={{ fontSize: 11, color: '#6ee7b7', marginLeft: 'auto' }}>
-                  ≈ {Math.round(num(ops.estimasiCup) / 26)} cup/hari kerja
+                  ≈ {Math.round(num(ops.estimasiCup) / 26)} {targetUnit}/hari kerja
                 </span>
               </div>
             </div>
@@ -293,13 +293,13 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
                 <span className="mono">{fmtRp(totalOpsBulanan)}</span>
               </div>
               <div className="flex-between" style={{ fontSize: 12, fontWeight: 700, color: '#059669', marginTop: 2 }}>
-                <span>÷ {num(ops.estimasiCup).toLocaleString('id-ID')} cup</span>
-                <span className="mono">= {fmtRp(hppOps)} / cup</span>
+                <span>÷ {num(ops.estimasiCup).toLocaleString('id-ID')} {targetUnit}</span>
+                <span className="mono">= {fmtRp(hppOps)} / {targetUnit}</span>
               </div>
             </div>
           </div>
           <div className="section-footer" style={{ background: '#f0fdf4' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>Beban Operasional per Cup</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>Beban Operasional per {targetUnit}</span>
             <span className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#047857' }}>{fmtRp(hppOps)}</span>
           </div>
         </div>
@@ -344,11 +344,17 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
           ))}
 
           <div className="flex-between" style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <span style={{ fontSize: 12, color: '#94a3b8' }}>TOTAL HPP / CUP</span>
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>TOTAL HPP / {targetUnit.toUpperCase()}</span>
             <div style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius: 9, padding: '5px 14px' }}>
               <span className="mono" style={{ fontWeight: 900, fontSize: 20, color: '#fff' }}>{fmtRp(totalHPP)}</span>
             </div>
           </div>
+          {pcsPerPortion > 1 && (
+            <div className="flex-between" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed rgba(255,255,255,0.07)' }}>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>TOTAL HPP / {subUnitLabel.toUpperCase()}</span>
+              <span className="mono" style={{ fontWeight: 800, fontSize: 14, color: '#a5b4fc' }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
+            </div>
+          )}
 
           {totalHPP > 0 && (
             <div style={{ marginTop: 14 }}>
@@ -401,21 +407,41 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
             <div className="price-card">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                 <div className="metric-card" style={{ background: '#fff', border: '1px solid #d1fae5' }}>
-                  <span className="label-xs" style={{ color: '#059669' }}>HPP / Cup</span>
-                  <span className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>{fmtRp(totalHPP)}</span>
+                  <span className="label-xs" style={{ color: '#059669' }}>HPP / {targetUnit}</span>
+                  <span className="mono" style={{ fontWeight: 800, fontSize: 14, color: '#1e293b' }}>{fmtRp(totalHPP)}</span>
                 </div>
                 <div className="metric-card" style={{ background: '#fff', border: '1px solid #d1fae5' }}>
-                  <span className="label-xs" style={{ color: '#059669' }}>Profit / Cup</span>
-                  <span className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#10b981' }}>{fmtRp(profitPerCup)}</span>
+                  <span className="label-xs" style={{ color: '#059669' }}>Profit / {targetUnit}</span>
+                  <span className="mono" style={{ fontWeight: 800, fontSize: 14, color: '#10b981' }}>{fmtRp(profitPerCup)}</span>
                 </div>
+                {pcsPerPortion > 1 && (
+                  <>
+                    <div className="metric-card" style={{ background: '#fcfdfd', border: '1px dashed #cbd5e1' }}>
+                      <span className="label-xs" style={{ color: '#64748b' }}>HPP / {subUnitLabel}</span>
+                      <span className="mono" style={{ fontWeight: 800, fontSize: 13, color: '#475569' }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
+                    </div>
+                    <div className="metric-card" style={{ background: '#fcfdfd', border: '1px dashed #cbd5e1' }}>
+                      <span className="label-xs" style={{ color: '#64748b' }}>Profit / {subUnitLabel}</span>
+                      <span className="mono" style={{ fontWeight: 800, fontSize: 13, color: '#10b981' }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion))}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Main price */}
               <div style={{ background: '#fff', borderRadius: 10, border: '2px solid #10b981', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#059669', marginBottom: 2 }}>💡 Rekomendasi Harga Jual</div>
-                <div className="mono" style={{ fontWeight: 900, fontSize: 26, color: '#047857' }}>{fmtRp(hargaJualBulat)}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#059669', marginBottom: 2 }}>💡 Rekomendasi Harga Jual ({targetUnit})</div>
+                <div className="mono" style={{ fontWeight: 900, fontSize: 24, color: '#047857' }}>{fmtRp(hargaJualBulat)}</div>
+                
+                {pcsPerPortion > 1 && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #a7f3d0' }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: '#475569', marginBottom: 2 }}>Harga Jual per {subUnitLabel}</div>
+                    <div className="mono" style={{ fontWeight: 800, fontSize: 18, color: '#059669' }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion))}</div>
+                  </div>
+                )}
+
                 <div style={{ fontSize: 10, color: '#6ee7b7', marginTop: 3 }}>
-                  {fmtRp(totalHPP)} ÷ (1−{margin}%) → dibulatkan ke Rp 500
+                  {fmtRp(totalHPP)} ÷ (1−{margin}%) → dibulatkan
                 </div>
                 {hargaJual !== hargaJualBulat && (
                   <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
@@ -445,7 +471,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
                 <div className="label-xs" style={{ color: '#475569', marginBottom: 6 }}>📊 Estimasi Profit Bulanan</div>
                 <div className="flex-between">
                   <span style={{ fontSize: 11, color: '#94a3b8' }}>
-                    {num(ops.estimasiCup).toLocaleString('id-ID')} cup × {fmtRp(profitPerCup)}
+                    {num(ops.estimasiCup).toLocaleString('id-ID')} {targetUnit} × {fmtRp(profitPerCup)}
                   </span>
                   <span className="mono" style={{ fontWeight: 800, fontSize: 17, color: '#4ade80' }}>
                     {fmtRp(profitPerCup * num(ops.estimasiCup))}

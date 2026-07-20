@@ -68,6 +68,10 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
     if (selectedMenus.length === 0) return;
 
     const summaryData = selectedMenus.map(m => {
+      const targetUnit = m.targetUnit || 'cup';
+      const pcsPerPortion = m.pcsPerPortion || 1;
+      const subUnitLabel = m.subUnitLabel || 'pcs';
+
       const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
       const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
       const py = getPenyusutanBulanan(m.ops);
@@ -88,13 +92,18 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
         'Nama Menu': m.name,
         'Kategori': m.category,
         'Target Margin': m.margin + '%',
-        'HPP Bahan Baku (per Cup)': bb,
-        'HPP Kemasan (per Cup)': km,
-        'HPP Operasional (per Cup)': opsPerCup,
-        'Total HPP (per Cup)': hpp,
-        'Rekomendasi Harga Jual': hargaJualBulat,
-        'Profit per Cup': profit,
-        'Estimasi Penjualan (Cup/bln)': num(m.ops.estimasiCup),
+        'Satuan Utama': targetUnit,
+        'HPP Bahan Baku (per Satuan Utama)': bb,
+        'HPP Kemasan (per Satuan Utama)': km,
+        'HPP Operasional (per Satuan Utama)': opsPerCup,
+        'Total HPP (per Satuan Utama)': hpp,
+        'Rekomendasi Harga Jual (Satuan Utama)': hargaJualBulat,
+        'Profit per Satuan Utama': profit,
+        'Rasio Bagi Porsi': pcsPerPortion,
+        'Satuan Kecil': pcsPerPortion > 1 ? subUnitLabel : '-',
+        'HPP per Satuan Kecil': pcsPerPortion > 1 ? (hpp / pcsPerPortion) : '-',
+        'Harga Jual per Satuan Kecil': pcsPerPortion > 1 ? roundPrice(hargaJual / pcsPerPortion) : '-',
+        'Estimasi Penjualan (Porsi Utama/bln)': num(m.ops.estimasiCup),
         'Estimasi Profit Bulanan': profit * num(m.ops.estimasiCup)
       };
     });
@@ -166,10 +175,22 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
       const hj = m.margin >= 100 ? 0 : totalHPP / (1 - m.margin / 100);
       const hjb = roundPrice(hj);
       const profit = hjb - totalHPP;
+      const targetUnit = m.targetUnit || 'cup';
+      const pcsPerPortion = m.pcsPerPortion || 1;
+      const subUnitLabel = m.subUnitLabel || 'pcs';
+
       details.push({ A: 'RINGKASAN AKHIR' });
-      details.push({ A: 'TOTAL HPP per Cup', F: totalHPP });
-      details.push({ A: 'Harga Jual Rekomendasi', F: hjb });
-      details.push({ A: 'Profit per Cup', F: profit });
+      details.push({ A: `TOTAL HPP per ${targetUnit}`, F: totalHPP });
+      details.push({ A: `Harga Jual per ${targetUnit}`, F: hjb });
+      details.push({ A: `Profit per ${targetUnit}`, F: profit });
+      
+      if (pcsPerPortion > 1) {
+        details.push({ A: `Bagi Porsi: 1 ${targetUnit} = ${pcsPerPortion} ${subUnitLabel}` });
+        details.push({ A: `TOTAL HPP per ${subUnitLabel}`, F: totalHPP / pcsPerPortion });
+        details.push({ A: `Harga Jual per ${subUnitLabel}`, F: roundPrice(hj / pcsPerPortion) });
+        details.push({ A: `Profit per ${subUnitLabel}`, F: roundPrice(hj / pcsPerPortion) - (totalHPP / pcsPerPortion) });
+      }
+      
       details.push({ A: 'Estimasi Profit Bulanan', F: profit * num(m.ops.estimasiCup) });
 
       const wsDetail = XLSX.utils.json_to_sheet(details, { skipHeader: true });
@@ -202,7 +223,11 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
         { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
         { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
       ];
-      const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0) + py;
+      const targetUnit = m.targetUnit || 'cup';
+      const pcsPerPortion = m.pcsPerPortion || 1;
+      const subUnitLabel = m.subUnitLabel || 'pcs';
+
+      const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
       const ops = totalExpenses + py;
       
       const expenseLines = expensesList.map(exp => {
@@ -213,6 +238,24 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
       const hpp = bb + km + opsPerCup;
       const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
       const hjb = roundPrice(hj);
+
+      let finalPortionLines = `
+  TOTAL HPP / ${targetUnit.toUpperCase().padEnd(16)}: ${fmtRp(hpp)}
+  Target Margin                : ${m.margin}%
+  HARGA JUAL / ${targetUnit.toUpperCase().padEnd(16)}: ${fmtRp(hjb)}
+  Profit per ${targetUnit.padEnd(18)}: ${fmtRp(hjb - hpp)}
+  Estimasi Profit Bulanan      : ${fmtRp((hjb - hpp) * num(m.ops.estimasiCup))}`;
+
+      if (pcsPerPortion > 1) {
+        const hppPcs = hpp / pcsPerPortion;
+        const hjbPcs = roundPrice(hj / pcsPerPortion);
+        finalPortionLines += `
+  ────────────────────────────────────────────
+  1 ${targetUnit} = ${pcsPerPortion} ${subUnitLabel}
+  TOTAL HPP / ${subUnitLabel.toUpperCase().padEnd(16)}: ${fmtRp(hppPcs)}
+  HARGA JUAL / ${subUnitLabel.toUpperCase().padEnd(16)}: ${fmtRp(hjbPcs)}
+  Profit per ${subUnitLabel.padEnd(18)}: ${fmtRp(hjbPcs - hppPcs)}`;
+      }
 
       return `
 <div style="page-break-after: ${idx < selectedMenus.length - 1 ? 'always' : 'avoid'}; font-family: monospace; font-size: 13px; line-height: 1.8; margin-bottom: 40px; padding: 20px;">
@@ -237,15 +280,11 @@ ${expenseLines}
   Penyusutan Aset              : ${fmtRp(py)}
   ────────────────────────────────────────────
   Total Ops Bulanan            : ${fmtRp(ops)}
-  Estimasi Penjualan           : ${num(m.ops.estimasiCup).toLocaleString('id-ID')} cup/bln
-  Beban Ops per Cup            : ${fmtRp(opsPerCup)}
+  Estimasi Penjualan           : ${num(m.ops.estimasiCup).toLocaleString('id-ID')} ${targetUnit}/bln
+  Beban Ops per ${targetUnit.padEnd(15)}: ${fmtRp(opsPerCup)}
 
   ════════════════════════════════════════════
-  TOTAL HPP / CUP              : ${fmtRp(hpp)}
-  Target Margin                : ${m.margin}%
-  HARGA JUAL (dibulatkan)      : ${fmtRp(hjb)}
-  Profit per Cup               : ${fmtRp(hjb - hpp)}
-  Estimasi Profit Bulanan      : ${fmtRp((hjb - hpp) * num(m.ops.estimasiCup))}
+${finalPortionLines.trim()}
   ════════════════════════════════════════════
 
   ${m.notes ? '📝 CATATAN:\n  ' + m.notes : ''}
@@ -423,11 +462,11 @@ ${expenseLines}
                 {/* Card actions */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }} onClick={e => e.stopPropagation()}>
                   <button className="btn btn-icon btn-sm" title="Duplikat"
-                    onClick={() => onDuplicate(menu.id)}>
+                    onClick={(e) => { e.stopPropagation(); onDuplicate(menu.id); }}>
                     <Icon name="copy" size={12} />
                   </button>
                   <button className="btn btn-danger btn-sm" title="Hapus"
-                    onClick={() => onDelete(menu.id)}
+                    onClick={(e) => { e.stopPropagation(); onDelete(menu.id); }}
                     style={{ width: 30, height: 30, justifyContent: 'center' }}>
                     <Icon name="trash" size={12} />
                   </button>

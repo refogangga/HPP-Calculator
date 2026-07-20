@@ -116,7 +116,7 @@ export function SectionHeader({ iconEmoji, iconBg, title, badgeText, badgeClass,
 }
 
 /* ─── Ingredient Row ─────────────────────────────────────── */
-export function IngredientRow({ ing, idx, total, onUpdate, onRemove }) {
+export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit = 'cup' }) {
   const [showPackModal, setShowPackModal] = useState(false);
 
   const perUnit = num(ing.ukuranKemasan) ? num(ing.hargaBeli) / num(ing.ukuranKemasan) : 0;
@@ -232,7 +232,7 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove }) {
 }
 
 /* ─── Packaging Card ─────────────────────────────────────── */
-export function PackagingCard({ pkg, onUpdate, onRemove }) {
+export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup' }) {
   const [showPackModal, setShowPackModal] = useState(false);
   const upd = (f, v) => onUpdate(pkg.id, f, v);
 
@@ -283,7 +283,7 @@ export function PackagingCard({ pkg, onUpdate, onRemove }) {
 
         {/* Pemakaian per cup */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0, width: 62 }}>Pakai/cup:</span>
+          <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0, marginRight: 4 }}>Pakai/{targetUnit}:</span>
           <input className="hpp-input sm" type="number" placeholder="1" step="any"
             value={pkg.usage !== undefined ? pkg.usage : 1} onChange={e => upd('usage', e.target.value)}
             disabled={!pkg.enabled} style={{ width: 60 }} />
@@ -343,6 +343,9 @@ export function MenuMetaModal({ menu, onSave, onClose }) {
   const [name, setName] = useState(menu.name);
   const [emoji, setEmoji] = useState(menu.emoji);
   const [cat, setCat] = useState(menu.category);
+  const [targetUnit, setTargetUnit] = useState(menu.targetUnit || 'cup');
+  const [pcsPerPortion, setPcsPerPortion] = useState(menu.pcsPerPortion || 1);
+  const [subUnitLabel, setSubUnitLabel] = useState(menu.subUnitLabel || 'pcs');
 
   const emojis = ['☕', '🍵', '🥤', '🧋', '🍺', '🍹', '🍔', '🍕', '🍜', '🍱', '🍰', '🧁', '🥗', '🌮', '🍣', '🥞'];
   const cats = ['Minuman', 'Makanan', 'Snack', 'Lainnya'];
@@ -378,7 +381,7 @@ export function MenuMetaModal({ menu, onSave, onClose }) {
             placeholder="Contoh: Kopi Susu Signature" autoFocus />
         </div>
 
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 14 }}>
           <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Kategori</label>
           <div className="tab-bar">
             {cats.map(c => (
@@ -390,10 +393,38 @@ export function MenuMetaModal({ menu, onSave, onClose }) {
           </div>
         </div>
 
+        {/* Satuan & Portioning Section */}
+        <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: 14, marginTop: 14, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div>
+              <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Satuan Utama</label>
+              <select className="hpp-input" value={targetUnit} onChange={e => setTargetUnit(e.target.value)} style={{ padding: '6px 10px', fontSize: 13 }}>
+                {['cup', 'porsi', 'pcs', 'loyang', 'bag', 'box', 'slice', 'kotak', 'gram'].map(u => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Contoh: cup (minuman) atau loyang (cake)</div>
+            </div>
+            <div>
+              <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Bagi Porsi (Portioning)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#64748b' }}>Bagi ke</span>
+                <input className="hpp-input" type="number" min="1" value={pcsPerPortion} 
+                  onChange={e => setPcsPerPortion(Math.max(1, parseInt(e.target.value) || 1))}
+                  style={{ width: 65, textAlign: 'center', padding: '6px' }} />
+                <input className="hpp-input" value={subUnitLabel} 
+                  onChange={e => setSubUnitLabel(e.target.value)} 
+                  placeholder="pcs" style={{ flex: 1, padding: '6px' }} />
+              </div>
+              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Bagi satuan utama ke pcs/slice kecil</div>
+            </div>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button className="btn btn-icon" style={{ width: 'auto', padding: '8px 14px', fontSize: 12 }} onClick={onClose}>Batal</button>
           <button className="btn btn-primary btn-sm" style={{ fontSize: 13, padding: '9px 20px' }}
-            onClick={() => { onSave({ name, emoji, category: cat }); onClose(); }}>
+            onClick={() => { onSave({ name, emoji, category: cat, targetUnit, pcsPerPortion, subUnitLabel }); onClose(); }}>
             <Icon name="check" size={13} /> Simpan
           </button>
         </div>
