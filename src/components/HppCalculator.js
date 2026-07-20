@@ -18,11 +18,11 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
     id: uid(), name: '', hargaBeli: 0, ukuranKemasan: 1000, unit: 'ml', takaranPerCup: 0,
     usePackCalc: false, packQty: 0, packPrice: 0
   }]);
-  const updateIng = (id, f, v) => setIng(p => p.map(i => i.id === id ? { ...i, [f]: v } : i));
+  const updateIng = (id, f, v) => setIng(p => p.map(i => i.id === id ? (typeof f === 'object' ? { ...i, ...f } : { ...i, [f]: v }) : i));
   const removeIng = (id) => setIng(p => p.filter(i => i.id !== id));
 
   const addPkg = () => setPkg(p => [...p, { id: uid(), name: '', icon: '📦', enabled: true, harga: 0, packQty: 0, packPrice: 0 }]);
-  const updatePkg = (id, f, v) => setPkg(p => p.map(x => x.id === id ? { ...x, [f]: v } : x));
+  const updatePkg = (id, f, v) => setPkg(p => p.map(x => x.id === id ? (typeof f === 'object' ? { ...x, ...f } : { ...x, [f]: v }) : x));
   const removePkg = (id) => setPkg(p => p.filter(x => x.id !== id));
 
   /* ── Calculations ── */

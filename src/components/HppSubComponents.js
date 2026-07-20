@@ -219,9 +219,11 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove }) {
           initialPackQty={ing.packQty}
           onClose={() => setShowPackModal(false)}
           onApply={(pricePerUnit, packPrice, packQty) => {
-            upd('hargaBeli', Math.round(pricePerUnit * num(ing.ukuranKemasan)));
-            upd('packPrice', packPrice);
-            upd('packQty', packQty);
+            onUpdate(ing.id, {
+              hargaBeli: Math.round(pricePerUnit * num(ing.ukuranKemasan)),
+              packPrice: packPrice,
+              packQty: packQty
+            });
           }}
         />
       )}
@@ -324,9 +326,11 @@ export function PackagingCard({ pkg, onUpdate, onRemove }) {
           initialPackQty={pkg.packQty}
           onClose={() => setShowPackModal(false)}
           onApply={(pricePerUnit, packPrice, packQty) => {
-            upd('harga', pricePerUnit);
-            upd('packPrice', packPrice);
-            upd('packQty', packQty);
+            onUpdate(pkg.id, {
+              harga: pricePerUnit,
+              packPrice: packPrice,
+              packQty: packQty
+            });
           }}
         />
       )}

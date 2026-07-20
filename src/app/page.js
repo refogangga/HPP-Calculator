@@ -6,6 +6,7 @@ import { ToastContainer, MenuMetaModal } from '../components/HppSubComponents';
 import HppCalculator from '../components/HppCalculator';
 import MenuDatabase from '../components/MenuDatabase';
 import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan } from '../utils/hpp';
+import * as XLSX from 'xlsx';
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
@@ -80,6 +81,112 @@ export default function Home() {
   const selectMenu = (id) => {
     setActiveId(id);
     setView('calculator');
+  };
+
+  const deleteMenusBatch = useCallback((ids) => {
+    if (!window.confirm(`Hapus ${ids.length} menu yang dipilih dari database?`)) return;
+    setMenus(prev => {
+      const next = prev.filter(m => !ids.includes(m.id));
+      if (ids.includes(activeId) && next.length > 0) setActiveId(next[0].id);
+      return next;
+    });
+    showToast(`${ids.length} menu dihapus`, 'info');
+  }, [activeId, showToast]);
+
+  const handleExportSingleExcel = () => {
+    if (!activeMenu) return;
+    const m = activeMenu;
+    const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
+    const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
+    const py = getPenyusutanBulanan(m.ops);
+    const expensesList = m.ops.expenses || [
+      { id: 'listrik', name: '⚡ Listrik & Air', value: num(m.ops.listrik) },
+      { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
+      { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
+    ];
+    const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
+    const totalOps = totalExpenses + py;
+    const opsPerCup = num(m.ops.estimasiCup) > 0 ? totalOps / num(m.ops.estimasiCup) : 0;
+    const hpp = bb + km + opsPerCup;
+    const hargaJual = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
+    const hargaJualBulat = roundPrice(hargaJual);
+    const profit = hargaJualBulat - hpp;
+
+    const summaryData = [{
+      'Nama Menu': m.name,
+      'Kategori': m.category,
+      'Target Margin': m.margin + '%',
+      'HPP Bahan Baku (per Cup)': bb,
+      'HPP Kemasan (per Cup)': km,
+      'HPP Operasional (per Cup)': opsPerCup,
+      'Total HPP (per Cup)': hpp,
+      'Rekomendasi Harga Jual': hargaJualBulat,
+      'Profit per Cup': profit,
+      'Estimasi Penjualan (Cup/bln)': num(m.ops.estimasiCup),
+      'Estimasi Profit Bulanan': profit * num(m.ops.estimasiCup)
+    }];
+
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan HPP");
+
+    const details = [];
+    details.push({ A: `LAPORAN DETAIL HPP: ${m.name.toUpperCase()}` });
+    details.push({ A: `Kategori: ${m.category}` });
+    details.push({ A: `Target Margin: ${m.margin}%` });
+    details.push({});
+
+    details.push({ A: '1. BIAYA BAHAN BAKU' });
+    details.push({ A: 'Nama Bahan', B: 'Harga Beli', C: 'Kemasan', D: 'Satuan', E: 'Takaran/Cup', F: 'HPP/Cup' });
+    m.ingredients.forEach(i => {
+      const perUnit = num(i.ukuranKemasan) ? num(i.hargaBeli) / num(i.ukuranKemasan) : 0;
+      details.push({
+        A: i.name,
+        B: num(i.hargaBeli),
+        C: num(i.ukuranKemasan),
+        D: i.unit,
+        E: num(i.takaranPerCup),
+        F: perUnit * num(i.takaranPerCup)
+      });
+    });
+    details.push({ A: 'Sub-total Bahan Baku', F: bb });
+    details.push({});
+
+    details.push({ A: '2. BIAYA KEMASAN' });
+    details.push({ A: 'Nama Item', B: 'Harga Satuan', C: 'Pemakaian', D: 'Satuan', E: '', F: 'HPP/Cup' });
+    m.packaging.filter(p => p.enabled).forEach(p => {
+      details.push({
+        A: p.name,
+        B: num(p.harga),
+        C: num(p.usage !== undefined ? p.usage : 1),
+        D: p.unit || 'pcs',
+        E: '',
+        F: num(p.harga) * num(p.usage !== undefined ? p.usage : 1)
+      });
+    });
+    details.push({ A: 'Sub-total Kemasan', F: km });
+    details.push({});
+
+    details.push({ A: '3. BIAYA OPERASIONAL & OVERHEAD' });
+    expensesList.forEach(exp => {
+      details.push({ A: exp.name, F: num(exp.value) });
+    });
+    details.push({ A: 'Penyusutan Aset', F: py });
+    details.push({ A: 'Total Ops Bulanan', F: totalOps });
+    details.push({ A: 'Estimasi Penjualan (Cup/bln)', F: num(m.ops.estimasiCup) });
+    details.push({ A: 'Beban Ops per Cup', F: opsPerCup });
+    details.push({});
+
+    details.push({ A: 'RINGKASAN AKHIR' });
+    details.push({ A: 'TOTAL HPP per Cup', F: hpp });
+    details.push({ A: 'Harga Jual Rekomendasi', F: hargaJualBulat });
+    details.push({ A: 'Profit per Cup', F: profit });
+    details.push({ A: 'Estimasi Profit Bulanan', F: profit * num(m.ops.estimasiCup) });
+
+    const wsDetail = XLSX.utils.json_to_sheet(details, { skipHeader: true });
+    XLSX.utils.book_append_sheet(wb, wsDetail, "Detail");
+
+    XLSX.writeFile(wb, `Laporan_HPP_${m.name.replace(/\s+/g, '_')}.xlsx`);
   };
 
   /* ── Print ── */
@@ -188,6 +295,9 @@ ${expenseLines}
               <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
                 <Icon name="print" size={12} /> Cetak
               </button>
+              <button className="btn btn-ghost btn-sm" onClick={handleExportSingleExcel}>
+                🟢 Export Excel
+              </button>
               <button className="btn btn-ghost btn-sm"
                 onClick={() => { saveDB(menus); showToast('Tersimpan ke database!', 'success'); }}>
                 <Icon name="save" size={12} /> Simpan
@@ -262,6 +372,7 @@ ${expenseLines}
           menus={menus} activeId={activeId}
           onSelect={selectMenu} onAdd={addMenu}
           onDelete={deleteMenu} onDuplicate={duplicateMenu}
+          onDeleteBatch={deleteMenusBatch}
         />
       )}
 
