@@ -31,14 +31,14 @@ export function PackCalcModal({ onClose, onApply, initialPackPrice, initialPackQ
       <div className="modal-box">
         <div className="flex-between" style={{ marginBottom: 20 }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 17, color: '#1e293b' }}>🧮 Kalkulator Harga per Satuan</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{itemName || 'Item'}</div>
+            <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--color-text)' }}>🧮 Kalkulator Harga per Satuan</div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{itemName || 'Item'}</div>
           </div>
           <button className="btn btn-icon" onClick={onClose}><Icon name="x" size={14} /></button>
         </div>
 
-        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '14px', marginBottom: 16 }}>
-          <p style={{ fontSize: 12, color: '#64748b', margin: 0, lineHeight: 1.6 }}>
+        <div style={{ background: 'var(--bg-app)', borderRadius: 10, padding: '14px', marginBottom: 16 }}>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
             Masukkan <strong>harga beli 1 pack/bundle</strong> dan <strong>jumlah isi per pack</strong>.
             Sistem akan menghitung harga satuan secara otomatis.
           </p>
@@ -184,8 +184,8 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '3px 9px', borderRadius: 20,
-              border: '1px solid #e0e7ff', background: '#eef2ff',
-              color: '#6366f1', fontSize: 10, fontWeight: 700,
+              border: '1px solid var(--border-color)', background: 'rgba(0, 102, 204, 0.08)',
+              color: 'var(--primary)', fontSize: 10, fontWeight: 700,
               cursor: 'pointer', transition: 'all 0.15s',
               fontFamily: 'Inter, sans-serif'
             }}
@@ -297,13 +297,13 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup' }) {
 
         {/* Pack calc row */}
         {pkg.enabled && (
-          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed #e0e7ff', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-color)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={() => setShowPackModal(true)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 padding: '3px 8px', borderRadius: 20,
-                border: '1px solid #e0e7ff', background: '#eef2ff',
-                color: '#6366f1', fontSize: 10, fontWeight: 700,
+                border: '1px solid var(--border-color)', background: 'rgba(0, 102, 204, 0.08)',
+                color: 'var(--primary)', fontSize: 10, fontWeight: 700,
                 cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s'
               }}>
               <Icon name="package" size={10} /> Hitung dari Pack
@@ -364,9 +364,10 @@ export function MenuMetaModal({ menu, onSave, onClose }) {
               <button key={e} onClick={() => setEmoji(e)}
                 style={{
                   width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer',
-                  background: emoji === e ? '#eef2ff' : '#f8fafc',
+                  background: emoji === e ? 'rgba(0, 102, 204, 0.15)' : 'var(--bg-app)',
+                  color: 'var(--color-text)',
                   fontSize: 18, transition: 'all 0.15s',
-                  boxShadow: emoji === e ? '0 0 0 2px #6366f1' : 'none'
+                  boxShadow: emoji === e ? '0 0 0 2px var(--primary)' : 'none'
                 }}>
                 {e}
               </button>

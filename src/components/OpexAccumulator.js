@@ -19,7 +19,7 @@ export default function OpexAccumulator({
 }) {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Semua');
-  const [editingName, setEditingName] = useState('');
+  const [menuToAdd, setMenuToAdd] = useState('');
 
   // Dropdown categories for OPEX expenses & assets mapping
   const opexCategories = ['Semua', 'Minuman', 'Makanan', 'Snack', 'Lainnya'];
@@ -29,17 +29,15 @@ export default function OpexAccumulator({
     return opexProfiles.find(p => p.id === activeProfileId) || opexProfiles[0] || mkOpexProfile();
   }, [opexProfiles, activeProfileId]);
 
-  // Keep editingName state in sync with active profile name
-  useEffect(() => {
-    if (activeProfile) {
-      setEditingName(activeProfile.name);
-    }
-  }, [activeProfile?.id, activeProfile?.name]);
-
   // Get selected menus in this profile
   const selectedMenus = useMemo(() => {
     return menus.filter(m => activeProfile.selectedMenuIds?.includes(m.id));
   }, [menus, activeProfile.selectedMenuIds]);
+
+  // Get active (enabled) menus in this profile
+  const activeMenus = useMemo(() => {
+    return selectedMenus.filter(m => !activeProfile.disabledMenuIds?.includes(m.id));
+  }, [selectedMenus, activeProfile.disabledMenuIds]);
 
   /* ─── Direct HPP & Pricing Calculations ─── */
   const getDirectHPP = (menu) => {
@@ -60,6 +58,59 @@ export default function OpexAccumulator({
     return roundPrice(hj);
   };
 
+  /* ── Platform-aware calculations per menu ──────────── */
+  const getPlatformCalc = (menu) => {
+    const hj = getSellingPrice(menu);
+    const hpp = getDirectHPP(menu);
+    const p = menu.platform;
+
+    // OPEX per cup dari data ops menu itu sendiri
+    const py = getPenyusutanBulanan(menu.ops);
+    const expensesTotal = (Array.isArray(menu.ops?.expenses) ? menu.ops.expenses : [])
+      .reduce((s, e) => s + num(e.value), 0);
+    const opsPerCup = num(menu.ops?.estimasiCup) > 0
+      ? (expensesTotal + py) / num(menu.ops.estimasiCup)
+      : 0;
+
+    if (!p || !p.enabled || hj <= 0) {
+      return {
+        hargaJual: hj,
+        diskonNominal: 0,
+        hargaEfektif: hj,
+        totalKomisi: 0,
+        revenueBersih: hj,
+        hpp,
+        opsPerCup,
+        netProfit: hj - hpp - opsPerCup,
+        hasPlatform: false,
+      };
+    }
+
+    const diskonNominal = p.discountType === 'pct'
+      ? hj * num(p.discountValue) / 100
+      : num(p.discountValue);
+    const hargaEfektif = Math.max(hj - diskonNominal, 0);
+    const basisKomisi = p.commissionBasis === 'effective' ? hargaEfektif : hj;
+    const komisi = basisKomisi * num(p.commissionPct) / 100;
+    const totalKomisi = komisi + num(p.flatFee);
+    const revenueBersih = hargaEfektif - totalKomisi;
+    const netProfit = revenueBersih - hpp - opsPerCup;
+
+    return {
+      hargaJual: hj,
+      diskonNominal,
+      hargaEfektif,
+      totalKomisi,
+      revenueBersih,
+      hpp,
+      opsPerCup,
+      netProfit,
+      platformName: p.name,
+      commissionPct: num(p.commissionPct),
+      hasPlatform: true,
+    };
+  };
+
   const handlePriceChange = (menu, newPriceVal) => {
     const currentPrices = { ...activeProfile.menuPrices || {} };
     if (newPriceVal === '' || newPriceVal === undefined || newPriceVal === null) {
@@ -70,29 +121,7 @@ export default function OpexAccumulator({
     onUpdateProfile({ menuPrices: currentPrices });
   };
 
-  /* ─── Profile Management Operations ─── */
-  const handleRenameProfile = (newName) => {
-    setEditingName(newName);
-    onUpdateProfile({ name: newName });
-  };
 
-  const handleCreateProfile = () => {
-    const newProfile = mkOpexProfile({
-      name: `Profil ${opexProfiles.length + 1}`,
-      selectedMenuIds: menus.map(m => m.id) // Select all menus by default
-    });
-    onAddProfile(newProfile);
-  };
-
-  const handleDeleteProfile = () => {
-    if (opexProfiles.length <= 1) {
-      alert("Anda harus menyisakan minimal satu profil OPEX.");
-      return;
-    }
-    if (confirm(`Hapus profil "${activeProfile.name}"?`)) {
-      onDeleteProfile(activeProfile.id);
-    }
-  };
 
   /* ─── Volume Balancing Logic ─── */
 
@@ -108,8 +137,8 @@ export default function OpexAccumulator({
     const targetVol = Math.max(0, parseInt(newVolVal) || 0);
     const currentVols = { ...activeProfile.menuVolumes };
 
-    // Fill missing values for all selected menus
-    selectedMenus.forEach(m => {
+    // Fill missing values for all active menus
+    activeMenus.forEach(m => {
       if (currentVols[m.id] === undefined) {
         currentVols[m.id] = num(m.ops?.estimasiCup || 100);
       }
@@ -119,9 +148,9 @@ export default function OpexAccumulator({
     const diff = targetVol - oldVol;
 
     if (activeProfile.isTotalVolumeLocked) {
-      const others = selectedMenus.filter(m => m.id !== menuId);
+      const others = activeMenus.filter(m => m.id !== menuId);
       if (others.length === 0) {
-        // If only 1 menu is selected, it must equal the totalVolume
+        // If only 1 menu is active, it must equal the totalVolume
         currentVols[menuId] = activeProfile.totalVolume;
       } else {
         const sumOthers = others.reduce((sum, m) => sum + (currentVols[m.id] || 0), 0);
@@ -150,7 +179,7 @@ export default function OpexAccumulator({
         }
 
         // Final rounding gap adjustment
-        let newSum = selectedMenus.reduce((sum, m) => sum + (currentVols[m.id] || 0), 0);
+        let newSum = activeMenus.reduce((sum, m) => sum + (currentVols[m.id] || 0), 0);
         let gap = activeProfile.totalVolume - newSum;
         if (gap !== 0 && others.length > 0) {
           const firstOtherId = others[0].id;
@@ -159,9 +188,9 @@ export default function OpexAccumulator({
       }
       onUpdateProfile({ menuVolumes: currentVols });
     } else {
-      // Unlocked: modify this item's volume, and update total volume to the sum of all selected
+      // Unlocked: modify this item's volume, and update total volume to the sum of all active
       currentVols[menuId] = targetVol;
-      const newTotal = selectedMenus.reduce((sum, m) => sum + (currentVols[m.id] || 0), 0);
+      const newTotal = activeMenus.reduce((sum, m) => sum + (currentVols[m.id] || 0), 0);
       onUpdateProfile({
         menuVolumes: currentVols,
         totalVolume: newTotal
@@ -173,16 +202,16 @@ export default function OpexAccumulator({
     const newTotal = Math.max(0, parseInt(newTotalVal) || 0);
     const currentVols = { ...activeProfile.menuVolumes };
 
-    if (selectedMenus.length > 0) {
-      const equalShare = Math.floor(newTotal / selectedMenus.length);
-      selectedMenus.forEach(m => {
+    if (activeMenus.length > 0) {
+      const equalShare = Math.floor(newTotal / activeMenus.length);
+      activeMenus.forEach(m => {
         currentVols[m.id] = equalShare;
       });
 
       // Distribute rounding remainder
-      const remainder = newTotal % selectedMenus.length;
+      const remainder = newTotal % activeMenus.length;
       for (let i = 0; i < remainder; i++) {
-        const id = selectedMenus[i].id;
+        const id = activeMenus[i].id;
         currentVols[id] = (currentVols[id] || 0) + 1;
       }
     }
@@ -194,77 +223,36 @@ export default function OpexAccumulator({
   };
 
   const handleToggleMenuSelect = (menuId) => {
-    let updatedSelection = [...(activeProfile.selectedMenuIds || [])];
-    if (updatedSelection.includes(menuId)) {
-      updatedSelection = updatedSelection.filter(id => id !== menuId);
-    } else {
-      updatedSelection.push(menuId);
-    }
-
-    // Rebalance volume split if locked
-    const currentVols = { ...activeProfile.menuVolumes };
-    if (activeProfile.isTotalVolumeLocked && updatedSelection.length > 0) {
-      const equalShare = Math.floor(activeProfile.totalVolume / updatedSelection.length);
-      updatedSelection.forEach(id => {
-        currentVols[id] = equalShare;
-      });
-      // Distribute rounding remainder
-      const remainder = activeProfile.totalVolume % updatedSelection.length;
-      for (let i = 0; i < remainder; i++) {
-        const id = updatedSelection[i];
-        currentVols[id] = (currentVols[id] || 0) + 1;
-      }
-    } else if (!activeProfile.isTotalVolumeLocked) {
-      // Unlocked: recalculate total volume to match new sum
-      const newSum = updatedSelection.reduce((sum, id) => sum + (currentVols[id] || 100), 0);
-      onUpdateProfile({
-        selectedMenuIds: updatedSelection,
-        totalVolume: newSum
-      });
-      return;
-    }
+    const disabled = activeProfile.disabledMenuIds || [];
+    const isCurrentlyDisabled = disabled.includes(menuId);
+    let nextDisabled = isCurrentlyDisabled
+      ? disabled.filter(id => id !== menuId)
+      : [...disabled, menuId];
 
     onUpdateProfile({
-      selectedMenuIds: updatedSelection,
-      menuVolumes: currentVols
+      disabledMenuIds: nextDisabled
     });
   };
 
   const handleToggleSelectAll = (checked) => {
-    let updatedSelection = [];
-    if (checked) {
-      const currentFilteredIds = filteredMenus.map(m => m.id);
-      updatedSelection = [...new Set([...(activeProfile.selectedMenuIds || []), ...currentFilteredIds])];
-    } else {
-      const currentFilteredIds = filteredMenus.map(m => m.id);
-      updatedSelection = (activeProfile.selectedMenuIds || []).filter(id => !currentFilteredIds.includes(id));
-    }
+    const currentFilteredIds = filteredMenus.map(m => m.id);
+    const currentDisabled = activeProfile.disabledMenuIds || [];
+    let nextDisabled = [...currentDisabled];
 
-    // Rebalance volumes if locked
-    const currentVols = { ...activeProfile.menuVolumes };
-    if (activeProfile.isTotalVolumeLocked && updatedSelection.length > 0) {
-      const equalShare = Math.floor(activeProfile.totalVolume / updatedSelection.length);
-      updatedSelection.forEach(id => {
-        currentVols[id] = equalShare;
+    if (checked) {
+      // Enable all currently filtered menus -> remove them from the disabled list
+      nextDisabled = nextDisabled.filter(id => !currentFilteredIds.includes(id));
+    } else {
+      // Disable all currently filtered menus -> add them to the disabled list
+      currentFilteredIds.forEach(id => {
+        if (!nextDisabled.includes(id)) {
+          nextDisabled.push(id);
+        }
       });
-      // Distribute rounding remainder
-      const remainder = activeProfile.totalVolume % updatedSelection.length;
-      for (let i = 0; i < remainder; i++) {
-        const id = updatedSelection[i];
-        currentVols[id] = (currentVols[id] || 0) + 1;
-      }
-    } else if (!activeProfile.isTotalVolumeLocked) {
-      const newSum = updatedSelection.reduce((sum, id) => sum + (currentVols[id] || 100), 0);
-      onUpdateProfile({
-        selectedMenuIds: updatedSelection,
-        totalVolume: newSum
-      });
-      return;
     }
 
     onUpdateProfile({
-      selectedMenuIds: updatedSelection,
-      menuVolumes: currentVols
+      disabledMenuIds: nextDisabled
     });
   };
 
@@ -312,43 +300,53 @@ export default function OpexAccumulator({
     return totalExpenses + totalAssetDepreciation;
   }, [totalExpenses, totalAssetDepreciation]);
 
-  // Main KPI values
+  // Main KPI values — platform-aware
   const financialSummary = useMemo(() => {
-    let totalRevenue = 0;
+    let totalRevenue = 0;         // gross revenue (harga jual × volume)
+    let totalNetRevenue = 0;      // net revenue setelah diskon & komisi platform
     let totalCOGS = 0;
+    let totalOpexCups = 0;
     let totalVolume = 0;
+    let totalPlatformCut = 0;
+    let totalDiskon = 0;
 
-    selectedMenus.forEach(m => {
+    activeMenus.forEach(m => {
       const volume = getMenuVolume(m.id, num(m.ops?.estimasiCup));
-      const price = getSellingPrice(m);
-      const hpp = getDirectHPP(m);
+      const pc = getPlatformCalc(m);
 
       totalVolume += volume;
-      totalRevenue += volume * price;
-      totalCOGS += volume * hpp;
+      totalRevenue += volume * pc.hargaJual;
+      totalNetRevenue += volume * pc.revenueBersih;
+      totalCOGS += volume * pc.hpp;
+      totalOpexCups += volume * pc.opsPerCup;
+      totalPlatformCut += volume * pc.totalKomisi;
+      totalDiskon += volume * pc.diskonNominal;
     });
 
-    const totalGrossProfit = totalRevenue - totalCOGS;
-    const netProfit = totalGrossProfit - totalOpexVal;
+    const totalGrossProfit = totalNetRevenue - totalCOGS;
+    const netProfit = totalGrossProfit - totalOpexVal - totalOpexCups;
 
-    const avgOpexPerUnit = totalVolume > 0 ? totalOpexVal / totalVolume : 0;
+    const avgOpexPerUnit = totalVolume > 0 ? (totalOpexVal + totalOpexCups) / totalVolume : 0;
 
-    // BEP Calculation
-    const avgPrice = totalVolume > 0 ? totalRevenue / totalVolume : 0;
+    // BEP based on net revenue
+    const avgNetPrice = totalVolume > 0 ? totalNetRevenue / totalVolume : 0;
     const avgHpp = totalVolume > 0 ? totalCOGS / totalVolume : 0;
-    const avgContributionMargin = avgPrice - avgHpp;
+    const avgContributionMargin = avgNetPrice - avgHpp;
     const bepUnits = avgContributionMargin > 0 ? Math.ceil(totalOpexVal / avgContributionMargin) : 0;
 
     return {
       totalVolume,
       totalRevenue,
+      totalNetRevenue,
       totalCOGS,
       totalGrossProfit,
       netProfit,
       avgOpexPerUnit,
-      bepUnits
+      bepUnits,
+      totalPlatformCut,
+      totalDiskon,
     };
-  }, [selectedMenus, activeProfile.menuVolumes, totalOpexVal]);
+  }, [activeMenus, activeProfile.menuVolumes, totalOpexVal]);
 
   // Categories profit breakdown
   const categorySummaryBreakdown = useMemo(() => {
@@ -358,7 +356,7 @@ export default function OpexAccumulator({
       map[cat] = { opex: 0, revenue: 0, cogs: 0, volume: 0, margin: 0 };
     });
 
-    selectedMenus.forEach(m => {
+    activeMenus.forEach(m => {
       const cat = m.category || 'Lainnya';
       if (!map[cat]) map[cat] = { opex: 0, revenue: 0, cogs: 0, volume: 0, margin: 0 };
 
@@ -417,64 +415,20 @@ export default function OpexAccumulator({
       ...val,
       netProfit: val.margin - val.opex
     }));
-  }, [selectedMenus, activeProfile, financialSummary.totalVolume]);
+  }, [activeMenus, activeProfile, financialSummary.totalVolume]);
 
   const filteredMenus = useMemo(() => {
-    return menus.filter(m => {
+    return selectedMenus.filter(m => {
       const matchCat = filterCategory === 'Semua' || m.category === filterCategory;
       const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
       return matchCat && matchSearch;
     });
-  }, [menus, filterCategory, search]);
+  }, [selectedMenus, filterCategory, search]);
 
   return (
     <div style={{ padding: '0 28px' }}>
       
-      {/* ── Top Profiles Ribbon Bar ── */}
-      <div
-        style={{
-          background: '#fff',
-          borderBottom: '1px solid #e2e8f0',
-          padding: '12px 24px',
-          margin: '0 -28px 20px -28px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 14
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>Profil Toko/Kategori:</span>
-          <select
-            className="hpp-input sm"
-            value={activeProfileId || ''}
-            onChange={e => onSelectProfile(e.target.value)}
-            style={{ maxWidth: 200, fontWeight: 600 }}
-          >
-            {opexProfiles.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          
-          <input
-            className="hpp-input sm"
-            value={editingName}
-            onChange={e => handleRenameProfile(e.target.value)}
-            placeholder="Edit nama profil..."
-            style={{ maxWidth: 220, fontWeight: 600 }}
-          />
-        </div>
-        
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-add btn-sm" onClick={handleCreateProfile}>
-            <Icon name="plus" size={11} /> Buat Profil Baru
-          </button>
-          <button className="btn btn-danger" onClick={handleDeleteProfile} style={{ width: 'auto', height: 'auto', padding: '7px 14px', fontSize: 12, borderRadius: 8 }}>
-            <Icon name="trash" size={11} /> Hapus Profil
-          </button>
-        </div>
-      </div>
+
 
       <div className="main-grid" style={{
         display: 'grid', gridTemplateColumns: '1fr 390px', gap: 20,
@@ -493,6 +447,69 @@ export default function OpexAccumulator({
             />
             <div className="section-body">
               
+              {/* Add Menu Control Bar */}
+              <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-app)', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text)' }}>Tambah Menu ke Simulasi:</span>
+                <select
+                  className="hpp-input sm"
+                  value={menuToAdd}
+                  onChange={e => setMenuToAdd(e.target.value)}
+                  style={{ maxWidth: 200, height: '30px' }}
+                >
+                  <option value="">-- Pilih Menu --</option>
+                  {menus
+                    .filter(m => !activeProfile.selectedMenuIds?.includes(m.id))
+                    .map(m => (
+                      <option key={m.id} value={m.id}>{m.emoji} {m.name}</option>
+                    ))
+                  }
+                </select>
+                <button
+                  className="btn btn-add btn-sm"
+                  onClick={() => {
+                    if (!menuToAdd) return;
+                    onUpdateProfile({
+                      selectedMenuIds: [...(activeProfile.selectedMenuIds || []), menuToAdd]
+                    });
+                    setMenuToAdd('');
+                  }}
+                  disabled={!menuToAdd}
+                  style={{ height: '30px', padding: '0 12px' }}
+                >
+                  <Icon name="plus" size={11} /> Tambah
+                </button>
+                
+                <span style={{ borderLeft: '1px solid var(--border-color)', height: 18, margin: '0 4px' }} />
+
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    const allIds = menus.map(m => m.id);
+                    onUpdateProfile({
+                      selectedMenuIds: allIds
+                    });
+                  }}
+                  style={{ fontSize: 11, padding: '4px 10px', height: '30px' }}
+                >
+                  Tambah Semua
+                </button>
+
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    if (confirm('Kosongkan semua menu dari simulasi opex?')) {
+                      onUpdateProfile({
+                        selectedMenuIds: [],
+                        disabledMenuIds: []
+                      });
+                    }
+                  }}
+                  style={{ fontSize: 11, padding: '4px 10px', color: '#ef4444', height: '30px' }}
+                >
+                  Kosongkan
+                </button>
+              </div>
+
               {/* Filter and Search Bar */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, position: 'relative', minWidth: 200 }}>
@@ -524,7 +541,7 @@ export default function OpexAccumulator({
               {/* Menus Table */}
               {filteredMenus.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: 13 }}>
-                  Tidak ada menu ditemukan. Silakan tambahkan menu di tab Database.
+                  Tidak ada menu di dalam simulasi opex. Silakan pilih menu di atas lalu klik Tambah.
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
@@ -534,42 +551,44 @@ export default function OpexAccumulator({
                         <th style={{ padding: '8px 4px', width: 30 }}>
                           <input
                             type="checkbox"
-                            checked={filteredMenus.length > 0 && filteredMenus.every(m => activeProfile.selectedMenuIds?.includes(m.id))}
+                            checked={filteredMenus.length > 0 && filteredMenus.every(m => !activeProfile.disabledMenuIds?.includes(m.id))}
                             onChange={e => handleToggleSelectAll(e.target.checked)}
                             style={{ cursor: 'pointer' }}
                           />
                         </th>
                         <th style={{ padding: '8px 8px' }}>Menu</th>
-                        <th style={{ padding: '8px 8px', width: 90 }}>Kategori</th>
-                        <th style={{ padding: '8px 8px', width: 90, textAlign: 'right' }}>Direct HPP</th>
-                        <th style={{ padding: '8px 8px', width: 125, textAlign: 'right' }}>Harga Jual</th>
-                        <th style={{ padding: '8px 8px', width: 100, textAlign: 'center' }}>Volume Jual</th>
-                        <th style={{ padding: '8px 8px', width: 100, textAlign: 'right' }}>Kontribusi</th>
+                        <th style={{ padding: '8px 8px', width: 75 }}>Kategori</th>
+                        <th style={{ padding: '8px 8px', width: 95, textAlign: 'right', whiteSpace: 'nowrap' }}>HPP</th>
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }}>Harga Jual</th>
+                        <th style={{ padding: '8px 8px', width: 120, textAlign: 'right', whiteSpace: 'nowrap' }}>Nett Revenue</th>
+                        <th style={{ padding: '8px 8px', width: 90, textAlign: 'center' }}>Volume</th>
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Net Profit/Cup</th>
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Kontribusi</th>
+                        <th style={{ padding: '8px 8px', width: 40, textAlign: 'center' }}>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredMenus.map((menu) => {
-                        const isSelected = activeProfile.selectedMenuIds?.includes(menu.id);
-                        const directHpp = getDirectHPP(menu);
-                        const sellingPrice = getSellingPrice(menu);
+                        const isEnabled = !activeProfile.disabledMenuIds?.includes(menu.id);
+                        const pc = getPlatformCalc(menu);
                         const volume = getMenuVolume(menu.id, num(menu.ops?.estimasiCup));
-                        const marginPerUnit = sellingPrice - directHpp;
-                        const totalMargin = volume * marginPerUnit;
+                        const totalContribusi = isEnabled ? volume * pc.netProfit : 0;
+                        const isProfit = pc.netProfit >= 0;
 
                         return (
                           <tr
                             key={menu.id}
                             style={{
-                              borderBottom: '1px solid #f1f5f9',
-                              opacity: isSelected ? 1 : 0.6,
-                              background: isSelected ? 'transparent' : '#f8fafc',
+                              borderBottom: '1px solid var(--border-color)',
+                              opacity: isEnabled ? 1 : 0.55,
+                              background: isEnabled ? 'transparent' : 'var(--bg-app)',
                               transition: 'all 0.15s'
                             }}
                           >
                             <td style={{ padding: '10px 4px' }}>
                               <input
                                 type="checkbox"
-                                checked={isSelected}
+                                checked={isEnabled}
                                 onChange={() => handleToggleMenuSelect(menu.id)}
                                 style={{ cursor: 'pointer' }}
                               />
@@ -578,55 +597,82 @@ export default function OpexAccumulator({
                               <button
                                 onClick={() => onNavigateToCalculator && onNavigateToCalculator(menu.id)}
                                 style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 6,
-                                  background: isSelected ? '#f1f5f9' : '#f8fafc',
-                                  border: '1px solid #cbd5e1',
-                                  padding: '5px 10px',
-                                  borderRadius: 8,
-                                  color: '#334155',
-                                  fontWeight: 600,
-                                  fontSize: 12,
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                                  textAlign: 'left'
+                                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                                  background: isEnabled ? 'var(--bg-app)' : 'var(--bg-card)',
+                                  border: '1px solid var(--border-color)', padding: '5px 10px',
+                                  borderRadius: 8, color: 'var(--color-text)', fontWeight: 600,
+                                  fontSize: 12, cursor: 'pointer', transition: 'all 0.15s ease',
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)', textAlign: 'left'
                                 }}
                                 onMouseOver={e => {
-                                  e.currentTarget.style.background = '#eef2ff';
-                                  e.currentTarget.style.borderColor = '#6366f1';
-                                  e.currentTarget.style.color = '#4f46e5';
+                                  e.currentTarget.style.background = 'rgba(0,102,204,0.08)';
+                                  e.currentTarget.style.borderColor = 'var(--primary)';
+                                  e.currentTarget.style.color = 'var(--primary)';
                                 }}
                                 onMouseOut={e => {
-                                  e.currentTarget.style.background = isSelected ? '#f1f5f9' : '#f8fafc';
-                                  e.currentTarget.style.borderColor = '#cbd5e1';
-                                  e.currentTarget.style.color = '#334155';
+                                  e.currentTarget.style.background = isEnabled ? 'var(--bg-app)' : 'var(--bg-card)';
+                                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                                  e.currentTarget.style.color = 'var(--color-text)';
                                 }}
                                 title="Klik untuk edit / hitung HPP"
                               >
                                 <span style={{ fontSize: 13 }}>{menu.emoji}</span>
                                 <span>{menu.name}</span>
+                                {pc.hasPlatform && (
+                                  <span style={{
+                                    fontSize: 9, padding: '1px 5px', borderRadius: 10,
+                                    background: '#fff1ef', color: '#ee4d2d', fontWeight: 700
+                                  }}>
+                                    🏪 {pc.platformName}
+                                  </span>
+                                )}
                               </button>
                             </td>
                             <td style={{ padding: '10px 8px' }}>
                               <span className="badge badge-slate" style={{ fontSize: 10 }}>{menu.category}</span>
                             </td>
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 500 }}>
-                              {fmtRp(directHpp)}
+
+                            {/* HPP */}
+                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 12 }}>
+                              {fmtRp(pc.hpp)}
                             </td>
+
+                            {/* Harga Jual (editable) */}
                             <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                              <div className="input-prefix-wrap sm" style={{ maxWidth: 110, marginLeft: 'auto' }}>
-                                <span className="prefix" style={{ fontSize: 9 }}>Rp</span>
-                                <FormatInput
-                                  className="hpp-input sm center"
-                                  style={{ paddingLeft: 20 }}
-                                  value={sellingPrice}
-                                  onChange={val => handlePriceChange(menu, val)}
-                                  disabled={!isSelected}
-                                />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+                                <div className="input-prefix-wrap sm" style={{ maxWidth: 110, marginLeft: 'auto' }}>
+                                  <span className="prefix" style={{ fontSize: 9 }}>Rp</span>
+                                  <FormatInput
+                                    className="hpp-input sm center"
+                                    style={{ paddingLeft: 20 }}
+                                    value={pc.hargaJual}
+                                    onChange={val => handlePriceChange(menu, val)}
+                                    disabled={!isEnabled}
+                                  />
+                                </div>
+                                {pc.hasPlatform && pc.diskonNominal > 0 && (
+                                  <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 600 }}>
+                                    − {fmtRp(pc.diskonNominal)} diskon
+                                  </span>
+                                )}
                               </div>
                             </td>
+
+                            {/* Nett Revenue (setelah platform) */}
+                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+                                <span style={{ fontWeight: 700, fontSize: 12, color: pc.hasPlatform ? '#4f46e5' : 'var(--color-text)' }}>
+                                  {fmtRp(pc.revenueBersih)}
+                                </span>
+                                {pc.hasPlatform && (
+                                  <span style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>
+                                    − {fmtRp(pc.totalKomisi)} komisi
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Volume */}
                             <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                               <input
                                 type="number"
@@ -634,11 +680,46 @@ export default function OpexAccumulator({
                                 style={{ maxWidth: 75, margin: '0 auto', display: 'block', fontWeight: 700 }}
                                 value={volume}
                                 onChange={e => handleVolumeChange(menu.id, e.target.value)}
-                                disabled={!isSelected}
+                                disabled={!isEnabled}
                               />
                             </td>
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: totalMargin > 0 ? '#10b981' : '#64748b' }}>
-                              {isSelected && volume > 0 ? fmtRp(totalMargin) : 'Rp 0'}
+
+                            {/* Net Profit per Cup */}
+                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+                                <span style={{
+                                  fontWeight: 700, fontSize: 12,
+                                  color: isProfit ? '#10b981' : '#ef4444'
+                                }}>
+                                  {fmtRp(pc.netProfit)}
+                                </span>
+                                {pc.opsPerCup > 0 && (
+                                  <span style={{ fontSize: 9, color: '#94a3b8' }}>
+                                    inc. OPEX {fmtRp(pc.opsPerCup)}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Total Kontribusi */}
+                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: totalContribusi > 0 ? 'var(--color-success)' : '#ef4444', whiteSpace: 'nowrap' }}>
+                              {isEnabled && volume > 0 ? fmtRp(totalContribusi) : 'Rp 0'}
+                            </td>
+
+                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => {
+                                  onUpdateProfile({
+                                    selectedMenuIds: activeProfile.selectedMenuIds.filter(id => id !== menu.id),
+                                    disabledMenuIds: (activeProfile.disabledMenuIds || []).filter(id => id !== menu.id)
+                                  });
+                                }}
+                                style={{ color: '#ef4444', padding: '4px 6px', height: 'auto', width: 'auto', border: 'none', background: 'transparent' }}
+                                title="Hapus dari simulasi"
+                              >
+                                <Icon name="trash" size={11} />
+                              </button>
                             </td>
                           </tr>
                         );
@@ -648,15 +729,15 @@ export default function OpexAccumulator({
                 </div>
               )}
             </div>
-            <div className="section-footer" style={{ background: '#eef2ff', display: 'flex', justifyContent: 'space-between', fontSize: 12, borderBottom: '1px solid #e2e8f0' }}>
-              <span style={{ fontWeight: 600, color: '#4f46e5' }}>Terpilih: {selectedMenus.length} dari {menus.length} Menu</span>
-              <span style={{ fontWeight: 800, color: '#4f46e5' }}>Volume Terakumulasi: {financialSummary.totalVolume.toLocaleString('id-ID')} unit</span>
+            <div className="section-footer bg-accent-blue" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, borderBottom: '1px solid var(--border-color)' }}>
+              <span style={{ fontWeight: 600 }}>Terpilih: {activeMenus.length} dari {selectedMenus.length} Menu Simulasi ({menus.length} di Database)</span>
+              <span style={{ fontWeight: 800 }}>Volume Terakumulasi: {financialSummary.totalVolume.toLocaleString('id-ID')} unit</span>
             </div>
 
             {/* Target Volume and Gembok Control (Placed at the bottom of the card, below the total summary footer) */}
             <div
+              className={activeProfile.isTotalVolumeLocked ? 'bg-accent-green' : 'bg-accent-yellow'}
               style={{
-                background: activeProfile.isTotalVolumeLocked ? '#f0fdf4' : '#fffbeb',
                 padding: '14px 18px',
                 display: 'flex',
                 alignItems: 'center',
@@ -665,7 +746,8 @@ export default function OpexAccumulator({
                 gap: 14,
                 borderBottomLeftRadius: 12,
                 borderBottomRightRadius: 12,
-                transition: 'background-color 0.2s'
+                transition: 'background-color 0.2s',
+                border: '1px solid var(--border-color)'
               }}
             >
               <div style={{ flex: 1, minWidth: 200 }}>
@@ -711,9 +793,9 @@ export default function OpexAccumulator({
                     width: 36,
                     height: 36,
                     borderRadius: 8,
-                    border: `1.5px solid ${activeProfile.isTotalVolumeLocked ? '#10b981' : '#cbd5e1'}`,
-                    background: activeProfile.isTotalVolumeLocked ? '#dcfce7' : '#fff',
-                    color: activeProfile.isTotalVolumeLocked ? '#15803d' : '#64748b',
+                    border: `1.5px solid ${activeProfile.isTotalVolumeLocked ? '#10b981' : 'var(--border-color)'}`,
+                    background: activeProfile.isTotalVolumeLocked ? 'rgba(16,185,129,0.1)' : 'var(--bg-card)',
+                    color: activeProfile.isTotalVolumeLocked ? '#10b981' : 'var(--color-text)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -757,10 +839,10 @@ export default function OpexAccumulator({
                         gridTemplateColumns: '1fr 140px 140px auto',
                         gap: 8,
                         alignItems: 'center',
-                        background: '#f8fafc',
+                        background: 'var(--bg-app)',
                         padding: '8px 12px',
                         borderRadius: 8,
-                        border: '1px solid #e2e8f0'
+                        border: '1px solid var(--border-color)'
                       }}
                     >
                       <div>
@@ -814,9 +896,9 @@ export default function OpexAccumulator({
                 </div>
               )}
             </div>
-            <div className="section-footer" style={{ background: '#fffbeb', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-              <span style={{ fontWeight: 600, color: '#d97706' }}>Sub-total Pengeluaran Overhead</span>
-              <span className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#b45309' }}>{fmtRp(totalExpenses)}</span>
+            <div className="section-footer bg-accent-yellow" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+              <span style={{ fontWeight: 600 }}>Sub-total Pengeluaran Overhead</span>
+              <span className="mono" style={{ fontWeight: 800, fontSize: 15 }}>{fmtRp(totalExpenses)}</span>
             </div>
           </div>
 
@@ -835,10 +917,10 @@ export default function OpexAccumulator({
               }
             />
             <div className="section-body">
-              <div className="flex-between" style={{ marginBottom: 14, background: '#f0fdf4', padding: '10px 14px', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+              <div className="flex-between bg-accent-green" style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 8, border: '1px solid' }}>
                 <div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#047857' }}>Depresiasi Umur Ekonomis</span>
-                  <div style={{ fontSize: 10, color: '#059669', marginTop: 2 }}>Mendepresiasi mesin/alat berdasarkan umur dalam tahun secara bulanan.</div>
+                  <span style={{ fontSize: 12, fontWeight: 700 }}>Depresiasi Umur Ekonomis</span>
+                  <div style={{ fontSize: 10, marginTop: 2 }}>Mendepresiasi mesin/alat berdasarkan umur dalam tahun secara bulanan.</div>
                 </div>
                 <label className="pkg-toggle" htmlFor="use-penyusutan-opex">
                   <input
@@ -868,11 +950,11 @@ export default function OpexAccumulator({
                             gridTemplateColumns: '1fr 120px 120px 70px 110px auto',
                             gap: 8,
                             alignItems: 'center',
-                            background: aset.enabled ? '#f8fafc' : '#f1f5f9',
+                            background: aset.enabled ? 'var(--bg-card)' : 'var(--bg-app)',
                             opacity: aset.enabled ? 1 : 0.6,
                             padding: '8px 12px',
                             borderRadius: 8,
-                            border: '1px solid #e2e8f0',
+                            border: '1px solid var(--border-color)',
                             transition: 'opacity 0.15s'
                           }}
                         >
@@ -931,7 +1013,7 @@ export default function OpexAccumulator({
 
                           <div>
                             <label className="label-sm" style={{ display: 'block', marginBottom: 2, textAlign: 'right' }}>Depresiasi/Bln</label>
-                            <div style={{ padding: '5px 8px', background: aset.enabled ? '#fff' : '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 11, fontWeight: 700, textAlign: 'right', height: 29, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                            <div style={{ padding: '5px 8px', background: aset.enabled ? 'var(--bg-card)' : 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: 6, fontSize: 11, fontWeight: 700, textAlign: 'right', height: 29, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                               <span className="mono">{fmtRp(blnVal)}</span>
                             </div>
                           </div>
@@ -974,9 +1056,9 @@ export default function OpexAccumulator({
                 </div>
               )}
             </div>
-            <div className="section-footer" style={{ background: '#f0fdf4', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-              <span style={{ fontWeight: 600, color: '#059669' }}>Sub-total Penyusutan Bulanan</span>
-              <span className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#047857' }}>{fmtRp(totalAssetDepreciation)}</span>
+            <div className="section-footer bg-accent-green" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+              <span style={{ fontWeight: 600 }}>Sub-total Penyusutan Bulanan</span>
+              <span className="mono" style={{ fontWeight: 800, fontSize: 15 }}>{fmtRp(totalAssetDepreciation)}</span>
             </div>
           </div>
 
@@ -1003,14 +1085,23 @@ export default function OpexAccumulator({
             
             <div className="label-xs" style={{ color: '#64748b', marginBottom: 16 }}>📊 KINERJA FINANSIAL: {activeProfile.name}</div>
             
+            {/* Revenue Waterfall rows */}
             {[
-              { label: 'Omset Pendapatan Kotor', val: financialSummary.totalRevenue, valColor: '#fff' },
-              { label: 'Total Direct HPP (COGS)', val: -financialSummary.totalCOGS, valColor: '#fecaca' },
-              { label: 'Gross Profit (Margin Kontribusi)', val: financialSummary.totalGrossProfit, valColor: '#a7f3d0', bold: true },
-              { label: 'Total OPEX Terpusat', val: -totalOpexVal, valColor: '#fed7aa' },
-            ].map(({ label, val, valColor, bold }) => (
-              <div key={label} className="result-row" style={{ padding: '6px 0', borderBottom: bold ? '1px dashed rgba(255,255,255,0.08)' : 'none', marginBottom: bold ? 4 : 0 }}>
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>{label}</span>
+              { label: 'Omset Pendapatan Kotor', val: financialSummary.totalRevenue, valColor: '#e2e8f0' },
+              ...(financialSummary.totalDiskon > 0 ? [{ label: '↳ Diskon Merchant', val: -financialSummary.totalDiskon, valColor: '#fde68a', indent: true }] : []),
+              ...(financialSummary.totalPlatformCut > 0 ? [{ label: '↳ Komisi Platform', val: -financialSummary.totalPlatformCut, valColor: '#fca5a5', indent: true }] : []),
+              ...(financialSummary.totalNetRevenue !== financialSummary.totalRevenue ? [{ label: '= Nett Revenue Diterima', val: financialSummary.totalNetRevenue, valColor: '#c7d2fe', bold: true }] : []),
+              { label: '− Total Direct HPP (COGS)', val: -financialSummary.totalCOGS, valColor: '#fed7aa' },
+              { label: '= Gross Profit (Kontribusi)', val: financialSummary.totalGrossProfit, valColor: '#a7f3d0', bold: true },
+              { label: '− Total OPEX Terpusat', val: -totalOpexVal, valColor: '#fde68a' },
+            ].map(({ label, val, valColor, bold, indent }) => (
+              <div key={label} className="result-row" style={{
+                padding: '5px 0',
+                paddingLeft: indent ? 12 : 0,
+                borderBottom: bold ? '1px dashed rgba(255,255,255,0.08)' : 'none',
+                marginBottom: bold ? 4 : 0,
+              }}>
+                <span style={{ fontSize: indent ? 11 : 12, color: indent ? '#64748b' : '#94a3b8' }}>{label}</span>
                 <span className="mono" style={{ fontWeight: bold ? 800 : 600, fontSize: bold ? 14 : 12, color: valColor }}>
                   {val < 0 ? `- ${fmtRp(Math.abs(val))}` : fmtRp(val)}
                 </span>
@@ -1032,14 +1123,16 @@ export default function OpexAccumulator({
               }}
             >
               <div style={{ fontSize: 11, fontWeight: 700, color: financialSummary.netProfit >= 0 ? '#34d399' : '#f87171', marginBottom: 4 }}>
-                {financialSummary.netProfit >= 0 ? '🏆 ESTIMASI PROFIT BERSIH' : '⚠️ ESTIMASI RUGI BERSIH'}
+                {financialSummary.netProfit >= 0 ? '🏆 ESTIMASI PROFIT BERSIH FINAL' : '🚨 ESTIMASI RUGI BERSIH'}
               </div>
               <div className="mono" style={{ fontWeight: 900, fontSize: 24, color: '#fff' }}>
                 {financialSummary.netProfit < 0 ? `- ${fmtRp(Math.abs(financialSummary.netProfit))}` : fmtRp(financialSummary.netProfit)}
               </div>
-              
-              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
-                Margin Kontribusi ({fmtRp(financialSummary.totalGrossProfit)}) − OPEX ({fmtRp(totalOpexVal)})
+              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.5 }}>
+                Gross Profit ({fmtRp(financialSummary.totalGrossProfit)}) − OPEX ({fmtRp(totalOpexVal)})
+                {financialSummary.totalPlatformCut > 0 && (
+                  <span> | Platform cut: {fmtRp(financialSummary.totalPlatformCut)}</span>
+                )}
               </div>
             </div>
           </div>
@@ -1049,48 +1142,48 @@ export default function OpexAccumulator({
             <SectionHeader iconEmoji="📊" iconBg="#ecfdf5" title="Analisis Operasional & BEP" badgeText="METRIK" badgeClass="badge-emerald" />
             <div className="section-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               
-              <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', border: '1px solid #e2e8f0' }}>
-                <span className="label-xs" style={{ color: '#64748b', display: 'block', marginBottom: 2 }}>BEBAN OPEX RATA-RATA (Metode Rata per Unit)</span>
+              <div style={{ background: 'var(--bg-app)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border-color)' }}>
+                <span className="label-xs" style={{ display: 'block', marginBottom: 2 }}>BEBAN OPEX RATA-RATA (Metode Rata per Unit)</span>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span className="mono" style={{ fontSize: 16, fontWeight: 800, color: '#1e293b' }}>
+                  <span className="mono" style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-text)' }}>
                     {fmtRp(financialSummary.avgOpexPerUnit)} / unit
                   </span>
-                  <span style={{ fontSize: 10, color: '#94a3b8' }}>
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
                     Total OPEX ÷ Total Volume
                   </span>
                 </div>
-                <div style={{ fontSize: 10, color: '#64748b', marginTop: 4, lineHeight: 1.4 }}>
-                  HPP Riil Gabungan = <strong style={{ color: '#4f46e5' }}>Direct HPP + {fmtRp(financialSummary.avgOpexPerUnit)}</strong>.
+                <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.4 }}>
+                  HPP Riil Gabungan = <strong style={{ color: 'var(--primary)' }}>Direct HPP + {fmtRp(financialSummary.avgOpexPerUnit)}</strong>.
                 </div>
               </div>
 
-              <div style={{ background: '#f0fdf4', borderRadius: 8, padding: '10px 12px', border: '1px solid #bbf7d0' }}>
-                <span className="label-xs" style={{ color: '#047857', display: 'block', marginBottom: 2 }}>TITIK IMPAS / BREAK-EVEN POINT (BEP)</span>
+              <div className="bg-accent-green" style={{ borderRadius: 8, padding: '10px 12px', border: '1px solid' }}>
+                <span className="label-xs" style={{ display: 'block', marginBottom: 2 }}>TITIK IMPAS / BREAK-EVEN POINT (BEP)</span>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span className="mono" style={{ fontSize: 20, fontWeight: 900, color: '#047857' }}>
+                  <span className="mono" style={{ fontSize: 20, fontWeight: 900 }}>
                     {financialSummary.bepUnits.toLocaleString('id-ID')} <span style={{ fontSize: 12, fontWeight: 600 }}>unit/bln</span>
                   </span>
-                  <span style={{ fontSize: 10, color: '#059669' }}>
+                  <span style={{ fontSize: 10 }}>
                     Volume Gabungan BEP
                   </span>
                 </div>
-                <div style={{ fontSize: 10, color: '#059669', marginTop: 4 }}>
+                <div style={{ fontSize: 10, marginTop: 4 }}>
                   Volume penjualan gabungan yang dibutuhkan untuk menutup total biaya operasional sebesar <strong>{fmtRp(totalOpexVal)}</strong>.
                 </div>
               </div>
 
               {financialSummary.totalVolume > 0 && (
                 <div style={{ padding: '4px 2px' }}>
-                  <div className="flex-between" style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
+                  <div className="flex-between" style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 4 }}>
                     <span>Pencapaian Target BEP</span>
                     <span>{((financialSummary.totalVolume / Math.max(1, financialSummary.bepUnits)) * 100).toFixed(0)}%</span>
                   </div>
-                  <div className="progress-bar" style={{ height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+                  <div className="progress-bar" style={{ height: 8, background: 'var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
                     <div
                       className="progress-segment"
                       style={{
                         width: `${Math.min(100, (financialSummary.totalVolume / Math.max(1, financialSummary.bepUnits)) * 100)}%`,
-                        background: financialSummary.totalVolume >= financialSummary.bepUnits ? '#10b981' : '#f59e0b',
+                        background: financialSummary.totalVolume >= financialSummary.bepUnits ? 'var(--color-emerald)' : 'var(--color-amber)',
                         borderRadius: 4
                       }}
                     />
@@ -1106,34 +1199,34 @@ export default function OpexAccumulator({
             <div className="section-body" style={{ padding: '10px 14px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {categorySummaryBreakdown.map((c) => {
-                  const profitColor = c.netProfit >= 0 ? '#10b981' : '#ef4444';
+                  const profitColor = c.netProfit >= 0 ? 'var(--color-emerald)' : 'var(--color-danger)';
                   return (
                     <div
                       key={c.category}
                       style={{
-                        background: '#fff',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
                         borderRadius: 8,
                         padding: 10,
                       }}
                     >
                       <div className="flex-between" style={{ marginBottom: 6 }}>
-                        <span style={{ fontWeight: 700, fontSize: 12, color: '#1e293b' }}>📁 Kategori: {c.category}</span>
+                        <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--color-text)' }}>📁 Kategori: {c.category}</span>
                         <span className="badge badge-slate" style={{ fontSize: 9 }}>{c.volume} unit terjual</span>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, color: '#64748b' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
                         <div className="flex-between">
                           <span>Margin Kotor:</span>
-                          <span className="mono" style={{ fontWeight: 600, color: '#334155' }}>{fmtRp(c.margin)}</span>
+                          <span className="mono" style={{ fontWeight: 600, color: 'var(--color-text)' }}>{fmtRp(c.margin)}</span>
                         </div>
                         <div className="flex-between">
                           <span>OPEX Alokasi:</span>
-                          <span className="mono" style={{ fontWeight: 600, color: '#e11d48' }}>{fmtRp(c.opex)}</span>
+                          <span className="mono" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>{fmtRp(c.opex)}</span>
                         </div>
                       </div>
 
-                      <div style={{ height: 1, background: '#f1f5f9', margin: '6px 0' }} />
+                      <div style={{ height: 1, background: 'var(--border-color)', margin: '6px 0' }} />
 
                       <div className="flex-between" style={{ fontSize: 11, fontWeight: 700 }}>
                         <span>Profit Bersih Kategori:</span>

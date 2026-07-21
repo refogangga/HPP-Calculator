@@ -52,6 +52,17 @@ export const mkOps = () => ({
   ]
 });
 
+export const mkPlatform = () => ({
+  enabled: false,
+  id: 'custom',         // 'shopeefood' | 'gofood' | 'grabfood' | 'custom'
+  name: 'Custom',
+  commissionPct: 20,    // % komisi dari harga jual
+  flatFee: 0,           // biaya penanganan tetap per transaksi (Rp)
+  commissionBasis: 'original', // 'original' | 'effective' (dasar penghitungan komisi)
+  discountType: 'pct',  // 'pct' | 'flat'
+  discountValue: 0,     // nilai diskon (% atau Rp flat)
+});
+
 export const mkMenu = (overrides = {}) => ({
   id: uid(),
   emoji: '☕',
@@ -62,6 +73,7 @@ export const mkMenu = (overrides = {}) => ({
   ops: mkOps(),
   margin: 50,
   notes: '',
+  platform: mkPlatform(),
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   ...overrides,
@@ -119,6 +131,20 @@ export const loadDB = () => {
       if (!menu.targetUnit) menu.targetUnit = 'cup';
       if (!menu.pcsPerPortion) menu.pcsPerPortion = 1;
       if (!menu.subUnitLabel) menu.subUnitLabel = 'pcs';
+
+      // Migrate: ensure platform field exists
+      if (!menu.platform || typeof menu.platform !== 'object') {
+        menu.platform = mkPlatform();
+      } else {
+        if (menu.platform.enabled === undefined) menu.platform.enabled = false;
+        if (!menu.platform.id) menu.platform.id = 'custom';
+        if (menu.platform.commissionPct === undefined) menu.platform.commissionPct = 20;
+        if (menu.platform.flatFee === undefined) menu.platform.flatFee = 0;
+        if (!menu.platform.commissionBasis) menu.platform.commissionBasis = 'original';
+        if (!menu.platform.discountType) menu.platform.discountType = 'pct';
+        if (menu.platform.discountValue === undefined) menu.platform.discountValue = 0;
+      }
+
       
       return menu;
     });

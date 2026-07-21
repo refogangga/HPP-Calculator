@@ -18,23 +18,7 @@ export default function Home() {
   const [showMeta, setShowMeta] = useState(false);
   const [opexProfiles, setOpexProfiles] = useState([]);
   const [activeProfileId, setActiveProfileId] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('hpp_dark_mode') === 'true';
-      setDarkMode(saved);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-    localStorage.setItem('hpp_dark_mode', darkMode);
-  }, [darkMode]);
 
   /* ── Toast helpers ── */
   const showToast = useCallback((msg, type = 'success') => {
@@ -44,6 +28,7 @@ export default function Home() {
   }, []);
 
   const activeMenu = menus.find(m => m.id === activeId);
+  const activeProfile = opexProfiles.find(p => p.id === activeProfileId) || opexProfiles[0] || null;
 
   // Load data from DB or migrate from LocalStorage
   useEffect(() => {
@@ -434,10 +419,10 @@ ${finalPortionLines.trim()}
   // Hydration fallback
   if (!isMounted) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 16, background: '#f1f5f9' }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 16px rgba(99,102,241,0.4)' }}>☕</div>
-        <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 15, fontWeight: 600, color: '#475569' }}>Memuat Kalkulator HPP…</div>
-        <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 12, color: '#94a3b8' }}>Harap tunggu sebentar</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 16, background: 'var(--bg-app)' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#0066cc,#2997ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>☕</div>
+        <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 15, fontWeight: 600, color: 'var(--color-text-muted)' }}>Memuat Kalkulator HPP…</div>
+        <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 12, color: 'var(--color-text-muted)', opacity: 0.8 }}>Harap tunggu sebentar</div>
       </div>
     );
   }
@@ -450,32 +435,12 @@ ${finalPortionLines.trim()}
         <div className="flex-center gap-3">
           <div className="topbar-logo">☕</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.01em' }}>Kalkulator HPP F&B</div>
-            <div style={{ fontSize: 11, color: '#475569' }}>Harga Pokok Penjualan — Real-Time</div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>Kalkulator HPP F&B</div>
+            <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Harga Pokok Penjualan — Real-Time</div>
           </div>
         </div>
         <div className="flex-center gap-2 header-btns">
-          {/* Dark Mode Toggle */}
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => setDarkMode(prev => !prev)}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              padding: '6px 10px',
-              fontSize: 12,
-              cursor: 'pointer',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '8px'
-            }}
-            title={darkMode ? "Ubah ke Mode Terang" : "Ubah ke Mode Gelap"}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-          <span style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', height: 20, margin: '0 4px' }} />
+
           {view === 'calculator' && activeMenu && (
             <>
               <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
@@ -512,10 +477,10 @@ ${finalPortionLines.trim()}
 
       {/* ── Menu Name Bar (only in calculator view) ── */}
       {view === 'calculator' && activeMenu && (
-        <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '10px 28px' }}>
+        <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', padding: '10px 28px' }}>
           <div className="flex-center gap-3" style={{ flexWrap: 'wrap' }}>
             <span style={{ fontSize: 20 }}>{activeMenu.emoji}</span>
-            <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>{activeMenu.name}</span>
+            <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--color-text)' }}>{activeMenu.name}</span>
             <button
               onClick={() => setShowMeta(true)}
               style={{
@@ -523,7 +488,7 @@ ${finalPortionLines.trim()}
                 border: 'none',
                 cursor: 'pointer',
                 padding: '4px 6px',
-                color: '#6366f1',
+                color: 'var(--primary)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -531,7 +496,7 @@ ${finalPortionLines.trim()}
                 transition: 'all 0.15s',
                 marginLeft: -6
               }}
-              onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+              onMouseOver={e => e.currentTarget.style.background = 'var(--bg-app)'}
               onMouseOut={e => e.currentTarget.style.background = 'none'}
               title="Edit Info Menu"
             >
@@ -540,7 +505,7 @@ ${finalPortionLines.trim()}
             <span className={`badge badge-slate`}>{activeMenu.category}</span>
             {menus.length > 1 && (
               <div className="flex-center gap-1" style={{ marginLeft: 'auto' }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', marginRight: 4 }}>Pindah Menu:</span>
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginRight: 4 }}>Pindah Menu:</span>
                 <select
                   className="hpp-input sm"
                   value={activeId || ''}
@@ -551,9 +516,9 @@ ${finalPortionLines.trim()}
                     fontSize: 11,
                     padding: '4px 24px 4px 8px',
                     height: 'auto',
-                    border: '1px solid #cbd5e1',
-                    background: '#f8fafc',
-                    color: '#475569',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-app)',
+                    color: 'var(--color-text)',
                     borderRadius: 6,
                     cursor: 'pointer',
                     outline: 'none'
@@ -570,6 +535,110 @@ ${finalPortionLines.trim()}
             <div className="flex-center gap-2" style={{ marginLeft: menus.length <= 1 ? 'auto' : 0 }}>
               <button className="btn btn-add btn-sm" onClick={addMenu}>
                 <Icon name="plus" size={12} /> Menu Baru
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── OPEX Profile Bar (only in opex view) ── */}
+      {view === 'opex' && opexProfiles.length > 0 && (
+        <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', padding: '10px 28px' }}>
+          <div className="flex-center gap-3" style={{ flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 20 }}>🏪</span>
+            <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--color-text)' }}>{activeProfile?.name || 'Profil Toko'}</span>
+            <button
+              onClick={() => {
+                const currentName = activeProfile?.name || '';
+                const newName = prompt("Ubah Nama Profil:", currentName);
+                if (newName !== null && newName.trim() !== '') {
+                  setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, name: newName.trim() } : p));
+                  showToast("Nama profil berhasil diubah!", "success");
+                }
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 6px',
+                color: 'var(--primary)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '6px',
+                transition: 'all 0.15s',
+                marginLeft: -6
+              }}
+              onMouseOver={e => e.currentTarget.style.background = 'var(--bg-app)'}
+              onMouseOut={e => e.currentTarget.style.background = 'none'}
+              title="Edit Nama Profil"
+            >
+              <Icon name="edit" size={13} />
+            </button>
+            <span style={{ borderLeft: '1px solid var(--border-color)', height: 16, margin: '0 4px' }} />
+            
+            {opexProfiles.length > 1 && (
+              <div className="flex-center gap-1">
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginRight: 4 }}>Pindah Profil:</span>
+                <select
+                  className="hpp-input sm"
+                  value={activeProfileId || ''}
+                  onChange={e => setActiveProfileId(e.target.value)}
+                  style={{
+                    maxWidth: 220,
+                    fontWeight: 600,
+                    fontSize: 11,
+                    padding: '4px 24px 4px 8px',
+                    height: 'auto',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-app)',
+                    color: 'var(--color-text)',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  {opexProfiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex-center gap-2" style={{ marginLeft: 'auto' }}>
+              <button
+                className="btn btn-add btn-sm"
+                onClick={() => {
+                  const newProfile = mkOpexProfile();
+                  newProfile.name = `Profil ${opexProfiles.length + 1}`;
+                  setOpexProfiles(prev => [...prev, newProfile]);
+                  setActiveProfileId(newProfile.id);
+                  showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
+                }}
+              >
+                <Icon name="plus" size={12} /> Profil Baru
+              </button>
+
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => {
+                  if (opexProfiles.length <= 1) {
+                    showToast('Gagal menghapus! Minimal harus menyisakan 1 profil.', 'error');
+                    return;
+                  }
+                  const idToDelete = activeProfileId;
+                  setOpexProfiles(prev => {
+                    const next = prev.filter(p => p.id !== idToDelete);
+                    if (idToDelete === activeProfileId) {
+                      setActiveProfileId(next[0]?.id || null);
+                    }
+                    return next;
+                  });
+                  showToast('Profil berhasil dihapus!', 'success');
+                }}
+                style={{ width: 'auto', height: 'auto', padding: '6px 12px', fontSize: 11, borderRadius: 8 }}
+              >
+                <Icon name="trash" size={12} /> Hapus
               </button>
             </div>
           </div>
@@ -666,8 +735,8 @@ ${finalPortionLines.trim()}
 
       {/* Footer */}
       <div style={{
-        textAlign: 'center', padding: '12px 28px', fontSize: 11, color: '#94a3b8',
-        borderTop: '1px solid #e2e8f0', background: '#fff', marginTop: 12
+        textAlign: 'center', padding: '12px 28px', fontSize: 11, color: 'var(--color-text-muted)',
+        borderTop: '1px solid var(--border-color)', background: 'var(--bg-card)', marginTop: 12
       }}>
         HPP F&B Calculator &bull; {menus.length} menu tersimpan &bull; Data disimpan otomatis di browser
       </div>

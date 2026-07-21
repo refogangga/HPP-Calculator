@@ -421,9 +421,9 @@ ${finalPortionLines.trim()}
               <div key={menu.id} 
                 className={`db-card ${activeId === menu.id ? 'active' : ''}`}
                 style={{
-                  border: isSelected ? '2px solid #38bdf8' : activeId === menu.id ? '2px solid #6366f1' : '1px solid #e2e8f0',
-                  boxShadow: isSelected ? '0 4px 12px rgba(56, 189, 248, 0.15)' : 'none',
-                  background: isSelected ? '#f0f9ff' : '#fff',
+                  border: isSelected ? '2px solid var(--primary)' : activeId === menu.id ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                  boxShadow: 'none',
+                  background: isSelected ? 'rgba(0, 102, 204, 0.08)' : 'var(--bg-card)',
                   position: 'relative',
                   paddingLeft: 12
                 }}
@@ -440,21 +440,21 @@ ${finalPortionLines.trim()}
 
                 <div className="db-card-icon">{menu.emoji}</div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 2 }}>{menu.name}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text)', marginBottom: 2 }}>{menu.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6 }}>
                     {menu.category} &bull; {new Date(menu.updatedAt).toLocaleDateString('id-ID')}
                   </div>
                   <div style={{ display: 'flex', gap: 14 }}>
                     <div>
-                      <div className="label-xs" style={{ color: '#94a3b8' }}>HPP</div>
-                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', whiteSpace: 'nowrap' }}>{fmtRp(hpp)}</div>
+                      <div className="label-xs">HPP</div>
+                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>{fmtRp(hpp)}</div>
                     </div>
                     <div>
-                      <div className="label-xs" style={{ color: '#94a3b8' }}>Jual</div>
+                      <div className="label-xs">Jual</div>
                       <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmtRp(hargaJual)}</div>
                     </div>
                     <div>
-                      <div className="label-xs" style={{ color: '#94a3b8' }}>Profit</div>
+                      <div className="label-xs">Profit</div>
                       <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#10b981', whiteSpace: 'nowrap' }}>{fmtRp(profit)}</div>
                     </div>
                   </div>
@@ -510,9 +510,9 @@ ${finalPortionLines.trim()}
                 <div key={p.id}
                   className={`db-card ${isActive ? 'active' : ''}`}
                   style={{
-                    border: isActive ? '1.5px solid #6366f1' : '1.5px solid #e2e8f0',
-                    boxShadow: isActive ? '0 10px 18px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -2px rgba(99, 102, 241, 0.05)' : '0 2px 4px rgba(0,0,0,0.01)',
-                    background: isActive ? 'linear-gradient(to bottom, #ffffff, #fafaff)' : '#fff',
+                    border: isActive ? '1.5px solid var(--primary)' : '1.5px solid var(--border-color)',
+                    boxShadow: 'none',
+                    background: isActive ? 'rgba(0, 102, 204, 0.04)' : 'var(--bg-card)',
                     position: 'relative',
                     padding: '20px',
                     borderRadius: 16,
@@ -530,8 +530,8 @@ ${finalPortionLines.trim()}
                       position: 'absolute',
                       top: 14,
                       right: 14,
-                      background: '#eef2ff',
-                      color: '#4f46e5',
+                      background: 'rgba(0, 102, 204, 0.12)',
+                      color: 'var(--primary)',
                       padding: '3px 8px',
                       borderRadius: 20,
                       fontSize: 8,
@@ -540,9 +540,9 @@ ${finalPortionLines.trim()}
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4,
-                      border: '1px solid #c7d2fe'
+                      border: '1px solid var(--primary)'
                     }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4f46e5', display: 'inline-block' }} />
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--primary)', display: 'inline-block' }} />
                       SIMULASI AKTIF
                     </div>
                   )}
@@ -553,7 +553,7 @@ ${finalPortionLines.trim()}
                       width: 36, 
                       height: 36, 
                       borderRadius: 10, 
-                      background: isActive ? '#eef2ff' : '#f1f5f9', 
+                      background: isActive ? 'rgba(0, 102, 204, 0.12)' : 'var(--bg-app)', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
@@ -562,8 +562,8 @@ ${finalPortionLines.trim()}
                       🏪
                     </div>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: 14, color: '#1e293b' }}>{p.name}</div>
-                      <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-text)' }}>{p.name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 1 }}>
                         Beban: {p.expenses.length} pos &bull; Aset: {p.assets.length} item
                       </div>
                     </div>
@@ -571,14 +571,14 @@ ${finalPortionLines.trim()}
 
                   {/* Primary Metric Panel */}
                   <div style={{
-                    background: isActive ? '#f5f7ff' : '#f8fafc',
+                    background: isActive ? 'rgba(0, 102, 204, 0.08)' : 'var(--bg-app)',
                     padding: '10px 14px',
                     borderRadius: 12,
                     marginBottom: 14,
-                    border: isActive ? '1px dashed #c7d2fe' : '1px solid #f1f5f9'
+                    border: isActive ? '1px dashed var(--primary)' : '1px solid var(--border-color)'
                   }}>
-                    <div className="label-xs" style={{ color: '#64748b', fontSize: 9, marginBottom: 2, letterSpacing: '0.02em' }}>TOTAL OPEX OVERHEAD BULANAN</div>
-                    <div className="mono" style={{ fontSize: 18, fontWeight: 850, color: '#4f46e5' }}>
+                    <div className="label-xs" style={{ fontSize: 9, marginBottom: 2, letterSpacing: '0.02em' }}>TOTAL OPEX OVERHEAD BULANAN</div>
+                    <div className="mono" style={{ fontSize: 18, fontWeight: 850, color: 'var(--primary)' }}>
                       {fmtRp(totalOpex)}
                     </div>
                   </div>
@@ -590,16 +590,16 @@ ${finalPortionLines.trim()}
                     gap: '10px 14px',
                     paddingBottom: 14,
                     marginBottom: 14,
-                    borderBottom: '1px solid #f1f5f9'
+                    borderBottom: '1px solid var(--border-color)'
                   }}>
                     <div>
-                      <div className="label-xs" style={{ color: '#94a3b8', fontSize: 9 }}>TARGET JUAL / BULAN</div>
-                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginTop: 2 }}>
+                      <div className="label-xs" style={{ fontSize: 9 }}>TARGET JUAL / BULAN</div>
+                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text)', marginTop: 2 }}>
                         {p.totalVolume.toLocaleString('id-ID')} unit
                       </div>
                     </div>
                     <div>
-                      <div className="label-xs" style={{ color: '#94a3b8', fontSize: 9 }}>ALOKASI OPEX / UNIT</div>
+                      <div className="label-xs" style={{ fontSize: 9 }}>ALOKASI OPEX / UNIT</div>
                       <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#0891b2', marginTop: 2 }}>
                         {fmtRp(opexPerUnit)}
                       </div>
@@ -609,16 +609,16 @@ ${finalPortionLines.trim()}
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'space-between',
-                        background: '#f8fafc', 
+                        background: 'var(--bg-app)', 
                         padding: '6px 12px',
                         borderRadius: 8,
                         fontSize: 10,
-                        color: '#475569',
+                        color: 'var(--color-text)',
                         fontWeight: 600,
-                        border: '1px solid #f1f5f9'
+                        border: '1px solid var(--border-color)'
                       }}>
                         <span>Simulasi Menu Terpilih</span>
-                        <span className="badge badge-slate" style={{ fontSize: 9, padding: '2px 6px', background: '#e2e8f0', color: '#334155' }}>
+                        <span className="badge badge-slate" style={{ fontSize: 9, padding: '2px 6px' }}>
                           {(p.selectedMenuIds || []).length} Menu
                         </span>
                       </div>
@@ -631,8 +631,8 @@ ${finalPortionLines.trim()}
                       onClick={() => onSelectProfile(p.id)}
                       style={{ 
                         flex: 1,
-                        background: isActive ? '#6366f1' : '#f1f5f9', 
-                        color: isActive ? '#fff' : '#475569', 
+                        background: isActive ? 'var(--primary)' : 'var(--bg-app)', 
+                        color: isActive ? '#fff' : 'var(--color-text)', 
                         border: 'none', 
                         padding: '8px 12px', 
                         borderRadius: 8, 
