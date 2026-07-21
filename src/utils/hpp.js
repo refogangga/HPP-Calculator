@@ -134,6 +134,67 @@ export const saveDB = (menus) => {
   localStorage.setItem(DB_KEY, JSON.stringify(menus));
 };
 
+/* ─── Central OPEX Profiles DB & Factory ────────────────── */
+export const OPEX_PROFILES_KEY = 'hpp_opex_profiles_v1';
+
+export const mkOpexProfile = (overrides = {}) => ({
+  id: uid(),
+  name: overrides.name || 'Outlet Utama',
+  usePenyusutan: true,
+  penyusutan: 0,
+  isTotalVolumeLocked: true,
+  totalVolume: 1000,
+  menuVolumes: {}, // menuId -> volume (untuk simulasi)
+  menuPrices: {},  // menuId -> harga jual (untuk simulasi)
+  selectedMenuIds: [],
+  assets: [
+    { id: uid(), name: 'Mesin Espresso', harga: 12000000, tahun: 5, enabled: true, category: 'Semua' }
+  ],
+  expenses: [
+    { id: uid(), name: '⚡ Listrik & Air', value: 800000, category: 'Semua' },
+    { id: uid(), name: '👤 Gaji Karyawan', value: 2500000, category: 'Semua' },
+    { id: uid(), name: '🌐 Sewa Tempat', value: 1500000, category: 'Semua' }
+  ],
+  ...overrides
+});
+
+export const loadOpexProfiles = () => {
+  if (typeof window === 'undefined') return [mkOpexProfile()];
+  try {
+    const raw = localStorage.getItem(OPEX_PROFILES_KEY);
+    if (!raw) return [mkOpexProfile()];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [mkOpexProfile()];
+    
+    return parsed.map(profile => {
+      if (!profile || typeof profile !== 'object') return mkOpexProfile();
+      if (!profile.id) profile.id = uid();
+      if (!profile.name) profile.name = 'Profil OPEX';
+      if (!Array.isArray(profile.expenses)) profile.expenses = [];
+      if (!Array.isArray(profile.assets)) profile.assets = [];
+      if (profile.usePenyusutan === undefined) profile.usePenyusutan = true;
+      if (profile.isTotalVolumeLocked === undefined) profile.isTotalVolumeLocked = true;
+      if (profile.totalVolume === undefined) profile.totalVolume = 1000;
+      if (!profile.menuVolumes || typeof profile.menuVolumes !== 'object') profile.menuVolumes = {};
+      if (!profile.menuPrices || typeof profile.menuPrices !== 'object') profile.menuPrices = {};
+      if (!Array.isArray(profile.selectedMenuIds)) profile.selectedMenuIds = [];
+      
+      profile.expenses = profile.expenses.map(e => ({ ...e, category: e.category || 'Semua' }));
+      profile.assets = profile.assets.map(a => ({ ...a, category: a.category || 'Semua' }));
+      
+      return profile;
+    });
+  } catch (err) {
+    console.error("Failed to load OPEX profiles:", err);
+    return [mkOpexProfile()];
+  }
+};
+
+export const saveOpexProfiles = (profiles) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(OPEX_PROFILES_KEY, JSON.stringify(profiles));
+};
+
 /* ─── Depreciation Calculator ───────────────────────────── */
 export const getPenyusutanBulanan = (ops) => {
   if (!ops) return 0;
@@ -143,3 +204,4 @@ export const getPenyusutanBulanan = (ops) => {
     return sum + (num(a.tahun) > 0 ? num(a.harga) / (num(a.tahun) * 12) : 0);
   }, 0);
 };
+

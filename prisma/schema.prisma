@@ -1,0 +1,39 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Tabel untuk menyimpan data Menu HPP
+model Menu {
+  id          String   @id @default(uuid())
+  name        String
+  emoji       String   @default("☕")
+  category    String   @default("Minuman")
+  margin      Float    @default(50)
+  ingredients Json     // Menyimpan array bahan baku
+  packaging   Json     // Menyimpan array kemasan
+  ops         Json?    // Menyimpan opsi operasional
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Tabel untuk menyimpan data Profil OPEX simulasi
+model OpexProfile {
+  id                  String   @id @default(uuid())
+  name                String
+  usePenyusutan       Boolean  @default(true)
+  penyusutan          Float    @default(0)
+  isTotalVolumeLocked Boolean  @default(true)
+  totalVolume         Int      @default(1000)
+  menuVolumes         Json     // Menyimpan map menuId -> volume
+  menuPrices          Json     // Menyimpan map menuId -> harga jual
+  selectedMenuIds     Json     // Menyimpan array menu id terpilih
+  assets              Json     // Menyimpan daftar aset penyusutan
+  expenses            Json     // Menyimpan daftar pengeluaran overhead
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

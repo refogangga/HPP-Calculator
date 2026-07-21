@@ -108,7 +108,6 @@ export function SectionHeader({ iconEmoji, iconBg, title, badgeText, badgeClass,
       <div className="section-icon" style={{ background: iconBg }}>{iconEmoji}</div>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', lineHeight: '1.3' }}>{title}</div>
-        {badgeText && <span className={`badge ${badgeClass || 'badge-slate'}`}>{badgeText}</span>}
       </div>
       {actions && <div style={{ display: 'flex', gap: 6 }}>{actions}</div>}
     </div>

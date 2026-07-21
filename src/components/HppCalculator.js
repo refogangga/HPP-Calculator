@@ -35,20 +35,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
   const hppKemasan = useMemo(() =>
     packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0), [packaging]);
 
-  const penyusutanBulanan = useMemo(() => getPenyusutanBulanan(ops), [ops]);
-
-  const expensesList = ops.expenses || [];
-  const totalExpenses = useMemo(() => {
-    return expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
-  }, [expensesList]);
-
-  const totalOpsBulanan = useMemo(() =>
-    totalExpenses + penyusutanBulanan, [totalExpenses, penyusutanBulanan]);
-
-  const hppOps = useMemo(() =>
-    num(ops.estimasiCup) > 0 ? totalOpsBulanan / num(ops.estimasiCup) : 0, [totalOpsBulanan, ops.estimasiCup]);
-
-  const totalHPP = useMemo(() => hppBahanBaku + hppKemasan + hppOps, [hppBahanBaku, hppKemasan, hppOps]);
+  const totalHPP = useMemo(() => hppBahanBaku + hppKemasan, [hppBahanBaku, hppKemasan]);
 
   const hargaJual = useMemo(() =>
     margin >= 100 ? 0 : totalHPP / (1 - margin / 100), [totalHPP, margin]);
@@ -60,8 +47,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
   const pct = useMemo(() => totalHPP > 0 ? {
     bb: (hppBahanBaku / totalHPP * 100),
     km: (hppKemasan / totalHPP * 100),
-    op: (hppOps / totalHPP * 100),
-  } : { bb: 0, km: 0, op: 0 }, [totalHPP, hppBahanBaku, hppKemasan, hppOps]);
+  } : { bb: 0, km: 0 }, [totalHPP, hppBahanBaku, hppKemasan]);
 
   const sliderBg = { '--slider-pct': `${margin}%` };
 
@@ -126,17 +112,16 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
           </div>
         </div>
 
-        {/* ── 3. Operasional ── */}
+        {/* ── 3. Estimasi Penjualan ── */}
         <div className="section-card">
           <SectionHeader
-            iconEmoji="⚙️" iconBg="#f0fdf4"
-            title="Biaya Operasional & Overhead (Bulanan)"
-            badgeText="KOMPONEN 3" badgeClass="badge-emerald"
+            iconEmoji="🏪" iconBg="#f0fdf4"
+            title="Estimasi Penjualan Bulanan"
+            badgeText="VOLUME" badgeClass="badge-emerald"
           />
           <div className="section-body">
-            {/* Estimasi cup */}
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-              <div className="label-xs" style={{ color: '#059669', marginBottom: 6 }}>🏪 Estimasi Penjualan Bulanan ({targetUnit})</div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px' }}>
+              <div className="label-xs" style={{ color: '#059669', marginBottom: 6 }}>Target Penjualan Bulanan ({targetUnit})</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input className="hpp-input large" type="number" placeholder="600"
                   value={ops.estimasiCup || ''}
@@ -148,159 +133,6 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
                 </span>
               </div>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
-              {expensesList.map(exp => (
-                <div key={exp.id} style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 10, alignItems: 'end', background: '#f8fafc', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <div>
-                    <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Nama Pengeluaran</label>
-                    <input className="hpp-input sm" 
-                      value={exp.name} onChange={e => {
-                        const updated = expensesList.map(x => x.id === exp.id ? { ...x, name: e.target.value } : x);
-                        setOps('expenses', updated);
-                      }} placeholder="Misal: Sewa Tempat..." style={{ fontWeight: 600 }} />
-                  </div>
-                  <div>
-                    <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Biaya Bulanan</label>
-                    <div className="input-prefix-wrap">
-                      <span className="prefix">Rp</span>
-                      <FormatInput className="hpp-input sm" placeholder="0"
-                        value={exp.value || ''} onChange={v => {
-                          const updated = expensesList.map(x => x.id === exp.id ? { ...x, value: v } : x);
-                          setOps('expenses', updated);
-                        }} />
-                    </div>
-                  </div>
-                  <button className="btn btn-danger" onClick={() => {
-                    const updated = expensesList.filter(x => x.id !== exp.id);
-                    setOps('expenses', updated);
-                  }} title="Hapus" style={{ height: 31, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name="trash" size={11} />
-                  </button>
-                </div>
-              ))}
-              
-              <button className="btn btn-add" onClick={() => {
-                const updated = [...expensesList, { id: uid(), name: 'Pengeluaran Baru', value: 0 }];
-                setOps('expenses', updated);
-              }} style={{ marginTop: 4 }}>
-                <Icon name="plus" size={13} /> Tambah Pengeluaran Bulanan
-              </button>
-            </div>
-
-              {/* Penyusutan */}
-              <div style={{ gridColumn: '1/-1', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px' }}>
-                <div className="flex-between" style={{ marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>🔧 Penyusutan Mesin / Aset</span>
-                  <label className="pkg-toggle" htmlFor="use-penyusutan">
-                    <input type="checkbox" id="use-penyusutan" checked={ops.usePenyusutan}
-                      onChange={e => setOps('usePenyusutan', e.target.checked)} />
-                    <div className="toggle-pill" />
-                    <span className="label-sm">Hitung otomatis</span>
-                  </label>
-                </div>
-                {ops.usePenyusutan ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {(() => {
-                      const currentAssets = ops.assets || [
-                        { id: 'legacy', name: 'Aset Lama', harga: num(ops.assetHarga), tahun: num(ops.assetTahun) || 5, enabled: true }
-                      ];
-                      return (
-                        <>
-                          {currentAssets.map(aset => (
-                            <div key={aset.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end', background: aset.enabled ? '#fff' : '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', opacity: aset.enabled ? 1 : 0.6 }}>
-                              <div style={{ gridColumn: '1/-1', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <input className="hpp-input sm" style={{ fontWeight: 600, border: 'none', padding: 0, background: 'transparent' }}
-                                  value={aset.name} onChange={e => {
-                                    setOps('assets', currentAssets.map(a => a.id === aset.id ? { ...a, name: e.target.value } : a));
-                                  }} placeholder="Nama Aset / Mesin..." disabled={!aset.enabled} />
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                  <label className="pkg-toggle" style={{ transform: 'scale(0.8)', transformOrigin: 'right center', margin: 0 }}>
-                                    <input type="checkbox" checked={aset.enabled} onChange={e => {
-                                      setOps('assets', currentAssets.map(a => a.id === aset.id ? { ...a, enabled: e.target.checked } : a));
-                                    }} />
-                                    <div className="toggle-pill" />
-                                  </label>
-                                  {currentAssets.length > 0 && (
-                                    <button style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 2 }} onClick={() => setOps('assets', currentAssets.filter(a => a.id !== aset.id))}>
-                                      <Icon name="trash" size={12} />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                              <div>
-                                <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Harga (Rp)</label>
-                                <div className="input-prefix-wrap">
-                                  <span className="prefix">Rp</span>
-                                  <FormatInput className="hpp-input sm" placeholder="12000000"
-                                    value={aset.harga || ''} onChange={v => {
-                                      setOps('assets', currentAssets.map(a => a.id === aset.id ? { ...a, harga: v } : a));
-                                    }} disabled={!aset.enabled} />
-                                </div>
-                              </div>
-                              <div>
-                                <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Umur (thn)</label>
-                                <input className="hpp-input sm" type="number" placeholder="5"
-                                  value={aset.tahun || ''} onChange={e => {
-                                    setOps('assets', currentAssets.map(a => a.id === aset.id ? { ...a, tahun: e.target.value } : a));
-                                  }} disabled={!aset.enabled} />
-                              </div>
-                              <div style={{ background: '#f1f5f9', padding: '6px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#475569', textAlign: 'right', display: 'flex', alignItems: 'center', height: '31px' }}>
-                                {fmtRp(num(aset.tahun) > 0 ? num(aset.harga) / (num(aset.tahun) * 12) : 0)}/bln
-                              </div>
-                            </div>
-                          ))}
-                          <button onClick={() => setOps('assets', [...currentAssets, { id: uid(), name: 'Aset / Mesin Baru', harga: 0, tahun: 5, enabled: true }])}
-                            style={{ background: 'transparent', border: '1px dashed #cbd5e1', borderRadius: 6, padding: '6px', fontSize: 11, color: '#64748b', cursor: 'pointer', marginTop: 2 }}>
-                            + Tambah Mesin / Aset
-                          </button>
-                        </>
-                      );
-                    })()}
-                    <div style={{ background: '#f8fafc', borderRadius: 7, padding: '7px 10px', display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-                      <span style={{ fontSize: 11, color: '#64748b' }}>Total Penyusutan:</span>
-                      <span className="mono" style={{ fontWeight: 700, fontSize: 12 }}>{fmtRp(penyusutanBulanan)}/bln</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="label-sm" style={{ display: 'block', marginBottom: 4 }}>Penyusutan Manual (Rp/bulan)</label>
-                    <div className="input-prefix-wrap">
-                      <span className="prefix">Rp</span>
-                      <FormatInput className="hpp-input sm" placeholder="0"
-                        value={ops.penyusutan || ''} onChange={v => setOps('penyusutan', v)} />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-            {/* Ops summary */}
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px', marginTop: 14 }}>
-              <div className="label-xs" style={{ color: '#059669', marginBottom: 8 }}>Rincian Biaya Operasional Bulanan</div>
-              {expensesList.map(exp => (
-                <div key={exp.id} className="flex-between" style={{ fontSize: 12, color: '#475569', padding: '2px 0' }}>
-                  <span>{exp.name || 'Pengeluaran'}</span>
-                  <span className="mono" style={{ fontWeight: 600 }}>{fmtRp(num(exp.value))}</span>
-                </div>
-              ))}
-              <div className="flex-between" style={{ fontSize: 12, color: '#475569', padding: '2px 0' }}>
-                <span>Penyusutan Aset</span>
-                <span className="mono" style={{ fontWeight: 600 }}>{fmtRp(penyusutanBulanan)}</span>
-              </div>
-              <div style={{ height: 1, background: '#bbf7d0', margin: '6px 0' }} />
-              <div className="flex-between" style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>
-                <span>Total Bulanan</span>
-                <span className="mono">{fmtRp(totalOpsBulanan)}</span>
-              </div>
-              <div className="flex-between" style={{ fontSize: 12, fontWeight: 700, color: '#059669', marginTop: 2 }}>
-                <span>÷ {num(ops.estimasiCup).toLocaleString('id-ID')} {targetUnit}</span>
-                <span className="mono">= {fmtRp(hppOps)} / {targetUnit}</span>
-              </div>
-            </div>
-          </div>
-          <div className="section-footer" style={{ background: '#f0fdf4' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>Beban Operasional per {targetUnit}</span>
-            <span className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#047857' }}>{fmtRp(hppOps)}</span>
           </div>
         </div>
 
@@ -332,7 +164,6 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
           {[
             { dot: '#818cf8', label: 'Bahan Baku', val: hppBahanBaku, valColor: '#c7d2fe' },
             { dot: '#fb923c', label: 'Kemasan', val: hppKemasan, valColor: '#fed7aa' },
-            { dot: '#4ade80', label: 'Operasional', val: hppOps, valColor: '#bbf7d0' },
           ].map(({ dot, label, val, valColor }) => (
             <div key={label} className="result-row">
               <div className="flex-center gap-2">
@@ -362,12 +193,10 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
               <div className="progress-bar">
                 <div className="progress-segment" style={{ width: `${pct.bb}%`, background: '#818cf8' }} />
                 <div className="progress-segment" style={{ width: `${pct.km}%`, background: '#fb923c' }} />
-                <div className="progress-segment" style={{ width: `${pct.op}%`, background: '#4ade80' }} />
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 5, fontSize: 10, color: '#64748b' }}>
                 <span>🟣 {pct.bb.toFixed(0)}% Bahan</span>
                 <span>🟠 {pct.km.toFixed(0)}% Kemasan</span>
-                <span>🟢 {pct.op.toFixed(0)}% Ops</span>
               </div>
             </div>
           )}

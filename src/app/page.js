@@ -5,34 +5,36 @@ import { Icon } from '../components/Icon';
 import { ToastContainer, MenuMetaModal } from '../components/HppSubComponents';
 import HppCalculator from '../components/HppCalculator';
 import MenuDatabase from '../components/MenuDatabase';
-import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan } from '../utils/hpp';
+import OpexAccumulator from '../components/OpexAccumulator';
+import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, loadOpexProfiles, saveOpexProfiles, mkOpexProfile } from '../utils/hpp';
 import * as XLSX from 'xlsx';
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
   const [menus, setMenus] = useState([]);
   const [activeId, setActiveId] = useState(null);
-  const [view, setView] = useState('calculator'); // 'calculator' | 'database'
+  const [view, setView] = useState('calculator'); // 'calculator' | 'database' | 'opex'
   const [toasts, setToasts] = useState([]);
   const [showMeta, setShowMeta] = useState(false);
+  const [opexProfiles, setOpexProfiles] = useState([]);
+  const [activeProfileId, setActiveProfileId] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
 
-  const activeMenu = menus.find(m => m.id === activeId);
-
-  // Hydrate from localStorage once mounted
   useEffect(() => {
-    setIsMounted(true);
-    const db = loadDB();
-    const loadedMenus = db.length > 0 ? db : [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman' })];
-    setMenus(loadedMenus);
-    setActiveId(loadedMenus[0]?.id);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('hpp_dark_mode') === 'true';
+      setDarkMode(saved);
+    }
   }, []);
 
-  // Save to DB whenever menus change
   useEffect(() => {
-    if (isMounted) {
-      saveDB(menus);
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
     }
-  }, [menus, isMounted]);
+    localStorage.setItem('hpp_dark_mode', darkMode);
+  }, [darkMode]);
 
   /* ── Toast helpers ── */
   const showToast = useCallback((msg, type = 'success') => {
@@ -40,6 +42,133 @@ export default function Home() {
     setToasts(t => [...t, { id, msg, type }]);
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
   }, []);
+
+  const activeMenu = menus.find(m => m.id === activeId);
+
+  // Load data from DB or migrate from LocalStorage
+  useEffect(() => {
+    setIsMounted(true);
+    
+    const initData = async () => {
+      try {
+        const menusRes = await fetch('/api/menus');
+        const dbMenus = await menusRes.json();
+        
+        const opexRes = await fetch('/api/opex');
+        const dbProfiles = await opexRes.json();
+        
+        const localMenus = loadDB();
+        const localProfiles = loadOpexProfiles();
+        
+        let finalMenus = dbMenus;
+        let finalProfiles = dbProfiles;
+        
+        const databaseIsEmpty = (!dbMenus || dbMenus.length === 0) && (!dbProfiles || dbProfiles.length === 0);
+        const localStorageHasData = (localMenus && localMenus.length > 0) || (localProfiles && localProfiles.length > 0);
+        
+        if (databaseIsEmpty && localStorageHasData) {
+          finalMenus = localMenus.length > 0 ? localMenus : [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman' })];
+          finalProfiles = localProfiles;
+          
+          await fetch('/api/menus', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(finalMenus)
+          });
+          
+          if (finalProfiles.length > 0) {
+            await fetch('/api/opex', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(finalProfiles)
+            });
+          }
+          
+          showToast('Data berhasil dimigrasikan ke database MariaDB Laragon!', 'success');
+        } else {
+          if (!finalMenus || finalMenus.length === 0) {
+            finalMenus = [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman' })];
+            await fetch('/api/menus', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(finalMenus)
+            });
+          }
+          if (!finalProfiles || finalProfiles.length === 0) {
+            finalProfiles = [mkOpexProfile()];
+            await fetch('/api/opex', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(finalProfiles)
+            });
+          }
+        }
+        
+        setMenus(finalMenus);
+        setActiveId(finalMenus[0]?.id || null);
+        setOpexProfiles(finalProfiles);
+        setActiveProfileId(finalProfiles[0]?.id || null);
+      } catch (error) {
+        console.error("Gagal memuat data dari database. Memakai fallback LocalStorage.", error);
+        const localMenus = loadDB();
+        const loadedMenus = localMenus.length > 0 ? localMenus : [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman' })];
+        setMenus(loadedMenus);
+        setActiveId(loadedMenus[0]?.id);
+        
+        const localProfiles = loadOpexProfiles();
+        setOpexProfiles(localProfiles);
+        setActiveProfileId(localProfiles[0]?.id || null);
+        showToast('Menghubungkan ke database gagal. Memakai data cadangan browser.', 'alert');
+      }
+    };
+    
+    initData();
+  }, []);
+
+  // Save to DB whenever menus change (automatic backup to LocalStorage)
+  useEffect(() => {
+    if (isMounted) {
+      saveDB(menus);
+    }
+  }, [menus, isMounted]);
+
+  // Save OPEX Profiles whenever they change (automatic backup to LocalStorage)
+  useEffect(() => {
+    if (isMounted && opexProfiles.length > 0) {
+      saveOpexProfiles(opexProfiles);
+    }
+  }, [opexProfiles, isMounted]);
+
+  const handleSaveAll = useCallback(async () => {
+    try {
+      showToast('Menyimpan ke database...', 'info');
+      
+      const menusRes = await fetch('/api/menus', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(menus)
+      });
+      if (!menusRes.ok) throw new Error('Gagal menyimpan menu');
+      
+      if (opexProfiles.length > 0) {
+        const opexRes = await fetch('/api/opex', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(opexProfiles)
+        });
+        if (!opexRes.ok) throw new Error('Gagal menyimpan profil OPEX');
+      }
+      
+      saveDB(menus);
+      saveOpexProfiles(opexProfiles);
+      showToast('Tersimpan sukses ke database MariaDB!', 'success');
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast('Gagal menyimpan ke database. Data dicadangkan ke browser.', 'alert');
+      saveDB(menus);
+      saveOpexProfiles(opexProfiles);
+    }
+  }, [menus, opexProfiles, showToast]);
 
   /* ── Menu CRUD ── */
   const updateActiveMenu = useCallback((changes) => {
@@ -314,7 +443,7 @@ ${finalPortionLines.trim()}
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', paddingBottom: 48 }}>
+    <div style={{ minHeight: '100vh', background: 'transparent', paddingBottom: 48 }}>
 
       {/* ── Top Bar ── */}
       <div className="topbar">
@@ -326,28 +455,57 @@ ${finalPortionLines.trim()}
           </div>
         </div>
         <div className="flex-center gap-2 header-btns">
+          {/* Dark Mode Toggle */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setDarkMode(prev => !prev)}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              padding: '6px 10px',
+              fontSize: 12,
+              cursor: 'pointer',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '8px'
+            }}
+            title={darkMode ? "Ubah ke Mode Terang" : "Ubah ke Mode Gelap"}
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+          <span style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', height: 20, margin: '0 4px' }} />
           {view === 'calculator' && activeMenu && (
             <>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowMeta(true)}>
-                <Icon name="edit" size={12} /> Edit Info Menu
-              </button>
               <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
                 <Icon name="print" size={12} /> Cetak
               </button>
-              <button className="btn btn-ghost btn-sm" onClick={handleExportSingleExcel}>
-                🟢 Export Excel
-              </button>
-              <button className="btn btn-ghost btn-sm"
-                onClick={() => { saveDB(menus); showToast('Tersimpan ke database!', 'success'); }}>
+              <button className="btn btn-ghost btn-sm" onClick={handleSaveAll}>
                 <Icon name="save" size={12} /> Simpan
               </button>
             </>
           )}
+          {view === 'opex' && opexProfiles.length > 0 && (
+            <button className="btn btn-ghost btn-sm" onClick={handleSaveAll}>
+              <Icon name="save" size={12} /> Simpan Semua
+            </button>
+          )}
+          <span style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', height: 20, margin: '0 4px' }} />
+          <button
+            className={`btn btn-sm ${view === 'calculator' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setView('calculator')}>
+            Kalkulator HPP
+          </button>
+          <button
+            className={`btn btn-sm ${view === 'opex' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setView('opex')}>
+            Akumulasi OPEX
+          </button>
           <button
             className={`btn btn-sm ${view === 'database' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setView(view === 'database' ? 'calculator' : 'database')}>
-            <Icon name="database" size={12} />
-            {view === 'database' ? 'Tutup Database' : `Database (${menus.length})`}
+            onClick={() => setView('database')}>
+            <Icon name="database" size={12} /> Database ({menus.length})
           </button>
         </div>
       </div>
@@ -357,45 +515,69 @@ ${finalPortionLines.trim()}
         <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '10px 28px' }}>
           <div className="flex-center gap-3" style={{ flexWrap: 'wrap' }}>
             <span style={{ fontSize: 20 }}>{activeMenu.emoji}</span>
-            <input className="hpp-input" value={activeMenu.name}
-              onChange={e => updateActiveMenu({ name: e.target.value })}
-              style={{ maxWidth: 340, fontWeight: 700, fontSize: 14 }}
-              placeholder="Nama menu…" />
+            <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>{activeMenu.name}</span>
+            <button
+              onClick={() => setShowMeta(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 6px',
+                color: '#6366f1',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '6px',
+                transition: 'all 0.15s',
+                marginLeft: -6
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+              onMouseOut={e => e.currentTarget.style.background = 'none'}
+              title="Edit Info Menu"
+            >
+              <Icon name="edit" size={13} />
+            </button>
             <span className={`badge badge-slate`}>{activeMenu.category}</span>
             {menus.length > 1 && (
               <div className="flex-center gap-1" style={{ marginLeft: 'auto' }}>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>Menu lain:</span>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {menus.filter(m => m.id !== activeId).slice(0, 4).map(m => (
-                    <button key={m.id} onClick={() => selectMenu(m.id)}
-                      title={m.name}
-                      style={{
-                        padding: '3px 8px', border: '1px solid #e2e8f0', borderRadius: 6,
-                        background: '#f8fafc', fontSize: 11, cursor: 'pointer',
-                        fontFamily: 'Inter,sans-serif', color: '#475569',
-                        display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s'
-                      }}>
-                      {m.emoji} <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
-                    </button>
+                <span style={{ fontSize: 11, color: '#94a3b8', marginRight: 4 }}>Pindah Menu:</span>
+                <select
+                  className="hpp-input sm"
+                  value={activeId || ''}
+                  onChange={e => selectMenu(e.target.value)}
+                  style={{
+                    maxWidth: 220,
+                    fontWeight: 600,
+                    fontSize: 11,
+                    padding: '4px 24px 4px 8px',
+                    height: 'auto',
+                    border: '1px solid #cbd5e1',
+                    background: '#f8fafc',
+                    color: '#475569',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  {menus.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.emoji} {m.name}
+                    </option>
                   ))}
-                  {menus.length > 5 && (
-                    <button onClick={() => setView('database')}
-                      style={{ padding: '3px 8px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#eef2ff', color: '#6366f1', fontSize: 11, cursor: 'pointer', fontFamily: 'Inter,sans-serif' }}>
-                      +{menus.length - 5} lainnya…
-                    </button>
-                  )}
-                </div>
+                </select>
               </div>
             )}
-            <button className="btn btn-add btn-sm" style={{ marginLeft: menus.length <= 1 ? 'auto' : 0 }} onClick={addMenu}>
-              <Icon name="plus" size={12} /> Menu Baru
-            </button>
+            <div className="flex-center gap-2" style={{ marginLeft: menus.length <= 1 ? 'auto' : 0 }}>
+              <button className="btn btn-add btn-sm" onClick={addMenu}>
+                <Icon name="plus" size={12} /> Menu Baru
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Main Content ── */}
-      {view === 'calculator' ? (
+      {view === 'calculator' && (
         activeMenu ? (
           <HppCalculator menu={activeMenu} onUpdate={updateActiveMenu} showToast={showToast} />
         ) : (
@@ -406,12 +588,70 @@ ${finalPortionLines.trim()}
             </button>
           </div>
         )
-      ) : (
+      )}
+
+      {view === 'database' && (
         <MenuDatabase
           menus={menus} activeId={activeId}
           onSelect={selectMenu} onAdd={addMenu}
           onDelete={deleteMenu} onDuplicate={duplicateMenu}
           onDeleteBatch={deleteMenusBatch}
+          opexProfiles={opexProfiles}
+          activeProfileId={activeProfileId}
+          onSelectProfile={(id) => {
+            setActiveProfileId(id);
+            setView('opex');
+          }}
+          onAddProfile={(newProfile) => {
+            setOpexProfiles(prev => [...prev, newProfile]);
+            setActiveProfileId(newProfile.id);
+            setView('opex');
+            showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
+          }}
+          onDeleteProfile={(id) => {
+            setOpexProfiles(prev => {
+              const next = prev.filter(p => p.id !== id);
+              if (id === activeProfileId) {
+                setActiveProfileId(next[0]?.id || null);
+              }
+              return next;
+            });
+            showToast('Profil OPEX dihapus', 'info');
+          }}
+        />
+      )}
+
+      {view === 'opex' && opexProfiles.length > 0 && (
+        <OpexAccumulator
+          menus={menus}
+          onUpdateMenu={(id, changes) => {
+            setMenus(prev => prev.map(m => m.id === id ? { ...m, ...changes, updatedAt: new Date().toISOString() } : m));
+          }}
+          opexProfiles={opexProfiles}
+          activeProfileId={activeProfileId}
+          onSelectProfile={setActiveProfileId}
+          onUpdateProfile={(changes) => {
+            setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, ...changes } : p));
+          }}
+          onAddProfile={(newProfile) => {
+            setOpexProfiles(prev => [...prev, newProfile]);
+            setActiveProfileId(newProfile.id);
+            showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
+          }}
+          onDeleteProfile={(id) => {
+            setOpexProfiles(prev => {
+              const next = prev.filter(p => p.id !== id);
+              if (id === activeProfileId) {
+                setActiveProfileId(next[0]?.id || null);
+              }
+              return next;
+            });
+            showToast('Profil OPEX dihapus', 'info');
+          }}
+          onNavigateToCalculator={(menuId) => {
+            setActiveId(menuId);
+            setView('calculator');
+          }}
         />
       )}
 

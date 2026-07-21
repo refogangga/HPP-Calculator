@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { Icon } from './Icon';
-import { num, fmtRp, roundPrice, getPenyusutanBulanan } from '../utils/hpp';
+import { num, fmtRp, roundPrice, getPenyusutanBulanan, mkOpexProfile } from '../utils/hpp';
 import * as XLSX from 'xlsx';
 
-export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelete, onDuplicate, onDeleteBatch }) {
+export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelete, onDuplicate, onDeleteBatch, opexProfiles = [], activeProfileId, onSelectProfile, onAddProfile, onDeleteProfile }) {
   const categories = ['Semua', 'Minuman', 'Makanan', 'Snack', 'Lainnya'];
   const [filter, setFilter] = useState('Semua');
   const [search, setSearch] = useState('');
@@ -475,6 +475,204 @@ ${finalPortionLines.trim()}
             );
           })}
         </div>
+      )}
+
+      {/* ── OPEX Profiles Section Divider ── */}
+      {opexProfiles && opexProfiles.length > 0 && (
+        <>
+          <hr style={{ border: 'none', borderTop: '1px dashed #cbd5e1', margin: '40px 0 30px' }} />
+          
+          {/* Header */}
+          <div className="flex-between" style={{ marginBottom: 20 }}>
+            <div>
+              <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: '#1e293b' }}>Database Profil OPEX & Outlet</h2>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
+                {opexProfiles.length} profil outlet/kategori tersimpan — buka profil untuk simulasi biaya
+              </p>
+            </div>
+            <button className="btn btn-primary" onClick={() => onAddProfile(mkOpexProfile({ name: 'Outlet Baru ' + (opexProfiles.length + 1) }))}>
+              <Icon name="plus" size={14} /> Tambah Profil Baru
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: 16, marginBottom: 20 }}>
+            {opexProfiles.map(p => {
+              const monthlyDepreciation = p.usePenyusutan ? p.assets.filter(a => a.enabled).reduce((sum, a) => {
+                if (!a.tahun) return sum;
+                return sum + (num(a.harga) / (num(a.tahun) * 12));
+              }, 0) : 0;
+              const totalExpenses = p.expenses.reduce((sum, e) => sum + num(e.value), 0);
+              const totalOpex = totalExpenses + monthlyDepreciation;
+              const opexPerUnit = p.totalVolume > 0 ? totalOpex / p.totalVolume : 0;
+              const isActive = p.id === activeProfileId;
+              
+              return (
+                <div key={p.id}
+                  className={`db-card ${isActive ? 'active' : ''}`}
+                  style={{
+                    border: isActive ? '1.5px solid #6366f1' : '1.5px solid #e2e8f0',
+                    boxShadow: isActive ? '0 10px 18px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -2px rgba(99, 102, 241, 0.05)' : '0 2px 4px rgba(0,0,0,0.01)',
+                    background: isActive ? 'linear-gradient(to bottom, #ffffff, #fafaff)' : '#fff',
+                    position: 'relative',
+                    padding: '20px',
+                    borderRadius: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    transform: isActive ? 'translateY(-2px)' : 'none'
+                  }}
+                  onClick={() => onSelectProfile(p.id)}
+                >
+                  {/* Active Indicator Badge */}
+                  {isActive && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 14,
+                      right: 14,
+                      background: '#eef2ff',
+                      color: '#4f46e5',
+                      padding: '3px 8px',
+                      borderRadius: 20,
+                      fontSize: 8,
+                      fontWeight: 800,
+                      letterSpacing: '0.05em',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      border: '1px solid #c7d2fe'
+                    }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4f46e5', display: 'inline-block' }} />
+                      SIMULASI AKTIF
+                    </div>
+                  )}
+
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <div style={{ 
+                      width: 36, 
+                      height: 36, 
+                      borderRadius: 10, 
+                      background: isActive ? '#eef2ff' : '#f1f5f9', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      fontSize: 18
+                    }}>
+                      🏪
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: '#1e293b' }}>{p.name}</div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
+                        Beban: {p.expenses.length} pos &bull; Aset: {p.assets.length} item
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Primary Metric Panel */}
+                  <div style={{
+                    background: isActive ? '#f5f7ff' : '#f8fafc',
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    marginBottom: 14,
+                    border: isActive ? '1px dashed #c7d2fe' : '1px solid #f1f5f9'
+                  }}>
+                    <div className="label-xs" style={{ color: '#64748b', fontSize: 9, marginBottom: 2, letterSpacing: '0.02em' }}>TOTAL OPEX OVERHEAD BULANAN</div>
+                    <div className="mono" style={{ fontSize: 18, fontWeight: 850, color: '#4f46e5' }}>
+                      {fmtRp(totalOpex)}
+                    </div>
+                  </div>
+
+                  {/* Secondary Metrics */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '10px 14px',
+                    paddingBottom: 14,
+                    marginBottom: 14,
+                    borderBottom: '1px solid #f1f5f9'
+                  }}>
+                    <div>
+                      <div className="label-xs" style={{ color: '#94a3b8', fontSize: 9 }}>TARGET JUAL / BULAN</div>
+                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginTop: 2 }}>
+                        {p.totalVolume.toLocaleString('id-ID')} unit
+                      </div>
+                    </div>
+                    <div>
+                      <div className="label-xs" style={{ color: '#94a3b8', fontSize: 9 }}>ALOKASI OPEX / UNIT</div>
+                      <div className="mono" style={{ fontSize: 12, fontWeight: 700, color: '#0891b2', marginTop: 2 }}>
+                        {fmtRp(opexPerUnit)}
+                      </div>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        background: '#f8fafc', 
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        fontSize: 10,
+                        color: '#475569',
+                        fontWeight: 600,
+                        border: '1px solid #f1f5f9'
+                      }}>
+                        <span>Simulasi Menu Terpilih</span>
+                        <span className="badge badge-slate" style={{ fontSize: 9, padding: '2px 6px', background: '#e2e8f0', color: '#334155' }}>
+                          {(p.selectedMenuIds || []).length} Menu
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }} onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-sm"
+                      onClick={() => onSelectProfile(p.id)}
+                      style={{ 
+                        flex: 1,
+                        background: isActive ? '#6366f1' : '#f1f5f9', 
+                        color: isActive ? '#fff' : '#475569', 
+                        border: 'none', 
+                        padding: '8px 12px', 
+                        borderRadius: 8, 
+                        fontSize: 11, 
+                        fontWeight: 700, 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s'
+                      }}>
+                      Buka Simulasi OPEX
+                      <span style={{ fontSize: 11 }}>➔</span>
+                    </button>
+                    {opexProfiles.length > 1 && (
+                      <button className="btn btn-danger btn-sm" title="Hapus Profil"
+                        onClick={() => {
+                          if (window.confirm(`Hapus profil "${p.name}"?`)) {
+                            onDeleteProfile(p.id);
+                          }
+                        }}
+                        style={{ 
+                          width: 32, 
+                          height: 32, 
+                          padding: 0, 
+                          borderRadius: 8,
+                          justifyContent: 'center', 
+                          display: 'flex', 
+                          alignItems: 'center' 
+                        }}>
+                        <Icon name="trash" size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
