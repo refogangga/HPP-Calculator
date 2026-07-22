@@ -706,27 +706,88 @@ ${finalPortionLines.trim()}
             </div>
           )}
 
-          <span style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', height: 20, margin: '0 4px' }} />
-          <button
-            className={`btn btn-sm ${view === 'calculator' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setView('calculator')}>
-            Kalkulator HPP
-          </button>
-          <button
-            className={`btn btn-sm ${view === 'opex' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setView('opex')}>
-            Akumulasi OPEX
-          </button>
-          <button
-            className={`btn btn-sm ${view === 'bep' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setView('bep')}>
-            Kalkulator BEP
-          </button>
-          <button
-            className={`btn btn-sm ${view === 'database' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setView('database')}>
-            <Icon name="database" size={12} /> Data
-          </button>
+          {/* Main Top View Switcher Tabs */}
+          <div style={{ display: 'flex', gap: 2, background: '#f4f4f5', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--border-color)' }}>
+            <button
+              className="btn btn-sm"
+              style={{
+                borderRadius: 'calc(var(--radius) - 2px)',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 12,
+                height: 28,
+                background: view === 'calculator' ? 'var(--bg-card)' : 'transparent',
+                color: view === 'calculator' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                boxShadow: view === 'calculator' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.15s',
+                padding: '0 12px'
+              }}
+              onClick={() => setView('calculator')}
+            >
+              Kalkulator HPP
+            </button>
+            <button
+              className="btn btn-sm"
+              style={{
+                borderRadius: 'calc(var(--radius) - 2px)',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 12,
+                height: 28,
+                background: view === 'opex' ? 'var(--bg-card)' : 'transparent',
+                color: view === 'opex' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                boxShadow: view === 'opex' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.15s',
+                padding: '0 12px'
+              }}
+              onClick={() => setView('opex')}
+            >
+              Akumulasi OPEX
+            </button>
+            <button
+              className="btn btn-sm"
+              style={{
+                borderRadius: 'calc(var(--radius) - 2px)',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 12,
+                height: 28,
+                background: view === 'bep' ? 'var(--bg-card)' : 'transparent',
+                color: view === 'bep' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                boxShadow: view === 'bep' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.15s',
+                padding: '0 12px'
+              }}
+              onClick={() => setView('bep')}
+            >
+              Kalkulator BEP
+            </button>
+            <button
+              className="btn btn-sm"
+              style={{
+                borderRadius: 'calc(var(--radius) - 2px)',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 12,
+                height: 28,
+                background: view === 'database' ? 'var(--bg-card)' : 'transparent',
+                color: view === 'database' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                boxShadow: view === 'database' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '0 12px'
+              }}
+              onClick={() => setView('database')}
+            >
+              <Icon name="database" size={11} color={view === 'database' ? 'var(--primary)' : 'var(--color-text-muted)'} /> Data
+            </button>
+          </div>
         </div>
       </div>
 

@@ -559,48 +559,50 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
       <div className="result-sticky" style={{ position: 'sticky', top: 90, display: 'flex', flexDirection: 'column', gap: 14 }}>
         
         {/* Navigation Tabs for Right Panel */}
-        <div style={{ display: 'flex', gap: 6, background: 'var(--bg-app)', padding: 4, borderRadius: 10, border: '1px solid var(--border-color)', marginBottom: 2 }}>
+        <div style={{ display: 'flex', gap: 2, background: '#f4f4f5', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', marginBottom: 2 }}>
           <button
             onClick={() => setActiveRightTab('operasional')}
             style={{
               flex: 1,
-              padding: '8px 10px',
-              borderRadius: 6,
+              padding: '6px 10px',
+              borderRadius: 'calc(var(--radius) - 2px)',
               border: 'none',
               cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: 11,
-              background: activeRightTab === 'operasional' ? 'linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%)' : 'transparent',
-              color: activeRightTab === 'operasional' ? '#fff' : 'var(--color-text-muted)',
+              fontWeight: 600,
+              fontSize: 12,
+              background: activeRightTab === 'operasional' ? 'var(--bg-card)' : 'transparent',
+              color: activeRightTab === 'operasional' ? 'var(--color-text)' : 'var(--color-text-muted)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6,
+              boxShadow: activeRightTab === 'operasional' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
               transition: 'all 0.15s'
             }}
           >
-            <Icon name="zap" size={12} /> BEP Operasional
+            <Icon name="zap" size={12} color={activeRightTab === 'operasional' ? 'var(--primary)' : 'var(--color-text-muted)'} /> BEP Operasional
           </button>
           <button
             onClick={() => setActiveRightTab('investasi')}
             style={{
               flex: 1,
-              padding: '8px 10px',
-              borderRadius: 6,
+              padding: '6px 10px',
+              borderRadius: 'calc(var(--radius) - 2px)',
               border: 'none',
               cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: 11,
-              background: activeRightTab === 'investasi' ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'transparent',
-              color: activeRightTab === 'investasi' ? '#fff' : 'var(--color-text-muted)',
+              fontWeight: 600,
+              fontSize: 12,
+              background: activeRightTab === 'investasi' ? 'var(--bg-card)' : 'transparent',
+              color: activeRightTab === 'investasi' ? 'var(--color-text)' : 'var(--color-text-muted)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6,
+              boxShadow: activeRightTab === 'investasi' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
               transition: 'all 0.15s'
             }}
           >
-            <Icon name="package" size={12} /> BEP Investasi
+            <Icon name="package" size={12} color={activeRightTab === 'investasi' ? 'var(--primary)' : 'var(--color-text-muted)'} /> BEP Investasi
           </button>
         </div>
 
@@ -608,32 +610,32 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
           <>
             {/* Hero Summary Banner: Target Penjualan Harian */}
             <div style={{
-              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-              borderRadius: 16,
+              background: 'var(--primary)',
+              borderRadius: 'var(--radius)',
               padding: '24px 20px',
               color: '#fff',
-              boxShadow: '0 12px 30px rgba(0,0,0,0.18)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
               textAlign: 'center',
               position: 'relative',
               overflow: 'hidden'
             }}>
-              <div style={{ position: 'absolute', right: '-15%', top: '-25%', width: 140, height: 140, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.12)', filter: 'blur(24px)' }} />
-              <div className="label-xs" style={{ color: '#38bdf8', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 10 }}>
+              <div style={{ position: 'absolute', right: '-15%', top: '-25%', width: 140, height: 140, borderRadius: '50%', background: 'rgba(255, 255, 255, 0.1)', filter: 'blur(24px)' }} />
+              <div className="label-xs" style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 10 }}>
                 TARGET HARIAN ANTI-RUGI (OPERASIONAL)
               </div>
-              <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>Target Penjualan Harian agar Tidak Rugi:</div>
-              <div className="mono" style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', textShadow: '0 2px 10px rgba(0,0,0,0.4)' }}>
-                {bepHarian} <span style={{ fontSize: 16, fontWeight: 700, color: '#38bdf8' }}>Cup / Hari</span>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', marginBottom: 6 }}>Target Penjualan Harian agar Tidak Rugi:</div>
+              <div className="mono" style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>
+                {bepHarian} <span style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Cup / Hari</span>
               </div>
-              <div style={{ fontSize: 10, color: '#64748b', marginTop: 10 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 10 }}>
                 Mencakup HPP &amp; target menutupi operasional bulanan {fmtRp(opexVal)}
               </div>
             </div>
 
             {/* Status Gauge & Actual Performance Card */}
             <div className="result-dark-card" style={{ padding: 20 }}>
-              <div className="flex-between" style={{ marginBottom: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>PERBANDINGAN TERJUAL vs BEP</span>
+              <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)' }}>PERBANDINGAN TERJUAL vs BEP</span>
                 <div style={{
                   background: statusBg,
                   border: `1.5px solid ${statusBorder}`,
@@ -649,29 +651,30 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: '#64748b' }}>Realisasi Harian</div>
-                  <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{actualVolumeHarian} Cup</div>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Realisasi Harian</div>
+                  <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', marginTop: 2 }}>{actualVolumeHarian} Cup</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: '#64748b' }}>Kebutuhan BEP Harian</div>
-                  <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: '#cbd5e1', marginTop: 2 }}>{bepHarian} Cup</div>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Kebutuhan BEP Harian</div>
+                  <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text-muted)', marginTop: 2 }}>{bepHarian} Cup</div>
                 </div>
               </div>
 
               {/* Progress bar */}
               <div style={{ marginBottom: 6 }}>
-                <div className="progress-bar" style={{ height: 10, background: 'rgba(255,255,255,0.06)', borderRadius: 5, overflow: 'hidden' }}>
+                <div className="progress-bar" style={{ height: 8, background: '#f4f4f5', borderRadius: 9999, overflow: 'hidden' }}>
                   <div
                     className="progress-segment"
                     style={{
                       width: `${targetPct}%`,
                       background: statusColor,
-                      borderRadius: 5
+                      height: '100%',
+                      borderRadius: 9999
                     }}
                   />
                 </div>
               </div>
-              <div className="flex-between" style={{ fontSize: 10, color: '#64748b' }}>
+              <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--color-text-muted)' }}>
                 <span>Pencapaian Target BEP:</span>
                 <span className="mono" style={{ fontWeight: 700, color: statusColor }}>{targetPct.toFixed(0)}%</span>
               </div>
@@ -733,24 +736,24 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
           <>
             {/* Hero Summary Banner: Target Penjualan Investasi */}
             <div style={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #0d9488 100%)',
-              borderRadius: 16,
+              background: '#18181b',
+              borderRadius: 'var(--radius)',
               padding: '24px 20px',
               color: '#fff',
-              boxShadow: '0 12px 30px rgba(13,148,136,0.18)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
               textAlign: 'center',
               position: 'relative',
               overflow: 'hidden'
             }}>
-              <div style={{ position: 'absolute', right: '-15%', top: '-25%', width: 140, height: 140, borderRadius: '50%', background: 'rgba(20,184,166,0.15)', filter: 'blur(24px)' }} />
-              <div className="label-xs" style={{ color: '#2dd4bf', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 10 }}>
+              <div style={{ position: 'absolute', right: '-15%', top: '-25%', width: 140, height: 140, borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', filter: 'blur(24px)' }} />
+              <div className="label-xs" style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 10 }}>
                 TARGET HARIAN BALIK MODAL (INVESTASI)
               </div>
-              <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 6 }}>Target Penjualan Harian agar Modal Kembali dalam {targetPaybackMonths} Bulan:</div>
-              <div className="mono" style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', textShadow: '0 2px 10px rgba(0,0,0,0.4)' }}>
-                {goalSeek.requiredCupDay} <span style={{ fontSize: 16, fontWeight: 700, color: '#2dd4bf' }}>Cup / Hari</span>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', marginBottom: 6 }}>Target Penjualan Harian agar Modal Kembali dalam {targetPaybackMonths} Bulan:</div>
+              <div className="mono" style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>
+                {goalSeek.requiredCupDay} <span style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Cup / Hari</span>
               </div>
-              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 10 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 10 }}>
                 Target Omset Bulanan: **{fmtRp(goalSeek.requiredRevMonth)}** ({goalSeek.requiredCupMonth.toLocaleString('id-ID')} Cup/Bulan)
               </div>
             </div>

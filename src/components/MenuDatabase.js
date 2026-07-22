@@ -847,7 +847,7 @@ ${finalPortionLines.trim()}
       </div>
 
       {/* ═══ THREE-TAB SECTION BAR ════════════════════════════ */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 2, background: '#f4f4f5', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', marginBottom: 8 }}>
         {[
           { id: 'menu', label: 'Database Resep Menu', icon: 'coffee', count: menus.length },
           { id: 'opex', label: 'Database Profil OPEX', icon: 'zap', count: opexProfiles.length },
@@ -860,25 +860,27 @@ ${finalPortionLines.trim()}
               key={t.id}
               onClick={() => setActiveTab(t.id)}
               style={{
-                background: 'none',
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: 'calc(var(--radius) - 2px)',
                 border: 'none',
-                borderBottom: isAct ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-                padding: '10px 18px',
-                fontWeight: 700,
-                fontSize: 13,
                 cursor: 'pointer',
-                color: isAct ? 'var(--primary)' : 'var(--color-text-muted)',
+                fontWeight: 600,
+                fontSize: 12,
+                background: isAct ? 'var(--bg-card)' : 'transparent',
+                color: isAct ? 'var(--color-text)' : 'var(--color-text-muted)',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 6,
-                paddingBottom: 12,
+                boxShadow: isAct ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
                 transition: 'all 0.15s'
               }}
             >
-              <Icon name={t.icon} size={13} />
-              {t.label}
+              <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : 'var(--color-text-muted)'} />
+              <span>{t.label}</span>
               {t.count !== null && (
-                <span className="badge badge-slate" style={{ fontSize: 9, padding: '2px 6px', borderRadius: 10 }}>
+                <span className="badge badge-slate" style={{ fontSize: 9, padding: '2px 6px', borderRadius: 10, background: isAct ? '#f4f4f5' : 'rgba(0,0,0,0.05)', color: 'var(--color-text-muted)' }}>
                   {t.count}
                 </span>
               )}

@@ -25,6 +25,20 @@ export default function OpexAccumulator({
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Semua');
   const [menuToAdd, setMenuToAdd] = useState('');
+  const [isSimpleView, setIsSimpleView] = useState(true);
+  const [expandedMenuId, setExpandedMenuId] = useState(null);
+
+  const handleRowClick = (e, menuId) => {
+    if (
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'BUTTON' ||
+      e.target.closest('button') ||
+      e.target.closest('input')
+    ) {
+      return;
+    }
+    setExpandedMenuId(prev => prev === menuId ? null : menuId);
+  };
 
   // Dropdown categories for OPEX expenses & assets mapping
   const opexCategories = ['Semua', 'Minuman', 'Makanan', 'Snack', 'Lainnya'];
@@ -637,9 +651,55 @@ export default function OpexAccumulator({
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
+                  {/* View Mode Toggle */}
+                  <div style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'center', background: 'var(--bg-app)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 11 }}>
+                    <span style={{ fontWeight: 700, color: 'var(--color-text-muted)' }}>Mode Tampilan Tabel:</span>
+                    <div style={{ display: 'flex', gap: 2, background: '#f4f4f5', padding: 2, borderRadius: 'var(--radius)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsSimpleView(true)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 'calc(var(--radius) - 2px)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 10,
+                          fontWeight: 600,
+                          background: isSimpleView ? 'var(--bg-card)' : 'transparent',
+                          color: isSimpleView ? 'var(--color-text)' : 'var(--color-text-muted)',
+                          boxShadow: isSimpleView ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        Sederhana
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSimpleView(false)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 'calc(var(--radius) - 2px)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 10,
+                          fontWeight: 600,
+                          background: !isSimpleView ? 'var(--bg-card)' : 'transparent',
+                          color: !isSimpleView ? 'var(--color-text)' : 'var(--color-text-muted)',
+                          boxShadow: !isSimpleView ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        Detail Analisis
+                      </button>
+                    </div>
+                    <span style={{ fontSize: 10, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
+                      {isSimpleView ? 'Menampilkan metrik utama kas UMKM.' : 'Menampilkan rincian biaya, margin, komisi platform, & HPP.'}
+                    </span>
+                  </div>
+
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '2px solid var(--border-color)', color: '#475569', fontWeight: 700, background: 'var(--bg-app)' }}>
+                      <tr style={{ borderBottom: '2px solid var(--border-color)', color: '#475569', fontWeight: 700, background: 'var(--bg-app)', fontSize: 11 }}>
                         <th style={{ padding: '8px 4px', width: 28, textAlign: 'center' }}>
                           <input
                             type="checkbox"
@@ -648,15 +708,63 @@ export default function OpexAccumulator({
                             style={{ cursor: 'pointer' }}
                           />
                         </th>
-                        <th style={{ padding: '8px 8px', minWidth: 140 }}>Menu &amp; Channel</th>
-                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Direct HPP (% Stlh Diskon)</th>
-                        <th style={{ padding: '8px 8px', width: 105, textAlign: 'right' }}>Harga Normal</th>
-                        <th style={{ padding: '8px 8px', width: 130, textAlign: 'right' }}>Diskon Merchant</th>
-                        <th style={{ padding: '8px 8px', width: 115, textAlign: 'right', whiteSpace: 'nowrap' }}>Harga Stlh Diskon</th>
-                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Nett Revenue</th>
-                        <th style={{ padding: '8px 8px', width: 75, textAlign: 'center' }}>Volume</th>
-                        <th style={{ padding: '8px 8px', width: 105, textAlign: 'right', whiteSpace: 'nowrap' }}>Profit/Cup</th>
-                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Kontribusi</th>
+                        <th style={{ padding: '8px 8px', minWidth: 140 }} title="Nama produk masakan atau minuman yang Anda daftarkan.">
+                          Nama Menu ℹ️
+                        </th>
+                        <th style={{ padding: '8px 8px', width: 105, textAlign: 'right' }} title="Harga jual reguler produk sebelum dikenakan diskon promosi.">
+                          Harga Normal ℹ️
+                        </th>
+                        
+                        {!isSimpleView && (
+                          <th style={{ padding: '8px 8px', width: 120, textAlign: 'right' }} title="Nominal potongan harga yang Anda berikan untuk promosi.">
+                            Diskon Merchant ℹ️
+                          </th>
+                        )}
+
+                        <th style={{ padding: '8px 8px', width: 125, textAlign: 'right', whiteSpace: 'nowrap' }} title="Harga final yang dibayarkan oleh pembeli setelah dipotong diskon.">
+                          Customer Membayar ℹ️
+                        </th>
+
+                        {!isSimpleView && (
+                          <th style={{ padding: '8px 8px', width: 120, textAlign: 'right' }} title="Potongan biaya komisi persentase & flat fee yang diambil oleh platform online.">
+                            Komisi Platform ℹ️
+                          </th>
+                        )}
+
+                        <th style={{ padding: '8px 8px', width: 120, textAlign: 'right', whiteSpace: 'nowrap' }} title="Nominal bersih yang ditransfer platform ke rekening Anda setelah dipotong komisi.">
+                          Uang Masuk Merchant ℹ️
+                        </th>
+
+                        {!isSimpleView && (
+                          <>
+                            <th style={{ padding: '8px 8px', width: 105, textAlign: 'right' }} title="Total biaya modal bahan baku dan kemasan untuk memproduksi 1 unit.">
+                              Direct HPP ℹ️
+                            </th>
+                            <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }} title="Keuntungan kotor per unit setelah dikurangi biaya modal (HPP).">
+                              Laba Stlh HPP ℹ️
+                            </th>
+                            <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }} title="Alokasi beban operasional bulanan (listrik, sewa, gaji, penyusutan) rata-rata per unit.">
+                              Alokasi Overhead ℹ️
+                            </th>
+                          </>
+                        )}
+
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }} title="Keuntungan bersih akhir per unit setelah dikurangi biaya HPP dan biaya operasional.">
+                          Laba Bersih/Cup ℹ️
+                        </th>
+
+                        {!isSimpleView && (
+                          <th style={{ padding: '8px 8px', width: 100, textAlign: 'right' }} title="Rasio keuntungan bersih terhadap harga yang dibayar customer.">
+                            Margin Bersih ℹ️
+                          </th>
+                        )}
+
+                        <th style={{ padding: '8px 8px', width: 75, textAlign: 'center' }} title="Estimasi volume penjualan produk dalam sebulan.">
+                          Volume ℹ️
+                        </th>
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }} title="Total laba bersih bulanan yang disumbangkan oleh menu ini (Laba Bersih/Cup × Volume).">
+                          Total Kontribusi ℹ️
+                        </th>
                         <th style={{ padding: '8px 4px', width: 35, textAlign: 'center' }}>Aksi</th>
                       </tr>
                     </thead>
@@ -665,231 +773,358 @@ export default function OpexAccumulator({
                         const isEnabled = !activeProfile.disabledMenuIds?.includes(menu.id);
                         const pc = getPlatformCalc(menu);
                         const volume = getMenuVolume(menu.id, num(menu.ops?.estimasiCup));
-                        const totalContribusi = isEnabled ? volume * pc.netProfit : 0;
-                        const isProfit = pc.netProfit >= 0;
+                        
+                        const alokasiOverhead = isEnabled ? financialSummary.avgOpexPerUnit : 0;
+                        const labaSetelahHpp = pc.netProfit;
+                        const labaBersihPerCup = isEnabled ? (labaSetelahHpp - alokasiOverhead) : 0;
+                        const marginBersihPct = pc.hargaEfektif > 0 ? (labaBersihPerCup / pc.hargaEfektif) * 100 : 0;
+                        const totalContribusi = isEnabled ? (volume * labaBersihPerCup) : 0;
+                        const isProfit = labaBersihPerCup >= 0;
+                        const isRowExpanded = expandedMenuId === menu.id;
 
                         return (
-                          <tr
-                            key={menu.id}
-                            style={{
-                              borderBottom: '1px solid var(--border-color)',
-                              opacity: isEnabled ? 1 : 0.55,
-                              background: isEnabled ? 'transparent' : 'var(--bg-app)',
-                              transition: 'all 0.15s'
-                            }}
-                          >
-                            {/* Checkbox */}
-                            <td style={{ padding: '10px 4px', textAlign: 'center' }}>
-                              <input
-                                type="checkbox"
-                                checked={isEnabled}
-                                onChange={() => handleToggleMenuSelect(menu.id)}
-                                style={{ cursor: 'pointer' }}
-                              />
-                            </td>
-
-                            {/* Menu & Channel */}
-                            <td style={{ padding: '10px 8px' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                <button
-                                  onClick={() => onNavigateToCalculator && onNavigateToCalculator(menu.id)}
-                                  style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                                    background: isEnabled ? 'var(--bg-app)' : 'var(--bg-card)',
-                                    border: '1px solid var(--border-color)', padding: '4px 8px',
-                                    borderRadius: 6, color: 'var(--color-text)', fontWeight: 600,
-                                    fontSize: 12, cursor: 'pointer', transition: 'all 0.15s ease',
-                                    textAlign: 'left'
-                                  }}
-                                  onMouseOver={e => {
-                                    e.currentTarget.style.background = 'rgba(0,102,204,0.08)';
-                                    e.currentTarget.style.borderColor = 'var(--primary)';
-                                    e.currentTarget.style.color = 'var(--primary)';
-                                  }}
-                                  onMouseOut={e => {
-                                    e.currentTarget.style.background = isEnabled ? 'var(--bg-app)' : 'var(--bg-card)';
-                                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                                    e.currentTarget.style.color = 'var(--color-text)';
-                                  }}
-                                  title="Klik untuk edit / hitung HPP"
-                                >
-                                  <span style={{ fontSize: 13 }}>{menu.emoji}</span>
-                                  <span>{menu.name}</span>
-                                </button>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <span className="badge badge-slate" style={{ fontSize: 9 }}>{menu.category}</span>
-                                  {pc.hasPlatform ? (
-                                    <span style={{
-                                      fontSize: 9, padding: '1px 5px', borderRadius: 8,
-                                      background: '#fff1ef', color: '#ee4d2d', fontWeight: 700
-                                    }}>
-                                      🏪 {pc.platformName} ({pc.commissionPct}%)
-                                    </span>
-                                  ) : (
-                                    <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>🏬 Direct</span>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Direct HPP & % HPP stlh Diskon */}
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 12 }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end' }}>
-                                <span style={{ fontWeight: 600 }}>{fmtRp(pc.hpp)}</span>
-                                {pc.hargaEfektif > 0 ? (
-                                  <span style={{
-                                    fontSize: 9,
-                                    fontWeight: 700,
-                                    padding: '1px 6px',
-                                    borderRadius: 10,
-                                    background: pc.hppPctAfterDiscount > 50 ? '#fee2e2' : pc.hppPctAfterDiscount > 35 ? '#fef3c7' : '#dcfce7',
-                                    color: pc.hppPctAfterDiscount > 50 ? '#b91c1c' : pc.hppPctAfterDiscount > 35 ? '#b45309' : '#15803d',
-                                    display: 'inline-flex',
-                                    alignItems: 'center'
-                                  }}>
-                                    {pc.hppPctAfterDiscount.toFixed(1)}% stlh diskon
-                                  </span>
-                                ) : (
-                                  <span style={{ fontSize: 9, color: '#94a3b8' }}>-</span>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Harga Normal (HJ Acuan) */}
-                            <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                              <div className="input-prefix-wrap sm" style={{ maxWidth: 100, marginLeft: 'auto' }}>
-                                <span className="prefix" style={{ fontSize: 9 }}>Rp</span>
-                                <FormatInput
-                                  className="hpp-input sm center"
-                                  style={{ paddingLeft: 18, fontWeight: 600 }}
-                                  value={pc.hargaJual}
-                                  onChange={val => handlePriceChange(menu, val)}
-                                  disabled={!isEnabled}
+                          <React.Fragment key={menu.id}>
+                            <tr
+                              onClick={(e) => handleRowClick(e, menu.id)}
+                              style={{
+                                borderBottom: '1px solid var(--border-color)',
+                                opacity: isEnabled ? 1 : 0.55,
+                                background: isRowExpanded ? 'rgba(0,102,204,0.02)' : (isEnabled ? 'transparent' : 'var(--bg-app)'),
+                                cursor: 'pointer',
+                                transition: 'all 0.15s'
+                              }}
+                            >
+                              {/* Checkbox */}
+                              <td style={{ padding: '10px 4px', textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isEnabled}
+                                  onChange={() => handleToggleMenuSelect(menu.id)}
+                                  style={{ cursor: 'pointer' }}
                                 />
-                              </div>
-                            </td>
+                              </td>
 
-                            {/* Diskon Merchant (Editable % atau Nominal Rp) */}
-                            <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDiscountChange(menu, 'discountType', menu.platform?.discountType === 'nominal' ? 'pct' : 'nominal')}
-                                  disabled={!isEnabled}
-                                  style={{
-                                    padding: '2px 5px',
-                                    fontSize: 9,
-                                    fontWeight: 800,
-                                    borderRadius: 5,
-                                    border: '1px solid var(--border-color)',
-                                    background: menu.platform?.discountType === 'nominal' ? '#e0e7ff' : '#fef3c7',
-                                    color: menu.platform?.discountType === 'nominal' ? '#4338ca' : '#b45309',
-                                    cursor: 'pointer'
-                                  }}
-                                  title="Klik untuk ubah jenis promo diskon (% persen / Rp nominal)"
-                                >
-                                  {menu.platform?.discountType === 'nominal' ? 'Rp' : '%'}
-                                </button>
+                              {/* Menu & Channel */}
+                              <td style={{ padding: '10px 8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                  <button
+                                    onClick={() => onNavigateToCalculator && onNavigateToCalculator(menu.id)}
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                                      background: isEnabled ? 'var(--bg-app)' : 'var(--bg-card)',
+                                      border: '1px solid var(--border-color)', padding: '4px 8px',
+                                      borderRadius: 6, color: 'var(--color-text)', fontWeight: 600,
+                                      fontSize: 12, cursor: 'pointer', transition: 'all 0.15s ease',
+                                      textAlign: 'left'
+                                    }}
+                                    onMouseOver={e => {
+                                      e.currentTarget.style.background = 'rgba(0,102,204,0.08)';
+                                      e.currentTarget.style.borderColor = 'var(--primary)';
+                                      e.currentTarget.style.color = 'var(--primary)';
+                                    }}
+                                    onMouseOut={e => {
+                                      e.currentTarget.style.background = isEnabled ? 'var(--bg-app)' : 'var(--bg-card)';
+                                      e.currentTarget.style.borderColor = 'var(--border-color)';
+                                      e.currentTarget.style.color = 'var(--color-text)';
+                                    }}
+                                    title="Klik untuk edit / hitung HPP"
+                                  >
+                                    <span style={{ fontSize: 13 }}>{menu.emoji}</span>
+                                    <span>{menu.name}</span>
+                                  </button>
 
-                                <div className="input-prefix-wrap sm" style={{ maxWidth: 80 }}>
-                                  {menu.platform?.discountType === 'nominal' && <span className="prefix" style={{ fontSize: 9 }}>Rp</span>}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span className="badge badge-slate" style={{ fontSize: 9 }}>{menu.category}</span>
+                                    {pc.hasPlatform ? (
+                                      <span style={{
+                                        fontSize: 9, padding: '1px 5px', borderRadius: 8,
+                                        background: '#fff1ef', color: '#ee4d2d', fontWeight: 700
+                                      }}>
+                                        🏪 {pc.platformName} ({pc.commissionPct}%)
+                                      </span>
+                                    ) : (
+                                      <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>🏬 Direct</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Harga Normal */}
+                              <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                                <div className="input-prefix-wrap sm" style={{ maxWidth: 90, marginLeft: 'auto' }}>
+                                  <span className="prefix" style={{ fontSize: 9 }}>Rp</span>
                                   <FormatInput
                                     className="hpp-input sm center"
-                                    style={{
-                                      paddingLeft: menu.platform?.discountType === 'nominal' ? 18 : 6,
-                                      borderColor: pc.diskonNominal > 0 ? '#f59e0b' : 'var(--border-color)',
-                                      fontWeight: pc.diskonNominal > 0 ? 700 : 400,
-                                      color: pc.diskonNominal > 0 ? '#b45309' : 'var(--color-text)'
-                                    }}
-                                    value={menu.platform?.discountValue || 0}
-                                    onChange={val => handleDiscountChange(menu, 'discountValue', val)}
+                                    style={{ paddingLeft: 18, fontWeight: 600 }}
+                                    value={pc.hargaJual}
+                                    onChange={val => handlePriceChange(menu, val)}
                                     disabled={!isEnabled}
                                   />
                                 </div>
-                              </div>
-                            </td>
+                              </td>
 
-                            {/* Harga Setelah Diskon (Harga Efektif Real) */}
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
-                                <span style={{
-                                  fontWeight: 800,
-                                  fontSize: 12,
-                                  color: pc.diskonNominal > 0 ? '#0284c7' : 'var(--color-text)'
-                                }}>
-                                  {fmtRp(pc.hargaEfektif)}
-                                </span>
-                                {pc.diskonNominal > 0 ? (
-                                  <span style={{ fontSize: 9, color: '#d97706', fontWeight: 600 }}>
-                                    − {fmtRp(pc.diskonNominal)} promo
-                                  </span>
-                                ) : (
-                                  <span style={{ fontSize: 9, color: '#94a3b8' }}>Tanpa diskon</span>
-                                )}
-                              </div>
-                            </td>
+                              {/* Diskon Merchant */}
+                              {!isSimpleView && (
+                                <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDiscountChange(menu, 'discountType', menu.platform?.discountType === 'nominal' ? 'pct' : 'nominal')}
+                                      disabled={!isEnabled}
+                                      style={{
+                                        padding: '2px 5px',
+                                        fontSize: 9,
+                                        fontWeight: 800,
+                                        borderRadius: 5,
+                                        border: '1px solid var(--border-color)',
+                                        background: menu.platform?.discountType === 'nominal' ? '#e0e7ff' : '#fef3c7',
+                                        color: menu.platform?.discountType === 'nominal' ? '#4338ca' : '#b45309',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      {menu.platform?.discountType === 'nominal' ? 'Rp' : '%'}
+                                    </button>
 
-                            {/* Nett Revenue (setelah platform) */}
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
-                                <span style={{ fontWeight: 700, fontSize: 12, color: pc.hasPlatform ? '#4f46e5' : 'var(--color-text)' }}>
-                                  {fmtRp(pc.revenueBersih)}
-                                </span>
-                                {pc.hasPlatform && pc.totalKomisi > 0 && (
-                                  <span style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>
-                                    − {fmtRp(pc.totalKomisi)} komisi
-                                  </span>
-                                )}
-                              </div>
-                            </td>
+                                    <div className="input-prefix-wrap sm" style={{ maxWidth: 75 }}>
+                                      {menu.platform?.discountType === 'nominal' && <span className="prefix" style={{ fontSize: 9 }}>Rp</span>}
+                                      <FormatInput
+                                        className="hpp-input sm center"
+                                        style={{
+                                          paddingLeft: menu.platform?.discountType === 'nominal' ? 18 : 6,
+                                          borderColor: pc.diskonNominal > 0 ? '#f59e0b' : 'var(--border-color)',
+                                          fontWeight: pc.diskonNominal > 0 ? 700 : 400,
+                                          color: pc.diskonNominal > 0 ? '#b45309' : 'var(--color-text)'
+                                        }}
+                                        value={menu.platform?.discountValue || 0}
+                                        onChange={val => handleDiscountChange(menu, 'discountValue', val)}
+                                        disabled={!isEnabled}
+                                      />
+                                    </div>
+                                  </div>
+                                </td>
+                              )}
 
-                            {/* Volume */}
-                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                              <input
-                                type="number"
-                                className="hpp-input sm center"
-                                style={{ maxWidth: 65, margin: '0 auto', display: 'block', fontWeight: 700 }}
-                                value={volume}
-                                onChange={e => handleVolumeChange(menu.id, e.target.value)}
-                                disabled={!isEnabled}
-                              />
-                            </td>
+                              {/* Customer Membayar */}
+                              <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: '#3b82f6', fontWeight: 700 }}>
+                                {fmtRp(pc.hargaEfektif)}
+                              </td>
 
-                            {/* Net Profit per Cup */}
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
-                                <span style={{
-                                  fontWeight: 700, fontSize: 12,
-                                  color: isProfit ? '#10b981' : '#ef4444'
-                                }}>
-                                  {fmtRp(pc.netProfit)}
-                                </span>
-                              </div>
-                            </td>
+                              {/* Komisi Platform */}
+                              {!isSimpleView && (
+                                <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: '#dc2626' }}>
+                                  −{fmtRp(pc.totalKomisi)}
+                                </td>
+                              )}
 
-                            {/* Total Kontribusi */}
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: totalContribusi > 0 ? 'var(--color-success)' : '#ef4444', whiteSpace: 'nowrap' }}>
-                              {isEnabled && volume > 0 ? fmtRp(totalContribusi) : 'Rp 0'}
-                            </td>
+                              {/* Uang Masuk Merchant */}
+                              <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: '#10b981', fontWeight: 700 }}>
+                                {fmtRp(pc.revenueBersih)}
+                              </td>
 
-                            {/* Aksi */}
-                            <td style={{ padding: '10px 4px', textAlign: 'center' }}>
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                onClick={() => {
-                                  onUpdateProfile({
-                                    selectedMenuIds: activeProfile.selectedMenuIds.filter(id => id !== menu.id),
-                                    disabledMenuIds: (activeProfile.disabledMenuIds || []).filter(id => id !== menu.id)
-                                  });
-                                }}
-                                style={{ color: '#ef4444', padding: '4px 6px', height: 'auto', width: 'auto', border: 'none', background: 'transparent' }}
-                                title="Hapus dari simulasi"
-                              >
-                                <Icon name="trash" size={11} />
-                              </button>
-                            </td>
-                          </tr>
+                              {/* Direct HPP */}
+                              {!isSimpleView && (
+                                <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: '#ea580c' }}>
+                                  {fmtRp(pc.hpp)}
+                                </td>
+                              )}
+
+                              {/* Laba Setelah HPP */}
+                              {!isSimpleView && (
+                                <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: '#10b981' }}>
+                                  {fmtRp(labaSetelahHpp)}
+                                </td>
+                              )}
+
+                              {/* Alokasi Overhead */}
+                              {!isSimpleView && (
+                                <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: '#71717a' }}>
+                                  {fmtRp(alokasiOverhead)}
+                                </td>
+                              )}
+
+                              {/* Laba Bersih/Cup */}
+                              <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: isProfit ? '#10b981' : '#dc2626', fontWeight: 800 }}>
+                                {fmtRp(labaBersihPerCup)}
+                              </td>
+
+                              {/* Margin Bersih */}
+                              {!isSimpleView && (
+                                <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: isProfit ? '#10b981' : '#dc2626' }}>
+                                  {marginBersihPct.toFixed(1)}%
+                                </td>
+                              )}
+
+                              {/* Volume */}
+                              <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                <input
+                                  type="number"
+                                  className="hpp-input sm center"
+                                  style={{ maxWidth: 95, margin: '0 auto', display: 'block', fontWeight: 700 }}
+                                  value={volume}
+                                  onChange={e => handleVolumeChange(menu.id, e.target.value)}
+                                  disabled={!isEnabled}
+                                />
+                              </td>
+
+                              {/* Total Kontribusi */}
+                              <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: totalContribusi >= 0 ? '#10b981' : '#dc2626', whiteSpace: 'nowrap' }}>
+                                {fmtRp(totalContribusi)}
+                              </td>
+
+                              {/* Aksi */}
+                              <td style={{ padding: '10px 4px', textAlign: 'center' }}>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => {
+                                    onUpdateProfile({
+                                      selectedMenuIds: activeProfile.selectedMenuIds.filter(id => id !== menu.id),
+                                      disabledMenuIds: (activeProfile.disabledMenuIds || []).filter(id => id !== menu.id)
+                                    });
+                                  }}
+                                  style={{ color: '#ef4444', padding: '4px 6px', height: 'auto', width: 'auto', border: 'none', background: 'transparent' }}
+                                  title="Hapus dari simulasi"
+                                >
+                                  <Icon name="trash" size={11} />
+                                </button>
+                              </td>
+                            </tr>
+
+                            {/* Timeline Cash Flow Accordion */}
+                            {isRowExpanded && (
+                              <tr onClick={(e) => e.stopPropagation()}>
+                                <td colSpan={isSimpleView ? 9 : 15} style={{ padding: '16px 20px', background: '#fafafa', borderBottom: '1px solid var(--border-color)', cursor: 'default' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
+                                    {/* Timeline Flow */}
+                                    <div>
+                                      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, color: 'var(--color-text)' }}>
+                                        Timeline Alur Uang (Cash Flow) per Cup — {menu.name}
+                                      </div>
+                                      
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative', paddingLeft: 16 }}>
+                                        <div style={{ position: 'absolute', left: 4, top: 8, bottom: 8, width: 2, background: 'var(--border-color)' }} />
+                                        
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                          <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#71717a' }} />
+                                          <div>
+                                            <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>1. Harga Jual Normal</div>
+                                            <div style={{ fontSize: 12, fontWeight: 700 }}>{fmtRp(pc.hargaJual)}</div>
+                                          </div>
+                                        </div>
+
+                                        {pc.diskonNominal > 0 && (
+                                          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                            <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#dc2626' }} />
+                                            <div>
+                                              <div style={{ fontSize: 10, color: '#dc2626' }}>2. Diskon Merchant ({pc.diskonPct.toFixed(0)}%)</div>
+                                              <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>− {fmtRp(pc.diskonNominal)}</div>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                          <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#3b82f6' }} />
+                                          <div>
+                                            <div style={{ fontSize: 10, color: '#3b82f6' }}>3. Customer Membayar</div>
+                                            <div style={{ fontSize: 12, fontWeight: 800, color: '#3b82f6' }}>{fmtRp(pc.hargaEfektif)}</div>
+                                          </div>
+                                        </div>
+
+                                        {pc.totalKomisi > 0 && (
+                                          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                            <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#dc2626' }} />
+                                            <div>
+                                              <div style={{ fontSize: 10, color: '#dc2626' }}>4. Potongan Komisi Platform ({pc.hargaEfektif > 0 ? ((pc.totalKomisi / pc.hargaEfektif) * 100).toFixed(1) : 0}%)</div>
+                                              <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>− {fmtRp(pc.totalKomisi)}</div>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                          <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#10b981' }} />
+                                          <div>
+                                            <div style={{ fontSize: 10, color: '#10b981' }}>5. Uang Masuk Merchant</div>
+                                            <div style={{ fontSize: 12, fontWeight: 800, color: '#10b981' }}>{fmtRp(pc.revenueBersih)}</div>
+                                            <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2, fontFamily: 'monospace' }}>
+                                              Rumus: = Customer Membayar ({fmtRp(pc.hargaEfektif)}) − Komisi Platform ({fmtRp(pc.totalKomisi)})
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                          <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#ea580c' }} />
+                                          <div>
+                                            <div style={{ fontSize: 10, color: '#ea580c' }}>6. Modal Produksi (Direct HPP) ({pc.hargaEfektif > 0 ? ((pc.hpp / pc.hargaEfektif) * 100).toFixed(1) : 0}%)</div>
+                                            <div style={{ fontSize: 12, fontWeight: 700, color: '#ea580c' }}>− {fmtRp(pc.hpp)}</div>
+                                          </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                          <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#10b981' }} />
+                                          <div>
+                                            <div style={{ fontSize: 10, color: '#10b981' }}>7. Laba Setelah HPP</div>
+                                            <div style={{ fontSize: 12, fontWeight: 800, color: '#10b981' }}>{fmtRp(labaSetelahHpp)}</div>
+                                            <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2, fontFamily: 'monospace' }}>
+                                              Rumus: = Uang Masuk Merchant ({fmtRp(pc.revenueBersih)}) − Direct HPP ({fmtRp(pc.hpp)})
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative', marginBottom: 12 }}>
+                                          <div style={{ position: 'absolute', left: -15, top: 4, width: 7, height: 7, borderRadius: '50%', background: '#71717a' }} />
+                                          <div>
+                                            <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>8. Alokasi Overhead (OPEX) ({pc.hargaEfektif > 0 ? ((alokasiOverhead / pc.hargaEfektif) * 100).toFixed(1) : 0}%)</div>
+                                            <div style={{ fontSize: 12, fontWeight: 700 }}>− {fmtRp(alokasiOverhead)}</div>
+                                          </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', position: 'relative' }}>
+                                          <div style={{ position: 'absolute', left: -16, top: 4, width: 9, height: 9, borderRadius: '50%', background: isProfit ? '#10b981' : '#dc2626' }} />
+                                          <div>
+                                            <div style={{ fontSize: 10, color: isProfit ? '#10b981' : '#dc2626', fontWeight: 700 }}>9. Laba Bersih / Cup ({marginBersihPct.toFixed(1)}%)</div>
+                                            <div style={{ fontSize: 14, fontWeight: 900, color: isProfit ? '#10b981' : '#dc2626' }}>{fmtRp(labaBersihPerCup)}</div>
+                                            <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2, fontFamily: 'monospace' }}>
+                                              Rumus: = Laba Setelah HPP ({fmtRp(labaSetelahHpp)}) − Alokasi Overhead ({fmtRp(alokasiOverhead)})
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Mini Summary Card on the right */}
+                                    <div style={{
+                                      background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                      borderRadius: 'var(--radius)', padding: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    }}>
+                                      <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase' }}>
+                                        Ringkasan Menu per Unit
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        {[
+                                          { label: 'Harga Jual Menu', val: pc.hargaJual, color: 'var(--color-text)' },
+                                          { label: 'Diskon Promosi', val: pc.diskonNominal, color: '#dc2626', prefix: '− ' },
+                                          { label: 'Customer Membayar', val: pc.hargaEfektif, color: '#3b82f6', bold: true },
+                                          { label: 'Komisi Platform', val: pc.totalKomisi, color: '#dc2626', prefix: '− ' },
+                                          { label: 'Uang Masuk Merchant', val: pc.revenueBersih, color: '#10b981', bold: true },
+                                          { label: 'Modal Produksi (HPP)', val: pc.hpp, color: '#ea580c', prefix: '− ' },
+                                          { label: 'Laba Setelah HPP', val: labaSetelahHpp, color: '#10b981', bold: true },
+                                          { label: 'Alokasi Overhead', val: alokasiOverhead, color: 'var(--color-text-muted)', prefix: '− ' },
+                                          { label: 'Laba Bersih Final', val: labaBersihPerCup, color: labaBersihPerCup >= 0 ? '#10b981' : '#dc2626', bold: true },
+                                          { label: 'Persentase Laba Bersih', val: `${marginBersihPct.toFixed(1)}%`, color: labaBersihPerCup >= 0 ? '#10b981' : '#dc2626', raw: true }
+                                        ].map(({ label, val, color, bold, prefix, raw }) => (
+                                          <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                                            <span style={{ color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                                            <span className="mono" style={{ fontWeight: bold ? 800 : 600, color }}>
+                                              {raw ? val : `${prefix || ''}${fmtRp(val)}`}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         );
                       })}
                     </tbody>
@@ -1268,8 +1503,8 @@ export default function OpexAccumulator({
 
                 {/* Revenue Stlh Diskon */}
                 <div style={{ background: '#f0f9ff', padding: '10px 12px', borderRadius: 8, border: '1px solid #bae6fd' }}>
-                  <div style={{ fontSize: 9, color: '#0369a1', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="dollar" size={11} color="#0369a1" /> REVENUE STLH DISKON
+                   <div style={{ fontSize: 9, color: '#0369a1', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="dollar" size={11} color="#0369a1" /> TOTAL CUSTOMER BAYAR
                   </div>
                   <div className="mono" style={{ fontSize: 15, fontWeight: 900, color: '#0284c7', marginTop: 2 }}>
                     {fmtRp(financialSummary.totalEffectiveRevenue)}
@@ -1280,7 +1515,7 @@ export default function OpexAccumulator({
                 {/* Nett Revenue */}
                 <div style={{ background: '#eef2ff', padding: '10px 12px', borderRadius: 8, border: '1px solid #c7d2fe' }}>
                   <div style={{ fontSize: 9, color: '#3730a3', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="bank" size={11} color="#3730a3" /> NETT REVENUE (KAS)
+                    <Icon name="bank" size={11} color="#3730a3" /> UANG MASUK MERCHANT
                   </div>
                   <div className="mono" style={{ fontSize: 15, fontWeight: 900, color: '#4338ca', marginTop: 2 }}>
                     {fmtRp(financialSummary.totalNetRevenue)}
@@ -1291,7 +1526,7 @@ export default function OpexAccumulator({
                 {/* Direct HPP */}
                 <div style={{ background: '#fff1f2', padding: '10px 12px', borderRadius: 8, border: '1px solid #fecdd3' }}>
                   <div style={{ fontSize: 9, color: '#9f1239', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="package" size={11} color="#9f1239" /> DIRECT HPP (COGS)
+                    <Icon name="package" size={11} color="#9f1239" /> TOTAL DIRECT HPP
                   </div>
                   <div className="mono" style={{ fontSize: 15, fontWeight: 800, color: '#be123c', marginTop: 2 }}>
                     - {fmtRp(financialSummary.totalCOGS)}
@@ -1307,7 +1542,7 @@ export default function OpexAccumulator({
                   border: `1px solid ${financialSummary.avgHppPctAfterDiscount > 50 ? '#fca5a5' : financialSummary.avgHppPctAfterDiscount > 35 ? '#fde68a' : '#86efac'}`
                 }}>
                   <div style={{ fontSize: 9, color: financialSummary.avgHppPctAfterDiscount > 50 ? '#991b1b' : financialSummary.avgHppPctAfterDiscount > 35 ? '#92400e' : '#166534', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="trending" size={11} /> % HPP STLH DISKON
+                    <Icon name="trending" size={11} /> PERSENTASE HPP
                   </div>
                   <div className="mono" style={{ fontSize: 15, fontWeight: 900, color: financialSummary.avgHppPctAfterDiscount > 50 ? '#dc2626' : financialSummary.avgHppPctAfterDiscount > 35 ? '#d97706' : '#15803d', marginTop: 2 }}>
                     {financialSummary.avgHppPctAfterDiscount.toFixed(1)}%
@@ -1319,39 +1554,39 @@ export default function OpexAccumulator({
               {/* Table Waterfall Flow Detail */}
               <div style={{ background: 'var(--bg-app)', padding: 14, borderRadius: 8, border: '1px solid var(--border-color)' }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--color-text)', marginBottom: 10, letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="fileText" size={13} color="var(--primary)" /> ALUR DETAIL PENDAPATAN &amp; DISKON SEBELUM OPEX:
+                  <Icon name="fileText" size={13} color="var(--primary)" /> ALUR DETAIL CASH FLOW SEBELUM OPEX:
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7, fontSize: 12 }}>
                   <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)' }}>
-                    <span>1. Omset Penjualan Normal (List Price × Volume)</span>
+                    <span>1. Omset Penjualan Normal</span>
                     <span className="mono" style={{ fontWeight: 700 }}>{fmtRp(financialSummary.totalRevenue)}</span>
                   </div>
                   <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)', color: '#d97706' }}>
-                    <span>2. Potongan Diskon Promo Merchant / Toko</span>
+                    <span>2. Potongan Diskon Merchant</span>
                     <span className="mono" style={{ fontWeight: 700 }}>
                       {financialSummary.totalDiskon > 0 ? `- ${fmtRp(financialSummary.totalDiskon)}` : 'Rp 0'}
                     </span>
                   </div>
                   <div className="flex-between" style={{ padding: '6px 10px', background: '#f0f9ff', borderRadius: 6, color: '#0369a1', fontWeight: 800 }}>
-                    <span>= Revenue Efektif Real (Setelah Diskon)</span>
+                    <span>= Total Pembayaran Customer</span>
                     <span className="mono" style={{ fontSize: 13 }}>{fmtRp(financialSummary.totalEffectiveRevenue)}</span>
                   </div>
                   {financialSummary.totalPlatformCut > 0 && (
                     <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)', color: '#dc2626' }}>
-                      <span>3. Potongan Komisi &amp; Fee Platform Online</span>
+                      <span>3. Potongan Komisi Platform</span>
                       <span className="mono" style={{ fontWeight: 700 }}>- {fmtRp(financialSummary.totalPlatformCut)}</span>
                     </div>
                   )}
                   <div className="flex-between" style={{ padding: '6px 10px', background: '#eef2ff', borderRadius: 6, color: '#3730a3', fontWeight: 800 }}>
-                    <span>= Nett Revenue Diterima Kas Toko</span>
+                    <span>= Uang Masuk Merchant (Kas)</span>
                     <span className="mono" style={{ fontSize: 13 }}>{fmtRp(financialSummary.totalNetRevenue)}</span>
                   </div>
                   <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)', color: '#be123c' }}>
-                    <span>4. Total Direct HPP (Bahan Baku + Kemasan)</span>
+                    <span>4. Total Modal Produksi (Direct HPP)</span>
                     <span className="mono" style={{ fontWeight: 700 }}>- {fmtRp(financialSummary.totalCOGS)}</span>
                   </div>
                   <div className="flex-between" style={{ padding: '8px 10px', background: 'var(--bg-card)', border: '1.5px solid var(--primary)', borderRadius: 6, color: 'var(--primary)', fontWeight: 900 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="trophy" size={14} /> Gross Profit (Kontribusi Sebelum OPEX Terpusat)</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="trophy" size={14} /> Total Laba Setelah HPP</span>
                     <span className="mono" style={{ fontSize: 14 }}>{fmtRp(financialSummary.totalGrossProfit)}</span>
                   </div>
                 </div>
@@ -1372,70 +1607,80 @@ export default function OpexAccumulator({
           {/* Profitability Main Summary Card */}
           <div
             style={{
-              background: financialSummary.netProfit >= 0 
-                ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
-                : 'linear-gradient(135deg, #1e1b4b 0%, #31102f 100%)',
-              borderRadius: 14,
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius)',
               padding: 20,
-              boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-              color: '#fff',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              color: 'var(--color-text)',
               position: 'relative',
               overflow: 'hidden'
             }}
           >
-            <div style={{ position: 'absolute', right: '-10%', top: '-20%', width: 150, height: 150, borderRadius: '50%', background: financialSummary.netProfit >= 0 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', right: '-10%', top: '-20%', width: 150, height: 150, borderRadius: '50%', background: financialSummary.netProfit >= 0 ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)', filter: 'blur(30px)', pointerEvents: 'none' }} />
             
-            <div className="label-xs" style={{ color: '#64748b', marginBottom: 16 }}>📊 KINERJA FINANSIAL: {activeProfile.name}</div>
+            <div className="label-xs" style={{ color: 'var(--color-text-muted)', marginBottom: 16 }}>📊 KINERJA FINANSIAL: {activeProfile.name}</div>
             
             {/* Revenue Waterfall rows */}
             {[
-              { label: 'Omset Pendapatan Kotor', val: financialSummary.totalRevenue, valColor: '#e2e8f0' },
-              ...(financialSummary.totalDiskon > 0 ? [{ label: '↳ Diskon Merchant', val: -financialSummary.totalDiskon, valColor: '#fde68a', indent: true }] : []),
-              ...(financialSummary.totalDiskon > 0 ? [{ label: '= Revenue Setelah Diskon', val: financialSummary.totalEffectiveRevenue, valColor: '#60a5fa', bold: true }] : []),
-              ...(financialSummary.totalPlatformCut > 0 ? [{ label: '↳ Komisi Platform', val: -financialSummary.totalPlatformCut, valColor: '#fca5a5', indent: true }] : []),
-              ...(financialSummary.totalNetRevenue !== financialSummary.totalRevenue ? [{ label: '= Nett Revenue Diterima', val: financialSummary.totalNetRevenue, valColor: '#c7d2fe', bold: true }] : []),
-              { label: '− Total Direct HPP (COGS)', val: -financialSummary.totalCOGS, valColor: '#fed7aa' },
-              { label: '= Gross Profit (Kontribusi)', val: financialSummary.totalGrossProfit, valColor: '#a7f3d0', bold: true },
-              { label: '− Total OPEX Terpusat', val: -totalOpexVal, valColor: '#fde68a' },
-            ].map(({ label, val, valColor, bold, indent }) => (
+              { label: 'Pendapatan Customer (Kotor)', val: financialSummary.totalRevenue, valColor: 'var(--color-text)', pctOfEffective: false },
+              ...(financialSummary.totalDiskon > 0 ? [{ label: '↳ Total Diskon Merchant', val: -financialSummary.totalDiskon, valColor: '#dc2626', indent: true, pct: (financialSummary.totalDiskon / Math.max(1, financialSummary.totalRevenue)) * 100 }] : []),
+              ...(financialSummary.totalDiskon > 0 ? [{ label: '= Total Pembayaran Customer', val: financialSummary.totalEffectiveRevenue, valColor: '#3b82f6', bold: true }] : []),
+              ...(financialSummary.totalPlatformCut > 0 ? [{ label: '↳ Potongan Platform', val: -financialSummary.totalPlatformCut, valColor: '#dc2626', indent: true, pct: (financialSummary.totalPlatformCut / Math.max(1, financialSummary.totalEffectiveRevenue)) * 100 }] : []),
+              { label: '= Total Uang Masuk Merchant', val: financialSummary.totalNetRevenue, valColor: '#10b981', bold: true },
+              { label: '− Total Modal Produksi (HPP)', val: -financialSummary.totalCOGS, valColor: '#ea580c', pct: (financialSummary.totalCOGS / Math.max(1, financialSummary.totalEffectiveRevenue)) * 100 },
+              { label: '= Total Laba Setelah HPP', val: financialSummary.totalGrossProfit, valColor: '#10b981', bold: true },
+              { label: '− Total Biaya Operasional (Overhead)', val: -totalOpexVal, valColor: '#71717a', pct: (totalOpexVal / Math.max(1, financialSummary.totalEffectiveRevenue)) * 100 }
+            ].map(({ label, val, valColor, bold, indent, pct }) => (
               <div key={label} className="result-row" style={{
-                padding: '5px 0',
+                padding: '6px 0',
                 paddingLeft: indent ? 12 : 0,
-                borderBottom: bold ? '1px dashed rgba(255,255,255,0.08)' : 'none',
+                borderBottom: bold ? '1px dashed var(--border-color)' : 'none',
                 marginBottom: bold ? 4 : 0,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline'
               }}>
-                <span style={{ fontSize: indent ? 11 : 12, color: indent ? '#64748b' : '#94a3b8' }}>{label}</span>
-                <span className="mono" style={{ fontWeight: bold ? 800 : 600, fontSize: bold ? 14 : 12, color: valColor }}>
-                  {val < 0 ? `- ${fmtRp(Math.abs(val))}` : fmtRp(val)}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: indent ? 11 : 12, fontWeight: bold ? 700 : 500, color: indent ? 'var(--color-text-muted)' : 'var(--color-text)' }}>{label}</span>
+                </div>
+                <span className="mono" style={{ fontWeight: bold ? 800 : 600, fontSize: bold ? 13 : 11, color: valColor }}>
+                  {val < 0 ? `− ${fmtRp(Math.abs(val))}` : fmtRp(val)}
+                  {pct !== undefined && (
+                    <span style={{ fontSize: 9, color: 'var(--color-text-muted)', marginLeft: 4, fontWeight: 500 }}>
+                      ({pct.toFixed(1)}%)
+                    </span>
+                  )}
                 </span>
               </div>
             ))}
 
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '12px 0' }} />
+            <div style={{ height: 1, background: 'var(--border-color)', margin: '12px 0' }} />
 
             {/* NET PROFIT CARD */}
             <div
               style={{
                 background: financialSummary.netProfit >= 0 
-                  ? 'rgba(16, 185, 129, 0.08)' 
-                  : 'rgba(239, 68, 68, 0.08)',
-                borderRadius: 10,
-                padding: '12px 14px',
+                  ? '#f0fdf4' 
+                  : '#fef2f2',
+                borderRadius: 'var(--radius)',
+                padding: '14px 16px',
                 border: `1.5px solid ${financialSummary.netProfit >= 0 ? '#10b981' : '#ef4444'}`,
-                textAlign: 'center'
+                textAlign: 'center',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
               }}
             >
-              <div style={{ fontSize: 11, fontWeight: 700, color: financialSummary.netProfit >= 0 ? '#34d399' : '#f87171', marginBottom: 4 }}>
-                {financialSummary.netProfit >= 0 ? '🏆 ESTIMASI PROFIT BERSIH FINAL' : '🚨 ESTIMASI RUGI BERSIH'}
+              <div style={{ fontSize: 11, fontWeight: 800, color: financialSummary.netProfit >= 0 ? '#15803d' : '#b91c1c', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {financialSummary.netProfit >= 0 ? '🏆 Laba Bersih Akhir' : '🚨 Estimasi Rugi Bersih'}
               </div>
-              <div className="mono" style={{ fontWeight: 900, fontSize: 24, color: '#fff' }}>
-                {financialSummary.netProfit < 0 ? `- ${fmtRp(Math.abs(financialSummary.netProfit))}` : fmtRp(financialSummary.netProfit)}
+              <div className="mono" style={{ fontWeight: 900, fontSize: 22, color: financialSummary.netProfit >= 0 ? '#15803d' : '#b91c1c' }}>
+                {financialSummary.netProfit < 0 ? `− ${fmtRp(Math.abs(financialSummary.netProfit))}` : fmtRp(financialSummary.netProfit)}
+                <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 4 }}>
+                  ({(financialSummary.netProfit / Math.max(1, financialSummary.totalEffectiveRevenue) * 100).toFixed(1)}%)
+                </span>
               </div>
-              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.5 }}>
-                Gross Profit ({fmtRp(financialSummary.totalGrossProfit)}) − OPEX ({fmtRp(totalOpexVal)})
-                {financialSummary.totalPlatformCut > 0 && (
-                  <span> | Platform cut: {fmtRp(financialSummary.totalPlatformCut)}</span>
-                )}
+              <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 4, lineHeight: 1.5 }}>
+                Rumus: Laba Setelah HPP ({fmtRp(financialSummary.totalGrossProfit)}) − Biaya Operasional ({fmtRp(totalOpexVal)})
               </div>
             </div>
           </div>

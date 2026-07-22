@@ -192,57 +192,55 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
               className="hpp-input"
               rows={3}
               placeholder="Tambahkan catatan, tips penyajian, atau informasi tambahan tentang menu ini…"
-              value={menu.notes}
+              value={menu.notes || ''}
               onChange={e => onUpdate({ notes: e.target.value })}
               style={{ resize: 'vertical', lineHeight: 1.6 }}
             />
           </div>
         </div>
       </div>
-
-      {/* ══ RIGHT PANEL ═══════════════════════════════════════ */}
       <div className="result-sticky" style={{ position: 'sticky', top: 90 }}>
 
         {/* Total HPP dark card */}
         <div className="result-dark-card">
-          <div className="label-xs" style={{ color: '#475569', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="label-xs" style={{ color: 'var(--color-text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name={menu.emoji || 'coffee'} size={14} color="var(--primary)" /> {menu.name || 'Menu'}
           </div>
 
           {[
-            { dot: '#818cf8', label: 'Bahan Baku', val: hppBahanBaku, valColor: '#c7d2fe' },
-            { dot: '#fb923c', label: 'Kemasan', val: hppKemasan, valColor: '#fed7aa' },
+            { dot: '#6366f1', label: 'Bahan Baku', val: hppBahanBaku, valColor: 'var(--color-text)' },
+            { dot: '#f97316', label: 'Kemasan', val: hppKemasan, valColor: 'var(--color-text)' },
           ].map(({ dot, label, val, valColor }) => (
-            <div key={label} className="result-row">
+            <div key={label} className="result-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 12 }}>
               <div className="flex-center gap-2">
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>{label}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
               </div>
               <span className="mono" style={{ fontWeight: 700, fontSize: 13, color: valColor }}>{fmtRp(val)}</span>
             </div>
           ))}
 
-          <div className="flex-between" style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <span style={{ fontSize: 12, color: '#94a3b8' }}>TOTAL HPP / {targetUnit.toUpperCase()}</span>
-            <div style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius: 9, padding: '5px 14px' }}>
-              <span className="mono" style={{ fontWeight: 900, fontSize: 20, color: '#fff' }}>{fmtRp(totalHPP)}</span>
+          <div className="flex-between" style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 600 }}>TOTAL HPP / {targetUnit.toUpperCase()}</span>
+            <div style={{ background: 'var(--primary)', borderRadius: 'var(--radius)', padding: '5px 14px' }}>
+              <span className="mono" style={{ fontWeight: 900, fontSize: 18, color: '#fff' }}>{fmtRp(totalHPP)}</span>
             </div>
           </div>
           {pcsPerPortion > 1 && (
-            <div className="flex-between" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed rgba(255,255,255,0.07)' }}>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>TOTAL HPP / {subUnitLabel.toUpperCase()}</span>
-              <span className="mono" style={{ fontWeight: 800, fontSize: 14, color: '#a5b4fc' }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
+            <div className="flex-between" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-color)', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>TOTAL HPP / {subUnitLabel.toUpperCase()}</span>
+              <span className="mono" style={{ fontWeight: 800, fontSize: 13, color: 'var(--color-text)' }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
             </div>
           )}
 
           {totalHPP > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 10, color: '#475569', marginBottom: 5 }}>Komposisi HPP</div>
-              <div className="progress-bar">
-                <div className="progress-segment" style={{ width: `${pct.bb}%`, background: '#818cf8' }} />
-                <div className="progress-segment" style={{ width: `${pct.km}%`, background: '#fb923c' }} />
+              <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginBottom: 5 }}>Komposisi HPP</div>
+              <div className="progress-bar" style={{ display: 'flex', height: 8, borderRadius: 9999, background: '#f4f4f5', overflow: 'hidden' }}>
+                <div className="progress-segment" style={{ width: `${pct.bb}%`, background: '#6366f1' }} />
+                <div className="progress-segment" style={{ width: `${pct.km}%`, background: '#f97316' }} />
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 5, fontSize: 10, color: '#64748b' }}>
+              <div style={{ display: 'flex', gap: 10, marginTop: 5, fontSize: 10, color: 'var(--color-text-muted)' }}>
                 <span>• {pct.bb.toFixed(0)}% Bahan</span>
                 <span>• {pct.km.toFixed(0)}% Kemasan</span>
               </div>
@@ -253,27 +251,26 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
         {/* ── Platform Breakdown Card (right panel) ── */}
         {activePlatform.enabled && hargaJualBulat > 0 && (
           <div className="platform-breakdown-card animate-fade-in">
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Icon name="chart" size={13} color="#fca5a5" /> Ringkasan Profitabilitas Realistis
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="chart" size={13} color="var(--color-text-muted)" /> Ringkasan Profitabilitas Realistis
             </div>
 
             {/* 4-segment bar */}
             <div style={{ marginBottom: 12 }}>
-              <div className="progress-bar" style={{ height: 12, borderRadius: 6, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-                <div className="progress-segment" style={{ width: `${pctBreakdown.hpp}%`, background: 'linear-gradient(90deg,#818cf8,#6366f1)', borderRadius: '6px 0 0 6px' }} />
-                <div className="progress-segment" style={{ width: `${pctBreakdown.diskon}%`, background: 'linear-gradient(90deg,#fcd34d,#f59e0b)' }} />
-                <div className="progress-segment" style={{ width: `${pctBreakdown.platform}%`, background: 'linear-gradient(90deg,#f87171,#dc2626)' }} />
+              <div className="progress-bar" style={{ height: 10, borderRadius: 9999, background: '#f4f4f5', overflow: 'hidden', display: 'flex' }}>
+                <div className="progress-segment" style={{ width: `${pctBreakdown.hpp}%`, background: '#6366f1' }} />
+                <div className="progress-segment" style={{ width: `${pctBreakdown.diskon}%`, background: '#f59e0b' }} />
+                <div className="progress-segment" style={{ width: `${pctBreakdown.platform}%`, background: '#ef4444' }} />
                 <div className="progress-segment" style={{
                   width: `${pctBreakdown.profit}%`,
-                  background: netProfit >= 0 ? 'linear-gradient(90deg,#34d399,#10b981)' : 'linear-gradient(90deg,#6b7280,#374151)',
-                  borderRadius: '0 6px 6px 0'
+                  background: netProfit >= 0 ? '#10b981' : '#6b7280'
                 }} />
               </div>
-              <div style={{ display: 'flex', gap: 6, marginTop: 5, fontSize: 9, flexWrap: 'wrap' }}>
-                <span style={{ color: '#818cf8', fontWeight: 600 }}>• {pctBreakdown.hpp.toFixed(0)}% HPP</span>
-                {diskonNominal > 0 && <span style={{ color: '#fcd34d', fontWeight: 600 }}>• {pctBreakdown.diskon.toFixed(0)}% Diskon</span>}
-                <span style={{ color: '#f87171', fontWeight: 600 }}>• {pctBreakdown.platform.toFixed(0)}% Platform</span>
-                <span style={{ color: netProfit >= 0 ? '#34d399' : '#9ca3af', fontWeight: 600 }}>
+              <div style={{ display: 'flex', gap: 6, marginTop: 5, fontSize: 9, flexWrap: 'wrap', color: 'var(--color-text-muted)' }}>
+                <span style={{ color: '#6366f1', fontWeight: 600 }}>• {pctBreakdown.hpp.toFixed(0)}% HPP</span>
+                {diskonNominal > 0 && <span style={{ color: '#f59e0b', fontWeight: 600 }}>• {pctBreakdown.diskon.toFixed(0)}% Diskon</span>}
+                <span style={{ color: '#ef4444', fontWeight: 600 }}>• {pctBreakdown.platform.toFixed(0)}% Platform</span>
+                <span style={{ color: netProfit >= 0 ? '#10b981' : '#6b7280', fontWeight: 600 }}>
                   • {pctBreakdown.profit.toFixed(0)}% Profit
                 </span>
               </div>
@@ -281,43 +278,41 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
 
             {/* Summary rows */}
             {[
-              { label: 'Harga Jual', val: hargaJualBulat, color: '#94a3b8' },
-              ...(diskonNominal > 0 ? [{ label: `− Diskon Merchant`, val: diskonNominal, color: '#fde68a' }] : []),
-              { label: `− Komisi ${activePlatform.name}`, val: totalKomisi, color: '#fca5a5' },
-              { label: '= Nett Revenue', val: revenueBersih, color: '#e2e8f0', bold: true },
-              { label: `− HPP (Bahan + Kemasan)`, val: totalHPP, color: '#a5b4fc' },
+              { label: 'Harga Jual', val: hargaJualBulat, color: 'var(--color-text)' },
+              ...(diskonNominal > 0 ? [{ label: `− Diskon Merchant`, val: diskonNominal, color: '#d97706' }] : []),
+              { label: `− Komisi ${activePlatform.name}`, val: totalKomisi, color: '#dc2626' },
+              { label: '= Nett Revenue', val: revenueBersih, color: 'var(--color-text)', bold: true },
+              { label: `− HPP (Bahan + Kemasan)`, val: totalHPP, color: 'var(--color-text-muted)' },
             ].map(({ label, val, color, bold }) => (
               <div key={label} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '3px 0', borderBottom: '1px dashed rgba(255,255,255,0.06)'
+                padding: '5px 0', borderBottom: '1px dashed var(--border-color)'
               }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
                 <span className="mono" style={{ fontSize: 12, fontWeight: bold ? 800 : 600, color }}>{fmtRp(val)}</span>
               </div>
             ))}
 
             {/* Net Profit Final */}
             <div style={{
-              marginTop: 10, padding: '10px 12px', borderRadius: 10,
-              background: netProfit >= 0
-                ? 'linear-gradient(135deg,rgba(16,185,129,0.18),rgba(52,211,153,0.1))'
-                : 'linear-gradient(135deg,rgba(239,68,68,0.22),rgba(220,38,38,0.15))',
-              border: `1px solid ${netProfit >= 0 ? 'rgba(52,211,153,0.35)' : 'rgba(239,68,68,0.45)'}`,
+              marginTop: 10, padding: '10px 12px', borderRadius: 'var(--radius)',
+              background: netProfit >= 0 ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${netProfit >= 0 ? '#bbf7d0' : '#fecaca'}`,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: netProfit >= 0 ? '#a7f3d0' : '#fecaca', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name={netProfit >= 0 ? "checkCircle" : "alert"} size={12} color={netProfit >= 0 ? "#4ade80" : "#f87171"} />
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: netProfit >= 0 ? '#16a34a' : '#dc2626', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name={netProfit >= 0 ? "checkCircle" : "alert"} size={12} color={netProfit >= 0 ? "#16a34a" : "#dc2626"} />
                     {netProfit >= 0 ? 'PROFIT BERSIH FINAL' : 'MERUGI'}
                   </div>
-                  <div style={{ fontSize: 10, color: '#64748b' }}>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
                     Margin bersih: {marginPct.toFixed(1)}%
                     {marginPct > 20 ? ' — Sehat' : marginPct > 0 ? ' — Tipis' : ' — Rugi'}
                   </div>
                 </div>
                 <div className="mono" style={{
                   fontSize: 20, fontWeight: 900,
-                  color: netProfit >= 0 ? '#4ade80' : '#f87171',
+                  color: netProfit >= 0 ? '#16a34a' : '#dc2626',
                   letterSpacing: '-0.02em'
                 }}>
                   {fmtRp(netProfit)}
@@ -326,89 +321,104 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
             </div>
           </div>
         )}
+
         {/* Pricing */}
         <div className="section-card" style={{ marginBottom: 14 }}>
-          <SectionHeader iconEmoji="tag" iconBg="#ecfdf5" title="Penetapan Harga Jual" badgeText="PRICING" badgeClass="badge-emerald" />
+          <SectionHeader iconEmoji="tag" iconBg="#f4f4f5" title="Penetapan Harga Jual" badgeText="PRICING" badgeClass="badge-slate" />
           <div className="section-body">
             <div style={{ marginBottom: 14 }}>
-              <div className="flex-between" style={{ marginBottom: 8 }}>
+              <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span className="label-sm">Target Profit Margin</span>
-                <div className="mono" style={{ background: '#6366f1', color: '#fff', borderRadius: 6, padding: '2px 12px', fontWeight: 800, fontSize: 16 }}>
+                <div className="mono" style={{ background: 'var(--primary)', color: '#fff', borderRadius: 'var(--radius)', padding: '2px 12px', fontWeight: 800, fontSize: 16 }}>
                   {margin}%
                 </div>
               </div>
               <input className="hpp-slider" type="range" min="5" max="90"
                 value={margin} onChange={e => setMargin(Number(e.target.value))} style={sliderBg} />
-              <div className="flex-between" style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>
+              <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--color-text-muted)', marginTop: 4 }}>
                 <span>5% minimal</span><span>45–55% standar F&B</span><span>90% premium</span>
               </div>
             </div>
 
             {/* Presets */}
-            <div style={{ display: 'flex', gap: 5, marginBottom: 14, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
               {[30, 40, 45, 50, 55, 60, 70].map(m => (
-                <button key={m} onClick={() => setMargin(m)} className={`btn-preset ${margin === m ? 'active' : ''}`} style={{
-                  padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                  fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
-                  fontFamily: 'Inter,sans-serif'
-                }}>{m}%</button>
+                <button 
+                  key={m} 
+                  onClick={() => setMargin(m)} 
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: margin === m ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                    background: margin === m ? 'var(--primary)' : 'var(--bg-card)',
+                    color: margin === m ? '#fff' : 'var(--color-text)',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {m}%
+                </button>
               ))}
             </div>
 
-            <div className="price-card">
+            <div className="price-card" style={{ border: '1px solid var(--border-color)', background: 'var(--bg-app)', padding: 14, borderRadius: 'var(--radius)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                <div className="metric-card bg-accent-green" style={{ border: '1px solid' }}>
-                  <span className="label-xs">HPP / {targetUnit}</span>
-                  <span className="mono" style={{ fontWeight: 800, fontSize: 14 }}>{fmtRp(totalHPP)}</span>
+                <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span className="label-xs" style={{ fontSize: 9 }}>HPP / {targetUnit.toUpperCase()}</span>
+                  <span className="mono" style={{ fontWeight: 800, fontSize: 13 }}>{fmtRp(totalHPP)}</span>
                 </div>
-                <div className="metric-card bg-accent-green" style={{ border: '1px solid' }}>
-                  <span className="label-xs">Profit / {targetUnit}</span>
-                  <span className="mono" style={{ fontWeight: 800, fontSize: 14 }}>{fmtRp(profitPerCup)}</span>
+                <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span className="label-xs" style={{ fontSize: 9 }}>Profit / {targetUnit.toUpperCase()}</span>
+                  <span className="mono" style={{ fontWeight: 800, fontSize: 13, color: profitPerCup > 0 ? '#10b981' : '#ef4444' }}>{fmtRp(profitPerCup)}</span>
                 </div>
                 {pcsPerPortion > 1 && (
                   <>
-                    <div className="metric-card" style={{ background: 'transparent', border: '1px dashed var(--border-color)' }}>
-                      <span className="label-xs">HPP / {subUnitLabel}</span>
-                      <span className="mono" style={{ fontWeight: 800, fontSize: 13 }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
+                    <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span className="label-xs" style={{ fontSize: 9 }}>HPP / {subUnitLabel.toUpperCase()}</span>
+                      <span className="mono" style={{ fontWeight: 800, fontSize: 12 }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
                     </div>
-                    <div className="metric-card" style={{ background: 'transparent', border: '1px dashed var(--border-color)' }}>
-                      <span className="label-xs">Profit / {subUnitLabel}</span>
-                      <span className="mono" style={{ fontWeight: 800, fontSize: 13 }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion))}</span>
+                    <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span className="label-xs" style={{ fontSize: 9 }}>Profit / {subUnitLabel.toUpperCase()}</span>
+                      <span className="mono" style={{ fontWeight: 800, fontSize: 12, color: (roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion)) > 0 ? '#10b981' : '#ef4444' }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion))}</span>
                     </div>
                   </>
                 )}
               </div>
 
               {/* Main price */}
-              <div className="bg-accent-green" style={{ borderRadius: 10, border: '2px solid', padding: '12px', textAlign: 'center' }}>
+              <div style={{ borderRadius: 'var(--radius)', background: 'rgba(0, 102, 204, 0.04)', border: '2px solid var(--primary)', padding: '12px', textAlign: 'center' }}>
                 <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <Icon name="info" size={13} /> Rekomendasi Harga Jual ({targetUnit})
+                  <Icon name="info" size={13} color="var(--primary)" /> Rekomendasi Harga Jual ({targetUnit})
                 </div>
-                <div className="mono" style={{ fontWeight: 900, fontSize: 24 }}>{fmtRp(hargaJualBulat)}</div>
+                <div className="mono" style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary)' }}>{fmtRp(hargaJualBulat)}</div>
                 
                 {pcsPerPortion > 1 && (
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed' }}>
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border-color)' }}>
                     <div style={{ fontSize: 10, fontWeight: 600, marginBottom: 2 }}>Harga Jual per {subUnitLabel}</div>
-                    <div className="mono" style={{ fontWeight: 800, fontSize: 18 }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion))}</div>
+                    <div className="mono" style={{ fontWeight: 800, fontSize: 16 }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion))}</div>
                   </div>
                 )}
 
-                <div style={{ fontSize: 10, marginTop: 3 }}>
+                <div style={{ fontSize: 10, marginTop: 4, color: 'var(--color-text-muted)' }}>
                   {fmtRp(totalHPP)} ÷ (1−{margin}%) → dibulatkan
                 </div>
                 {hargaJual !== hargaJualBulat && (
-                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 1 }}>
                     Harga asli: {fmtRp(hargaJual)} | Margin aktual: {marginAktual.toFixed(1)}%
                   </div>
                 )}
               </div>
 
               {/* Margin zone */}
-              <div className={margin < 30 ? 'bg-accent-orange' : 'bg-accent-green'} style={{
-                marginTop: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid'
+              <div style={{
+                marginTop: 10, padding: '8px 10px', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)',
+                background: margin < 30 ? '#fffbeb' : '#f0fdf4',
+                color: margin < 30 ? '#d97706' : '#16a34a'
               }}>
                 <div style={{ fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name={margin < 30 ? "alert" : "checkCircle"} size={13} />
+                  <Icon name={margin < 30 ? "alert" : "checkCircle"} size={13} color={margin < 30 ? '#d97706' : '#16a34a'} />
                   {margin < 30 ? 'Margin rendah — risiko bisnis tinggi' :
                     margin < 50 ? 'Margin sehat — standar industri F&B' :
                       margin < 70 ? 'Margin bagus — produk premium' :
@@ -419,22 +429,22 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
 
             {/* Monthly estimate */}
             {num(ops.estimasiCup) > 0 && (
-              <div style={{ marginTop: 10, background: '#1e293b', borderRadius: 10, padding: '12px 14px' }}>
-                <div className="label-xs" style={{ color: '#475569', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name="chart" size={12} color="#475569" /> Estimasi Profit Bulanan
+              <div style={{ marginTop: 10, background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
+                <div className="label-xs" style={{ color: 'var(--color-text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="chart" size={12} color="var(--color-text-muted)" /> Estimasi Profit Bulanan
                 </div>
-                <div className="flex-between">
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                     {num(ops.estimasiCup).toLocaleString('id-ID')} {targetUnit} × {fmtRp(profitPerCup)}
                   </span>
-                  <span className="mono" style={{ fontWeight: 800, fontSize: 17, color: '#4ade80' }}>
+                  <span className="mono" style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>
                     {fmtRp(profitPerCup * num(ops.estimasiCup))}
                   </span>
                 </div>
-                <div style={{ height: 1, background: '#334155', margin: '8px 0' }} />
-                <div className="flex-between">
-                  <span style={{ fontSize: 11, color: '#64748b' }}>Omset Bruto Bulanan</span>
-                  <span className="mono" style={{ fontSize: 12, color: '#94a3b8' }}>
+                <div style={{ height: 1, background: 'var(--border-color)', margin: '8px 0' }} />
+                <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Omset Bruto Bulanan</span>
+                  <span className="mono" style={{ fontSize: 12, color: 'var(--color-text)' }}>
                     {fmtRp(hargaJualBulat * num(ops.estimasiCup))}
                   </span>
                 </div>
@@ -447,8 +457,8 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
 
         {/* Info */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '12px 14px' }}>
-          <div className="flex-center gap-2" style={{ alignItems: 'flex-start' }}>
-            <Icon name="info" size={13} />
+          <div className="flex-center gap-2" style={{ display: 'flex', alignItems: 'flex-start' }}>
+            <span style={{ marginTop: 2, display: 'inline-block' }}><Icon name="info" size={13} color="var(--primary)" /></span>
             <div style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
               <strong style={{ color: 'var(--color-text)' }}>Rumus Harga Jual:</strong>
               <code style={{ background: 'var(--bg-app)', padding: '1px 5px', borderRadius: 4, fontSize: 11, marginLeft: 4, color: 'var(--color-text)' }}>
