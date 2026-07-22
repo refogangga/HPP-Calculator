@@ -6,7 +6,8 @@ import { ToastContainer, MenuMetaModal } from '../components/HppSubComponents';
 import HppCalculator from '../components/HppCalculator';
 import MenuDatabase from '../components/MenuDatabase';
 import OpexAccumulator from '../components/OpexAccumulator';
-import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, loadOpexProfiles, saveOpexProfiles, mkOpexProfile } from '../utils/hpp';
+import ChannelPresetsModal from '../components/ChannelPresetsModal';
+import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, loadOpexProfiles, saveOpexProfiles, mkOpexProfile, loadChannelPresets, saveChannelPresets } from '../utils/hpp';
 import * as XLSX from 'xlsx';
 
 export default function Home() {
@@ -18,6 +19,8 @@ export default function Home() {
   const [showMeta, setShowMeta] = useState(false);
   const [opexProfiles, setOpexProfiles] = useState([]);
   const [activeProfileId, setActiveProfileId] = useState(null);
+  const [channelPresets, setChannelPresets] = useState([]);
+  const [showChannelModal, setShowChannelModal] = useState(false);
 
 
   /* ── Toast helpers ── */
@@ -93,6 +96,9 @@ export default function Home() {
         setActiveId(finalMenus[0]?.id || null);
         setOpexProfiles(finalProfiles);
         setActiveProfileId(finalProfiles[0]?.id || null);
+
+        const loadedPresets = loadChannelPresets();
+        setChannelPresets(loadedPresets);
       } catch (error) {
         console.error("Gagal memuat data dari database. Memakai fallback LocalStorage.", error);
         const localMenus = loadDB();
@@ -103,6 +109,9 @@ export default function Home() {
         const localProfiles = loadOpexProfiles();
         setOpexProfiles(localProfiles);
         setActiveProfileId(localProfiles[0]?.id || null);
+
+        const loadedPresets = loadChannelPresets();
+        setChannelPresets(loadedPresets);
         showToast('Menghubungkan ke database gagal. Memakai data cadangan browser.', 'alert');
       }
     };
@@ -123,6 +132,13 @@ export default function Home() {
       saveOpexProfiles(opexProfiles);
     }
   }, [opexProfiles, isMounted]);
+
+  // Save Channel Presets whenever they change
+  useEffect(() => {
+    if (isMounted && channelPresets.length > 0) {
+      saveChannelPresets(channelPresets);
+    }
+  }, [channelPresets, isMounted]);
 
   const handleSaveAll = useCallback(async () => {
     try {
@@ -220,16 +236,7 @@ export default function Home() {
 
     const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
     const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
-    const py = getPenyusutanBulanan(m.ops);
-    const expensesList = m.ops.expenses || [
-      { id: 'listrik', name: '⚡ Listrik & Air', value: num(m.ops.listrik) },
-      { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
-      { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
-    ];
-    const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
-    const totalOps = totalExpenses + py;
-    const opsPerCup = num(m.ops.estimasiCup) > 0 ? totalOps / num(m.ops.estimasiCup) : 0;
-    const hpp = bb + km + opsPerCup;
+    const hpp = bb + km;
     const hargaJual = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
     const hargaJualBulat = roundPrice(hargaJual);
     const profit = hargaJualBulat - hpp;
@@ -241,7 +248,6 @@ export default function Home() {
       'Satuan Utama': targetUnit,
       'HPP Bahan Baku (per Satuan Utama)': bb,
       'HPP Kemasan (per Satuan Utama)': km,
-      'HPP Operasional (per Satuan Utama)': opsPerCup,
       'Total HPP (per Satuan Utama)': hpp,
       'Rekomendasi Harga Jual (Satuan Utama)': hargaJualBulat,
       'Profit per Satuan Utama': profit,
@@ -294,16 +300,6 @@ export default function Home() {
     details.push({ A: 'Sub-total Kemasan', F: km });
     details.push({});
 
-    details.push({ A: '3. BIAYA OPERASIONAL & OVERHEAD' });
-    expensesList.forEach(exp => {
-      details.push({ A: exp.name, F: num(exp.value) });
-    });
-    details.push({ A: 'Penyusutan Aset', F: py });
-    details.push({ A: 'Total Ops Bulanan', F: totalOps });
-    details.push({ A: 'Estimasi Penjualan (Cup/bln)', F: num(m.ops.estimasiCup) });
-    details.push({ A: 'Beban Ops per Cup', F: opsPerCup });
-    details.push({});
-
     details.push({ A: 'RINGKASAN AKHIR' });
     details.push({ A: `TOTAL HPP per ${targetUnit}`, F: hpp });
     details.push({ A: `Harga Jual per ${targetUnit}`, F: hargaJualBulat });
@@ -344,21 +340,8 @@ export default function Home() {
     // Recalculate for print
     const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
     const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
-    const py = getPenyusutanBulanan(m.ops);
-    const expensesList = m.ops.expenses || [
-      { id: 'listrik', name: '⚡ Listrik & Air', value: num(m.ops.listrik) },
-      { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
-      { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
-    ];
-    const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
-    const ops = totalExpenses + py;
     
-    const expenseLines = expensesList.map(exp => {
-      return `  ${(exp.name || 'Pengeluaran').padEnd(28)} : ${fmtRp(num(exp.value))}`;
-    }).join('\n');
-    
-    const opsPerCup = num(m.ops.estimasiCup) > 0 ? ops / num(m.ops.estimasiCup) : 0;
-    const hpp = bb + km + opsPerCup;
+    const hpp = bb + km;
     const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
     const hjb = roundPrice(hj);
 
@@ -396,14 +379,6 @@ ${lines}
 ${pkgLines}
   Sub-total Kemasan            : ${fmtRp(km)}
 
-  ──── OPERASIONAL (Bulanan) ──────────────────
-${expenseLines}
-  Penyusutan Aset              : ${fmtRp(py)}
-  ────────────────────────────────────────────
-  Total Ops Bulanan            : ${fmtRp(ops)}
-  Estimasi Penjualan           : ${num(m.ops.estimasiCup).toLocaleString('id-ID')} ${targetUnit}/bln
-  Beban Ops per ${targetUnit.padEnd(15)}: ${fmtRp(opsPerCup)}
-
   ════════════════════════════════════════════
 ${finalPortionLines.trim()}
   ════════════════════════════════════════════
@@ -420,7 +395,9 @@ ${finalPortionLines.trim()}
   if (!isMounted) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 16, background: 'var(--bg-app)' }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#0066cc,#2997ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>☕</div>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#0066cc,#2997ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+          <Icon name="coffee" size={24} />
+        </div>
         <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 15, fontWeight: 600, color: 'var(--color-text-muted)' }}>Memuat Kalkulator HPP…</div>
         <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 12, color: 'var(--color-text-muted)', opacity: 0.8 }}>Harap tunggu sebentar</div>
       </div>
@@ -433,7 +410,9 @@ ${finalPortionLines.trim()}
       {/* ── Top Bar ── */}
       <div className="topbar">
         <div className="flex-center gap-3">
-          <div className="topbar-logo">☕</div>
+          <div className="topbar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="coffee" size={18} color="#fff" />
+          </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>Kalkulator HPP F&B</div>
             <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Harga Pokok Penjualan — Real-Time</div>
@@ -443,6 +422,9 @@ ${finalPortionLines.trim()}
 
           {view === 'calculator' && activeMenu && (
             <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Master Channel Penjualan (ShopeeFood, GoFood, Grab, dll)">
+                <Icon name="store" size={12} /> Preset Channel
+              </button>
               <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
                 <Icon name="print" size={12} /> Cetak
               </button>
@@ -452,8 +434,18 @@ ${finalPortionLines.trim()}
             </>
           )}
           {view === 'opex' && opexProfiles.length > 0 && (
-            <button className="btn btn-ghost btn-sm" onClick={handleSaveAll}>
-              <Icon name="save" size={12} /> Simpan Semua
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Master Channel Penjualan">
+                <Icon name="store" size={12} /> Preset Channel
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={handleSaveAll}>
+                <Icon name="save" size={12} /> Simpan Semua
+              </button>
+            </>
+          )}
+          {view === 'database' && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Master Channel Penjualan">
+              <Icon name="store" size={12} /> Preset Channel
             </button>
           )}
           <span style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', height: 20, margin: '0 4px' }} />
@@ -479,7 +471,7 @@ ${finalPortionLines.trim()}
       {view === 'calculator' && activeMenu && (
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', padding: '10px 28px' }}>
           <div className="flex-center gap-3" style={{ flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 20 }}>{activeMenu.emoji}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center' }}><Icon name={activeMenu.emoji} size={20} color="var(--primary)" /></span>
             <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--color-text)' }}>{activeMenu.name}</span>
             <button
               onClick={() => setShowMeta(true)}
@@ -526,7 +518,7 @@ ${finalPortionLines.trim()}
                 >
                   {menus.map(m => (
                     <option key={m.id} value={m.id}>
-                      {m.emoji} {m.name}
+                      {m.name}
                     </option>
                   ))}
                 </select>
@@ -545,7 +537,7 @@ ${finalPortionLines.trim()}
       {view === 'opex' && opexProfiles.length > 0 && (
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', padding: '10px 28px' }}>
           <div className="flex-center gap-3" style={{ flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 20 }}>🏪</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center' }}><Icon name="store" size={20} color="var(--primary)" /></span>
             <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--color-text)' }}>{activeProfile?.name || 'Profil Toko'}</span>
             <button
               onClick={() => {
@@ -648,10 +640,18 @@ ${finalPortionLines.trim()}
       {/* ── Main Content ── */}
       {view === 'calculator' && (
         activeMenu ? (
-          <HppCalculator menu={activeMenu} onUpdate={updateActiveMenu} showToast={showToast} />
+          <HppCalculator
+            menu={activeMenu}
+            onUpdate={updateActiveMenu}
+            showToast={showToast}
+            channelPresets={channelPresets}
+            onOpenChannelModal={() => setShowChannelModal(true)}
+          />
         ) : (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>☕</div>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+              <Icon name="coffee" size={48} color="var(--primary)" />
+            </div>
             <button className="btn btn-primary" onClick={addMenu}>
               <Icon name="plus" size={14} /> Buat Menu Pertama
             </button>
@@ -721,6 +721,8 @@ ${finalPortionLines.trim()}
             setActiveId(menuId);
             setView('calculator');
           }}
+          channelPresets={channelPresets}
+          onOpenChannelModal={() => setShowChannelModal(true)}
         />
       )}
 
@@ -732,6 +734,17 @@ ${finalPortionLines.trim()}
           onClose={() => setShowMeta(false)}
         />
       )}
+
+      <ChannelPresetsModal
+        isOpen={showChannelModal}
+        onClose={() => setShowChannelModal(false)}
+        channelPresets={channelPresets}
+        onSavePresets={(updated) => {
+          setChannelPresets(updated);
+          saveChannelPresets(updated);
+        }}
+        showToast={showToast}
+      />
 
       {/* Footer */}
       <div style={{

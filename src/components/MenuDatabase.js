@@ -23,16 +23,7 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
       return s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup);
     }, 0);
     const km = menu.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
-    const py = getPenyusutanBulanan(menu.ops);
-    const expensesList = menu.ops.expenses || [
-      { id: 'listrik', name: '⚡ Listrik & Air', value: num(menu.ops.listrik) },
-      { id: 'gaji', name: '👤 Gaji Karyawan', value: num(menu.ops.gaji) },
-      { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(menu.ops.lainLain) }
-    ];
-    const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
-    const totalOps = totalExpenses + py;
-    const opsPerCup = num(menu.ops.estimasiCup) > 0 ? totalOps / num(menu.ops.estimasiCup) : 0;
-    const hpp = bb + km + opsPerCup;
+    const hpp = bb + km;
     const hargaJual = menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100);
     return { hpp, hargaJual: roundPrice(hargaJual) };
   };
@@ -74,16 +65,7 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
 
       const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
       const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
-      const py = getPenyusutanBulanan(m.ops);
-      const expensesList = m.ops.expenses || [
-        { id: 'listrik', name: '⚡ Listrik & Air', value: num(m.ops.listrik) },
-        { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
-        { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
-      ];
-      const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
-      const totalOps = totalExpenses + py;
-      const opsPerCup = num(m.ops.estimasiCup) > 0 ? totalOps / num(m.ops.estimasiCup) : 0;
-      const hpp = bb + km + opsPerCup;
+      const hpp = bb + km;
       const hargaJual = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
       const hargaJualBulat = roundPrice(hargaJual);
       const profit = hargaJualBulat - hpp;
@@ -95,7 +77,6 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
         'Satuan Utama': targetUnit,
         'HPP Bahan Baku (per Satuan Utama)': bb,
         'HPP Kemasan (per Satuan Utama)': km,
-        'HPP Operasional (per Satuan Utama)': opsPerCup,
         'Total HPP (per Satuan Utama)': hpp,
         'Rekomendasi Harga Jual (Satuan Utama)': hargaJualBulat,
         'Profit per Satuan Utama': profit,
@@ -153,25 +134,7 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
       details.push({ A: 'Sub-total Kemasan', F: kmTotal });
       details.push({});
 
-      details.push({ A: '3. BIAYA OPERASIONAL & OVERHEAD' });
-      const py = getPenyusutanBulanan(m.ops);
-      const expensesList = m.ops.expenses || [
-        { id: 'listrik', name: '⚡ Listrik & Air', value: num(m.ops.listrik) },
-        { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
-        { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
-      ];
-      expensesList.forEach(exp => {
-        details.push({ A: exp.name, F: num(exp.value) });
-      });
-      details.push({ A: 'Penyusutan Aset', F: py });
-      const totalOps = expensesList.reduce((sum, exp) => sum + num(exp.value), 0) + py;
-      const opsPerCup = num(m.ops.estimasiCup) > 0 ? totalOps / num(m.ops.estimasiCup) : 0;
-      details.push({ A: 'Total Ops Bulanan', F: totalOps });
-      details.push({ A: 'Estimasi Penjualan (Cup/bln)', F: num(m.ops.estimasiCup) });
-      details.push({ A: 'Beban Ops per Cup', F: opsPerCup });
-      details.push({});
-
-      const totalHPP = bbTotal + kmTotal + opsPerCup;
+      const totalHPP = bbTotal + kmTotal;
       const hj = m.margin >= 100 ? 0 : totalHPP / (1 - m.margin / 100);
       const hjb = roundPrice(hj);
       const profit = hjb - totalHPP;
@@ -217,25 +180,11 @@ export default function MenuDatabase({ menus, activeId, onSelect, onAdd, onDelet
 
       const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
       const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
-      const py = getPenyusutanBulanan(m.ops);
-      const expensesList = m.ops.expenses || [
-        { id: 'listrik', name: '⚡ Listrik & Air', value: num(m.ops.listrik) },
-        { id: 'gaji', name: '👤 Gaji Karyawan', value: num(m.ops.gaji) },
-        { id: 'lainLain', name: '🌐 Lain-lain (sewa, dll)', value: num(m.ops.lainLain) }
-      ];
       const targetUnit = m.targetUnit || 'cup';
       const pcsPerPortion = m.pcsPerPortion || 1;
       const subUnitLabel = m.subUnitLabel || 'pcs';
 
-      const totalExpenses = expensesList.reduce((sum, exp) => sum + num(exp.value), 0);
-      const ops = totalExpenses + py;
-      
-      const expenseLines = expensesList.map(exp => {
-        return `  ${(exp.name || 'Pengeluaran').padEnd(28)} : ${fmtRp(num(exp.value))}`;
-      }).join('\n');
-      
-      const opsPerCup = num(m.ops.estimasiCup) > 0 ? ops / num(m.ops.estimasiCup) : 0;
-      const hpp = bb + km + opsPerCup;
+      const hpp = bb + km;
       const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
       const hjb = roundPrice(hj);
 
@@ -274,14 +223,6 @@ ${lines}
   ──── KEMASAN ────────────────────────────────
 ${pkgLines}
   Sub-total Kemasan            : ${fmtRp(km)}
-
-  ──── OPERASIONAL (Bulanan) ──────────────────
-${expenseLines}
-  Penyusutan Aset              : ${fmtRp(py)}
-  ────────────────────────────────────────────
-  Total Ops Bulanan            : ${fmtRp(ops)}
-  Estimasi Penjualan           : ${num(m.ops.estimasiCup).toLocaleString('id-ID')} ${targetUnit}/bln
-  Beban Ops per ${targetUnit.padEnd(15)}: ${fmtRp(opsPerCup)}
 
   ════════════════════════════════════════════
 ${finalPortionLines.trim()}
@@ -326,7 +267,9 @@ ${finalPortionLines.trim()}
       {/* Header */}
       <div className="flex-between" style={{ marginBottom: 20 }}>
         <div>
-          <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: '#1e293b' }}>📋 Database Menu</h2>
+          <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="fileText" size={20} color="var(--primary)" /> Database Menu
+          </h2>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
             {menus.length} menu tersimpan — klik menu untuk edit atau hitung HPP
           </p>
@@ -339,7 +282,9 @@ ${finalPortionLines.trim()}
       {/* Filter + Search */}
       <div className="flex-center gap-3" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
-          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#94a3b8' }}>🔍</span>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+            <Icon name="search" size={14} color="#94a3b8" />
+          </span>
           <input className="hpp-input" placeholder="Cari nama menu…"
             value={search} onChange={e => setSearch(e.target.value)}
             style={{ paddingLeft: 32 }} />
@@ -378,13 +323,13 @@ ${finalPortionLines.trim()}
             </button>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-sm" onClick={handleExportExcel} style={{ background: '#10b981', color: '#fff', border: 'none', gap: 6, cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-              🟢 Export Excel (.xlsx)
+            <button className="btn btn-sm" onClick={handleExportExcel} style={{ background: '#10b981', color: '#fff', border: 'none', gap: 6, cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+              <Icon name="fileText" size={12} /> Export Excel (.xlsx)
             </button>
-            <button className="btn btn-sm" onClick={handleBatchPrint} style={{ background: '#6366f1', color: '#fff', border: 'none', gap: 6, cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-              📄 Cetak PDF Terpilih
+            <button className="btn btn-sm" onClick={handleBatchPrint} style={{ background: '#6366f1', color: '#fff', border: 'none', gap: 6, cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+              <Icon name="print" size={12} /> Cetak PDF Terpilih
             </button>
-            <button className="btn btn-danger btn-sm" onClick={handleBatchDelete} style={{ background: '#ef4444', color: '#fff', border: 'none', gap: 6, cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, width: 'auto', height: 'auto' }}>
+            <button className="btn btn-danger btn-sm" onClick={handleBatchDelete} style={{ background: '#ef4444', color: '#fff', border: 'none', gap: 6, cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, width: 'auto', height: 'auto', display: 'flex', alignItems: 'center' }}>
               <Icon name="trash" size={11} /> Hapus Terpilih
             </button>
           </div>
@@ -407,7 +352,9 @@ ${finalPortionLines.trim()}
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🍽️</div>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <Icon name="utensils" size={40} color="#94a3b8" />
+          </div>
           <div style={{ fontWeight: 600, fontSize: 15 }}>Belum ada menu</div>
           <div style={{ fontSize: 12, marginTop: 4 }}>Klik "Tambah Menu Baru" untuk mulai</div>
         </div>
@@ -438,7 +385,9 @@ ${finalPortionLines.trim()}
                   />
                 </div>
 
-                <div className="db-card-icon">{menu.emoji}</div>
+                <div className="db-card-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name={menu.emoji} size={20} color="var(--primary)" />
+                </div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text)', marginBottom: 2 }}>{menu.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6 }}>
@@ -485,7 +434,9 @@ ${finalPortionLines.trim()}
           {/* Header */}
           <div className="flex-between" style={{ marginBottom: 20 }}>
             <div>
-              <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: '#1e293b' }}>Database Profil OPEX & Outlet</h2>
+              <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="store" size={20} color="var(--primary)" /> Database Profil OPEX &amp; Outlet
+              </h2>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
                 {opexProfiles.length} profil outlet/kategori tersimpan — buka profil untuk simulasi biaya
               </p>
@@ -557,9 +508,9 @@ ${finalPortionLines.trim()}
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
-                      fontSize: 18
+                      color: 'var(--primary)'
                     }}>
-                      🏪
+                      <Icon name="store" size={18} />
                     </div>
                     <div>
                       <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-text)' }}>{p.name}</div>

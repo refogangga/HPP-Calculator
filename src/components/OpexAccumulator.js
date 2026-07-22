@@ -15,7 +15,9 @@ export default function OpexAccumulator({
   onUpdateProfile,
   onAddProfile,
   onDeleteProfile,
-  onNavigateToCalculator
+  onNavigateToCalculator,
+  channelPresets = [],
+  onOpenChannelModal
 }) {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Semua');
@@ -23,6 +25,49 @@ export default function OpexAccumulator({
 
   // Dropdown categories for OPEX expenses & assets mapping
   const opexCategories = ['Semua', 'Minuman', 'Makanan', 'Snack', 'Lainnya'];
+
+  const handleDiscountChange = (menu, field, value) => {
+    const currentPlatform = menu.platform || {
+      enabled: true,
+      name: 'Offline / Dine-In',
+      commissionPct: 0,
+      flatFee: 0,
+      discountType: 'pct',
+      discountValue: 0,
+      commissionBasis: 'original'
+    };
+    const updatedPlatform = {
+      ...currentPlatform,
+      enabled: (field === 'discountValue' ? num(value) > 0 : (currentPlatform.discountValue > 0)) || currentPlatform.commissionPct > 0 || currentPlatform.flatFee > 0 || currentPlatform.enabled,
+      [field]: value
+    };
+    if (onUpdateMenu) {
+      onUpdateMenu(menu.id, { platform: updatedPlatform });
+    }
+  };
+
+  const handleMassDiscount = (pctValue) => {
+    selectedMenus.forEach(menu => {
+      const currentPlatform = menu.platform || {
+        enabled: pctValue > 0,
+        name: 'Offline / Dine-In',
+        commissionPct: 0,
+        flatFee: 0,
+        discountType: 'pct',
+        discountValue: 0,
+        commissionBasis: 'original'
+      };
+      const updatedPlatform = {
+        ...currentPlatform,
+        enabled: currentPlatform.commissionPct > 0 || currentPlatform.flatFee > 0 || pctValue > 0,
+        discountType: 'pct',
+        discountValue: pctValue
+      };
+      if (onUpdateMenu) {
+        onUpdateMenu(menu.id, { platform: updatedPlatform });
+      }
+    });
+  };
 
   // Current active profile
   const activeProfile = useMemo(() => {
@@ -64,50 +109,35 @@ export default function OpexAccumulator({
     const hpp = getDirectHPP(menu);
     const p = menu.platform;
 
-    // OPEX per cup dari data ops menu itu sendiri
-    const py = getPenyusutanBulanan(menu.ops);
-    const expensesTotal = (Array.isArray(menu.ops?.expenses) ? menu.ops.expenses : [])
-      .reduce((s, e) => s + num(e.value), 0);
-    const opsPerCup = num(menu.ops?.estimasiCup) > 0
-      ? (expensesTotal + py) / num(menu.ops.estimasiCup)
+    const diskonNominal = p && p.enabled
+      ? (p.discountType === 'pct' ? hj * num(p.discountValue) / 100 : num(p.discountValue))
       : 0;
-
-    if (!p || !p.enabled || hj <= 0) {
-      return {
-        hargaJual: hj,
-        diskonNominal: 0,
-        hargaEfektif: hj,
-        totalKomisi: 0,
-        revenueBersih: hj,
-        hpp,
-        opsPerCup,
-        netProfit: hj - hpp - opsPerCup,
-        hasPlatform: false,
-      };
-    }
-
-    const diskonNominal = p.discountType === 'pct'
-      ? hj * num(p.discountValue) / 100
-      : num(p.discountValue);
     const hargaEfektif = Math.max(hj - diskonNominal, 0);
-    const basisKomisi = p.commissionBasis === 'effective' ? hargaEfektif : hj;
-    const komisi = basisKomisi * num(p.commissionPct) / 100;
-    const totalKomisi = komisi + num(p.flatFee);
+    const basisKomisi = p && p.enabled && p.commissionBasis === 'effective' ? hargaEfektif : hj;
+    const komisi = p && p.enabled ? basisKomisi * num(p.commissionPct) / 100 : 0;
+    const totalKomisi = p && p.enabled ? komisi + num(p.flatFee) : 0;
     const revenueBersih = hargaEfektif - totalKomisi;
-    const netProfit = revenueBersih - hpp - opsPerCup;
+    const netProfit = revenueBersih - hpp;
+
+    const hppPct = hj > 0 ? (hpp / hj) * 100 : 0;
+    const hppPctAfterDiscount = hargaEfektif > 0 ? (hpp / hargaEfektif) * 100 : 0;
+    const diskonPct = p && p.discountType === 'pct' ? num(p.discountValue) : (hj > 0 ? (diskonNominal / hj) * 100 : 0);
 
     return {
       hargaJual: hj,
       diskonNominal,
+      diskonPct,
       hargaEfektif,
       totalKomisi,
       revenueBersih,
       hpp,
-      opsPerCup,
+      hppPct,
+      hppPctAfterDiscount,
+      opsPerCup: 0,
       netProfit,
-      platformName: p.name,
-      commissionPct: num(p.commissionPct),
-      hasPlatform: true,
+      platformName: p?.name || 'Custom',
+      commissionPct: num(p?.commissionPct),
+      hasPlatform: !!(p && p.enabled),
     };
   };
 
@@ -303,9 +333,9 @@ export default function OpexAccumulator({
   // Main KPI values — platform-aware
   const financialSummary = useMemo(() => {
     let totalRevenue = 0;         // gross revenue (harga jual × volume)
+    let totalEffectiveRevenue = 0; // revenue setelah diskon merchant sebelum komisi
     let totalNetRevenue = 0;      // net revenue setelah diskon & komisi platform
     let totalCOGS = 0;
-    let totalOpexCups = 0;
     let totalVolume = 0;
     let totalPlatformCut = 0;
     let totalDiskon = 0;
@@ -316,17 +346,18 @@ export default function OpexAccumulator({
 
       totalVolume += volume;
       totalRevenue += volume * pc.hargaJual;
+      totalEffectiveRevenue += volume * pc.hargaEfektif;
       totalNetRevenue += volume * pc.revenueBersih;
       totalCOGS += volume * pc.hpp;
-      totalOpexCups += volume * pc.opsPerCup;
       totalPlatformCut += volume * pc.totalKomisi;
       totalDiskon += volume * pc.diskonNominal;
     });
 
     const totalGrossProfit = totalNetRevenue - totalCOGS;
-    const netProfit = totalGrossProfit - totalOpexVal - totalOpexCups;
+    const netProfit = totalGrossProfit - totalOpexVal;
 
-    const avgOpexPerUnit = totalVolume > 0 ? (totalOpexVal + totalOpexCups) / totalVolume : 0;
+    const avgOpexPerUnit = totalVolume > 0 ? totalOpexVal / totalVolume : 0;
+    const avgHppPctAfterDiscount = totalEffectiveRevenue > 0 ? (totalCOGS / totalEffectiveRevenue) * 100 : 0;
 
     // BEP based on net revenue
     const avgNetPrice = totalVolume > 0 ? totalNetRevenue / totalVolume : 0;
@@ -337,11 +368,13 @@ export default function OpexAccumulator({
     return {
       totalVolume,
       totalRevenue,
+      totalEffectiveRevenue,
       totalNetRevenue,
       totalCOGS,
       totalGrossProfit,
       netProfit,
       avgOpexPerUnit,
+      avgHppPctAfterDiscount,
       bepUnits,
       totalPlatformCut,
       totalDiskon,
@@ -448,7 +481,7 @@ export default function OpexAccumulator({
             <div className="section-body">
               
               {/* Add Menu Control Bar */}
-              <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-app)', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-app)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text)' }}>Tambah Menu ke Simulasi:</span>
                 <select
                   className="hpp-input sm"
@@ -510,8 +543,8 @@ export default function OpexAccumulator({
                 </button>
               </div>
 
-              {/* Filter and Search Bar */}
-              <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+              {/* Search & Filter Bar */}
+              <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, position: 'relative', minWidth: 200 }}>
                   <input
                     className="hpp-input sm"
@@ -538,6 +571,38 @@ export default function OpexAccumulator({
                 </select>
               </div>
 
+              {/* Set Diskon Promo Massal Cepat */}
+              {selectedMenus.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14, padding: '8px 12px', background: 'var(--bg-app)', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 11 }}>
+                  <span style={{ fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    🏷️ Set Promo Massal:
+                  </span>
+                  {[0, 10, 15, 20, 25, 30].map(pct => (
+                    <button
+                      key={pct}
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => handleMassDiscount(pct)}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: 10,
+                        height: '24px',
+                        background: pct === 0 ? 'rgba(239,68,68,0.1)' : 'var(--bg-card)',
+                        color: pct === 0 ? '#ef4444' : 'var(--primary)',
+                        border: '1px solid var(--border-color)',
+                        fontWeight: 600
+                      }}
+                      title={pct === 0 ? "Reset diskon semua menu simulasi ke 0%" : `Terapkan diskon ${pct}% ke seluruh menu simulasi`}
+                    >
+                      {pct === 0 ? 'Reset 0%' : `${pct}% Off`}
+                    </button>
+                  ))}
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
+                    *Terapkan diskon simultan ke seluruh menu yang aktif
+                  </span>
+                </div>
+              )}
+
               {/* Menus Table */}
               {filteredMenus.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: 13 }}>
@@ -545,10 +610,10 @@ export default function OpexAccumulator({
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#475569', fontWeight: 700 }}>
-                        <th style={{ padding: '8px 4px', width: 30 }}>
+                      <tr style={{ borderBottom: '2px solid var(--border-color)', color: '#475569', fontWeight: 700, background: 'var(--bg-app)' }}>
+                        <th style={{ padding: '8px 4px', width: 28, textAlign: 'center' }}>
                           <input
                             type="checkbox"
                             checked={filteredMenus.length > 0 && filteredMenus.every(m => !activeProfile.disabledMenuIds?.includes(m.id))}
@@ -556,15 +621,16 @@ export default function OpexAccumulator({
                             style={{ cursor: 'pointer' }}
                           />
                         </th>
-                        <th style={{ padding: '8px 8px' }}>Menu</th>
-                        <th style={{ padding: '8px 8px', width: 75 }}>Kategori</th>
-                        <th style={{ padding: '8px 8px', width: 95, textAlign: 'right', whiteSpace: 'nowrap' }}>HPP</th>
-                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }}>Harga Jual</th>
-                        <th style={{ padding: '8px 8px', width: 120, textAlign: 'right', whiteSpace: 'nowrap' }}>Nett Revenue</th>
-                        <th style={{ padding: '8px 8px', width: 90, textAlign: 'center' }}>Volume</th>
-                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Net Profit/Cup</th>
+                        <th style={{ padding: '8px 8px', minWidth: 140 }}>Menu &amp; Channel</th>
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Direct HPP (% Stlh Diskon)</th>
+                        <th style={{ padding: '8px 8px', width: 105, textAlign: 'right' }}>Harga Normal</th>
+                        <th style={{ padding: '8px 8px', width: 130, textAlign: 'right' }}>Diskon Merchant</th>
+                        <th style={{ padding: '8px 8px', width: 115, textAlign: 'right', whiteSpace: 'nowrap' }}>Harga Stlh Diskon</th>
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Nett Revenue</th>
+                        <th style={{ padding: '8px 8px', width: 75, textAlign: 'center' }}>Volume</th>
+                        <th style={{ padding: '8px 8px', width: 105, textAlign: 'right', whiteSpace: 'nowrap' }}>Profit/Cup</th>
                         <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>Kontribusi</th>
-                        <th style={{ padding: '8px 8px', width: 40, textAlign: 'center' }}>Aksi</th>
+                        <th style={{ padding: '8px 4px', width: 35, textAlign: 'center' }}>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -585,7 +651,8 @@ export default function OpexAccumulator({
                               transition: 'all 0.15s'
                             }}
                           >
-                            <td style={{ padding: '10px 4px' }}>
+                            {/* Checkbox */}
+                            <td style={{ padding: '10px 4px', textAlign: 'center' }}>
                               <input
                                 type="checkbox"
                                 checked={isEnabled}
@@ -593,67 +660,145 @@ export default function OpexAccumulator({
                                 style={{ cursor: 'pointer' }}
                               />
                             </td>
+
+                            {/* Menu & Channel */}
                             <td style={{ padding: '10px 8px' }}>
-                              <button
-                                onClick={() => onNavigateToCalculator && onNavigateToCalculator(menu.id)}
-                                style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                                  background: isEnabled ? 'var(--bg-app)' : 'var(--bg-card)',
-                                  border: '1px solid var(--border-color)', padding: '5px 10px',
-                                  borderRadius: 8, color: 'var(--color-text)', fontWeight: 600,
-                                  fontSize: 12, cursor: 'pointer', transition: 'all 0.15s ease',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)', textAlign: 'left'
-                                }}
-                                onMouseOver={e => {
-                                  e.currentTarget.style.background = 'rgba(0,102,204,0.08)';
-                                  e.currentTarget.style.borderColor = 'var(--primary)';
-                                  e.currentTarget.style.color = 'var(--primary)';
-                                }}
-                                onMouseOut={e => {
-                                  e.currentTarget.style.background = isEnabled ? 'var(--bg-app)' : 'var(--bg-card)';
-                                  e.currentTarget.style.borderColor = 'var(--border-color)';
-                                  e.currentTarget.style.color = 'var(--color-text)';
-                                }}
-                                title="Klik untuk edit / hitung HPP"
-                              >
-                                <span style={{ fontSize: 13 }}>{menu.emoji}</span>
-                                <span>{menu.name}</span>
-                                {pc.hasPlatform && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                <button
+                                  onClick={() => onNavigateToCalculator && onNavigateToCalculator(menu.id)}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                                    background: isEnabled ? 'var(--bg-app)' : 'var(--bg-card)',
+                                    border: '1px solid var(--border-color)', padding: '4px 8px',
+                                    borderRadius: 6, color: 'var(--color-text)', fontWeight: 600,
+                                    fontSize: 12, cursor: 'pointer', transition: 'all 0.15s ease',
+                                    textAlign: 'left'
+                                  }}
+                                  onMouseOver={e => {
+                                    e.currentTarget.style.background = 'rgba(0,102,204,0.08)';
+                                    e.currentTarget.style.borderColor = 'var(--primary)';
+                                    e.currentTarget.style.color = 'var(--primary)';
+                                  }}
+                                  onMouseOut={e => {
+                                    e.currentTarget.style.background = isEnabled ? 'var(--bg-app)' : 'var(--bg-card)';
+                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                    e.currentTarget.style.color = 'var(--color-text)';
+                                  }}
+                                  title="Klik untuk edit / hitung HPP"
+                                >
+                                  <span style={{ fontSize: 13 }}>{menu.emoji}</span>
+                                  <span>{menu.name}</span>
+                                </button>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span className="badge badge-slate" style={{ fontSize: 9 }}>{menu.category}</span>
+                                  {pc.hasPlatform ? (
+                                    <span style={{
+                                      fontSize: 9, padding: '1px 5px', borderRadius: 8,
+                                      background: '#fff1ef', color: '#ee4d2d', fontWeight: 700
+                                    }}>
+                                      🏪 {pc.platformName} ({pc.commissionPct}%)
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>🏬 Direct</span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Direct HPP & % HPP stlh Diskon */}
+                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 12 }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end' }}>
+                                <span style={{ fontWeight: 600 }}>{fmtRp(pc.hpp)}</span>
+                                {pc.hargaEfektif > 0 ? (
                                   <span style={{
-                                    fontSize: 9, padding: '1px 5px', borderRadius: 10,
-                                    background: '#fff1ef', color: '#ee4d2d', fontWeight: 700
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    padding: '1px 6px',
+                                    borderRadius: 10,
+                                    background: pc.hppPctAfterDiscount > 50 ? '#fee2e2' : pc.hppPctAfterDiscount > 35 ? '#fef3c7' : '#dcfce7',
+                                    color: pc.hppPctAfterDiscount > 50 ? '#b91c1c' : pc.hppPctAfterDiscount > 35 ? '#b45309' : '#15803d',
+                                    display: 'inline-flex',
+                                    alignItems: 'center'
                                   }}>
-                                    🏪 {pc.platformName}
+                                    {pc.hppPctAfterDiscount.toFixed(1)}% stlh diskon
                                   </span>
+                                ) : (
+                                  <span style={{ fontSize: 9, color: '#94a3b8' }}>-</span>
                                 )}
-                              </button>
-                            </td>
-                            <td style={{ padding: '10px 8px' }}>
-                              <span className="badge badge-slate" style={{ fontSize: 10 }}>{menu.category}</span>
+                              </div>
                             </td>
 
-                            {/* HPP */}
-                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 12 }}>
-                              {fmtRp(pc.hpp)}
-                            </td>
-
-                            {/* Harga Jual (editable) */}
+                            {/* Harga Normal (HJ Acuan) */}
                             <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
-                                <div className="input-prefix-wrap sm" style={{ maxWidth: 110, marginLeft: 'auto' }}>
-                                  <span className="prefix" style={{ fontSize: 9 }}>Rp</span>
+                              <div className="input-prefix-wrap sm" style={{ maxWidth: 100, marginLeft: 'auto' }}>
+                                <span className="prefix" style={{ fontSize: 9 }}>Rp</span>
+                                <FormatInput
+                                  className="hpp-input sm center"
+                                  style={{ paddingLeft: 18, fontWeight: 600 }}
+                                  value={pc.hargaJual}
+                                  onChange={val => handlePriceChange(menu, val)}
+                                  disabled={!isEnabled}
+                                />
+                              </div>
+                            </td>
+
+                            {/* Diskon Merchant (Editable % atau Nominal Rp) */}
+                            <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDiscountChange(menu, 'discountType', menu.platform?.discountType === 'nominal' ? 'pct' : 'nominal')}
+                                  disabled={!isEnabled}
+                                  style={{
+                                    padding: '2px 5px',
+                                    fontSize: 9,
+                                    fontWeight: 800,
+                                    borderRadius: 5,
+                                    border: '1px solid var(--border-color)',
+                                    background: menu.platform?.discountType === 'nominal' ? '#e0e7ff' : '#fef3c7',
+                                    color: menu.platform?.discountType === 'nominal' ? '#4338ca' : '#b45309',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Klik untuk ubah jenis promo diskon (% persen / Rp nominal)"
+                                >
+                                  {menu.platform?.discountType === 'nominal' ? 'Rp' : '%'}
+                                </button>
+
+                                <div className="input-prefix-wrap sm" style={{ maxWidth: 80 }}>
+                                  {menu.platform?.discountType === 'nominal' && <span className="prefix" style={{ fontSize: 9 }}>Rp</span>}
                                   <FormatInput
                                     className="hpp-input sm center"
-                                    style={{ paddingLeft: 20 }}
-                                    value={pc.hargaJual}
-                                    onChange={val => handlePriceChange(menu, val)}
+                                    style={{
+                                      paddingLeft: menu.platform?.discountType === 'nominal' ? 18 : 6,
+                                      borderColor: pc.diskonNominal > 0 ? '#f59e0b' : 'var(--border-color)',
+                                      fontWeight: pc.diskonNominal > 0 ? 700 : 400,
+                                      color: pc.diskonNominal > 0 ? '#b45309' : 'var(--color-text)'
+                                    }}
+                                    value={menu.platform?.discountValue || 0}
+                                    onChange={val => handleDiscountChange(menu, 'discountValue', val)}
                                     disabled={!isEnabled}
                                   />
                                 </div>
-                                {pc.hasPlatform && pc.diskonNominal > 0 && (
-                                  <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 600 }}>
-                                    − {fmtRp(pc.diskonNominal)} diskon
+                              </div>
+                            </td>
+
+                            {/* Harga Setelah Diskon (Harga Efektif Real) */}
+                            <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+                                <span style={{
+                                  fontWeight: 800,
+                                  fontSize: 12,
+                                  color: pc.diskonNominal > 0 ? '#0284c7' : 'var(--color-text)'
+                                }}>
+                                  {fmtRp(pc.hargaEfektif)}
+                                </span>
+                                {pc.diskonNominal > 0 ? (
+                                  <span style={{ fontSize: 9, color: '#d97706', fontWeight: 600 }}>
+                                    − {fmtRp(pc.diskonNominal)} promo
                                   </span>
+                                ) : (
+                                  <span style={{ fontSize: 9, color: '#94a3b8' }}>Tanpa diskon</span>
                                 )}
                               </div>
                             </td>
@@ -664,7 +809,7 @@ export default function OpexAccumulator({
                                 <span style={{ fontWeight: 700, fontSize: 12, color: pc.hasPlatform ? '#4f46e5' : 'var(--color-text)' }}>
                                   {fmtRp(pc.revenueBersih)}
                                 </span>
-                                {pc.hasPlatform && (
+                                {pc.hasPlatform && pc.totalKomisi > 0 && (
                                   <span style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>
                                     − {fmtRp(pc.totalKomisi)} komisi
                                   </span>
@@ -677,7 +822,7 @@ export default function OpexAccumulator({
                               <input
                                 type="number"
                                 className="hpp-input sm center"
-                                style={{ maxWidth: 75, margin: '0 auto', display: 'block', fontWeight: 700 }}
+                                style={{ maxWidth: 65, margin: '0 auto', display: 'block', fontWeight: 700 }}
                                 value={volume}
                                 onChange={e => handleVolumeChange(menu.id, e.target.value)}
                                 disabled={!isEnabled}
@@ -693,11 +838,6 @@ export default function OpexAccumulator({
                                 }}>
                                   {fmtRp(pc.netProfit)}
                                 </span>
-                                {pc.opsPerCup > 0 && (
-                                  <span style={{ fontSize: 9, color: '#94a3b8' }}>
-                                    inc. OPEX {fmtRp(pc.opsPerCup)}
-                                  </span>
-                                )}
                               </div>
                             </td>
 
@@ -706,7 +846,8 @@ export default function OpexAccumulator({
                               {isEnabled && volume > 0 ? fmtRp(totalContribusi) : 'Rp 0'}
                             </td>
 
-                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                            {/* Aksi */}
+                            <td style={{ padding: '10px 4px', textAlign: 'center' }}>
                               <button
                                 className="btn btn-ghost btn-sm"
                                 onClick={() => {
@@ -811,11 +952,9 @@ export default function OpexAccumulator({
               </div>
             </div>
           </div>
-
-          {/* ── 2. Central OPEX overhead expenses ── */}
           <div className="section-card">
             <SectionHeader
-              iconEmoji="⚡" iconBg="#fef3c7"
+              iconEmoji="zap" iconBg="#fef3c7"
               title="Biaya Operasional Bulanan (Overhead)"
               badgeText="OPERASIONAL" badgeClass="badge-orange"
               actions={
@@ -905,7 +1044,7 @@ export default function OpexAccumulator({
           {/* ── 3. Central Assets depreciation ── */}
           <div className="section-card">
             <SectionHeader
-              iconEmoji="🔧" iconBg="#ecfdf5"
+              iconEmoji="tool" iconBg="#ecfdf5"
               title="Penyusutan Aset & Peralatan"
               badgeText="PENYUSUTAN" badgeClass="badge-emerald"
               actions={
@@ -1062,6 +1201,142 @@ export default function OpexAccumulator({
             </div>
           </div>
 
+          {/* ── 4. Ringkasan Revenue & Diskon Bulanan (Standalone Section Card) ── */}
+          <div className="section-card">
+            <SectionHeader
+              iconEmoji="chart" iconBg="#e0f2fe"
+              title="Ringkasan Revenue & Diskon Bulanan"
+              badgeText="AKUMULASI REVENUE" badgeClass="badge-indigo"
+            />
+            <div className="section-body">
+              
+              {/* KPI Summary Cards Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: 10,
+                marginBottom: 16
+              }}>
+                {/* Omset Normal */}
+                <div style={{ background: 'var(--bg-app)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: 9, color: 'var(--color-text-muted)', fontWeight: 700, letterSpacing: '0.02em' }}>OMSET NORMAL</div>
+                  <div className="mono" style={{ fontSize: 15, fontWeight: 800, color: 'var(--color-text)', marginTop: 2 }}>
+                    {fmtRp(financialSummary.totalRevenue)}
+                  </div>
+                  <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2 }}>Harga Normal × Volume</div>
+                </div>
+
+                {/* Diskon Merchant */}
+                <div style={{ background: financialSummary.totalDiskon > 0 ? '#fffbe6' : 'var(--bg-app)', padding: '10px 12px', borderRadius: 8, border: `1px solid ${financialSummary.totalDiskon > 0 ? '#ffe58f' : 'var(--border-color)'}` }}>
+                  <div style={{ fontSize: 9, color: financialSummary.totalDiskon > 0 ? '#b45309' : 'var(--color-text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="tag" size={11} color="#b45309" /> POTONGAN DISKON
+                  </div>
+                  <div className="mono" style={{ fontSize: 15, fontWeight: 800, color: financialSummary.totalDiskon > 0 ? '#d97706' : 'var(--color-text-muted)', marginTop: 2 }}>
+                    {financialSummary.totalDiskon > 0 ? `- ${fmtRp(financialSummary.totalDiskon)}` : 'Rp 0'}
+                  </div>
+                  <div style={{ fontSize: 9, color: financialSummary.totalDiskon > 0 ? '#b45309' : 'var(--color-text-muted)', marginTop: 2 }}>
+                    Potongan Toko/Merchant
+                  </div>
+                </div>
+
+                {/* Revenue Stlh Diskon */}
+                <div style={{ background: '#f0f9ff', padding: '10px 12px', borderRadius: 8, border: '1px solid #bae6fd' }}>
+                  <div style={{ fontSize: 9, color: '#0369a1', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="dollar" size={11} color="#0369a1" /> REVENUE STLH DISKON
+                  </div>
+                  <div className="mono" style={{ fontSize: 15, fontWeight: 900, color: '#0284c7', marginTop: 2 }}>
+                    {fmtRp(financialSummary.totalEffectiveRevenue)}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#0284c7', marginTop: 2 }}>Omset Efektif Real Konsumen</div>
+                </div>
+
+                {/* Nett Revenue */}
+                <div style={{ background: '#eef2ff', padding: '10px 12px', borderRadius: 8, border: '1px solid #c7d2fe' }}>
+                  <div style={{ fontSize: 9, color: '#3730a3', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="bank" size={11} color="#3730a3" /> NETT REVENUE (KAS)
+                  </div>
+                  <div className="mono" style={{ fontSize: 15, fontWeight: 900, color: '#4338ca', marginTop: 2 }}>
+                    {fmtRp(financialSummary.totalNetRevenue)}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#6366f1', marginTop: 2 }}>Stlh Komisi Platform</div>
+                </div>
+
+                {/* Direct HPP */}
+                <div style={{ background: '#fff1f2', padding: '10px 12px', borderRadius: 8, border: '1px solid #fecdd3' }}>
+                  <div style={{ fontSize: 9, color: '#9f1239', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="package" size={11} color="#9f1239" /> DIRECT HPP (COGS)
+                  </div>
+                  <div className="mono" style={{ fontSize: 15, fontWeight: 800, color: '#be123c', marginTop: 2 }}>
+                    - {fmtRp(financialSummary.totalCOGS)}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#e11d48', marginTop: 2 }}>Biaya Bahan + Kemasan</div>
+                </div>
+
+                {/* Rasio HPP stlh Diskon */}
+                <div style={{
+                  background: financialSummary.avgHppPctAfterDiscount > 50 ? '#fef2f2' : financialSummary.avgHppPctAfterDiscount > 35 ? '#fffbe6' : '#f0fdf4',
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: `1px solid ${financialSummary.avgHppPctAfterDiscount > 50 ? '#fca5a5' : financialSummary.avgHppPctAfterDiscount > 35 ? '#fde68a' : '#86efac'}`
+                }}>
+                  <div style={{ fontSize: 9, color: financialSummary.avgHppPctAfterDiscount > 50 ? '#991b1b' : financialSummary.avgHppPctAfterDiscount > 35 ? '#92400e' : '#166534', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="trending" size={11} /> % HPP STLH DISKON
+                  </div>
+                  <div className="mono" style={{ fontSize: 15, fontWeight: 900, color: financialSummary.avgHppPctAfterDiscount > 50 ? '#dc2626' : financialSummary.avgHppPctAfterDiscount > 35 ? '#d97706' : '#15803d', marginTop: 2 }}>
+                    {financialSummary.avgHppPctAfterDiscount.toFixed(1)}%
+                  </div>
+                  <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2 }}>Rasio HPP ÷ Omset Efektif</div>
+                </div>
+              </div>
+
+              {/* Table Waterfall Flow Detail */}
+              <div style={{ background: 'var(--bg-app)', padding: 14, borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--color-text)', marginBottom: 10, letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="fileText" size={13} color="var(--primary)" /> ALUR DETAIL PENDAPATAN &amp; DISKON SEBELUM OPEX:
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7, fontSize: 12 }}>
+                  <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)' }}>
+                    <span>1. Omset Penjualan Normal (List Price × Volume)</span>
+                    <span className="mono" style={{ fontWeight: 700 }}>{fmtRp(financialSummary.totalRevenue)}</span>
+                  </div>
+                  <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)', color: '#d97706' }}>
+                    <span>2. Potongan Diskon Promo Merchant / Toko</span>
+                    <span className="mono" style={{ fontWeight: 700 }}>
+                      {financialSummary.totalDiskon > 0 ? `- ${fmtRp(financialSummary.totalDiskon)}` : 'Rp 0'}
+                    </span>
+                  </div>
+                  <div className="flex-between" style={{ padding: '6px 10px', background: '#f0f9ff', borderRadius: 6, color: '#0369a1', fontWeight: 800 }}>
+                    <span>= Revenue Efektif Real (Setelah Diskon)</span>
+                    <span className="mono" style={{ fontSize: 13 }}>{fmtRp(financialSummary.totalEffectiveRevenue)}</span>
+                  </div>
+                  {financialSummary.totalPlatformCut > 0 && (
+                    <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)', color: '#dc2626' }}>
+                      <span>3. Potongan Komisi &amp; Fee Platform Online</span>
+                      <span className="mono" style={{ fontWeight: 700 }}>- {fmtRp(financialSummary.totalPlatformCut)}</span>
+                    </div>
+                  )}
+                  <div className="flex-between" style={{ padding: '6px 10px', background: '#eef2ff', borderRadius: 6, color: '#3730a3', fontWeight: 800 }}>
+                    <span>= Nett Revenue Diterima Kas Toko</span>
+                    <span className="mono" style={{ fontSize: 13 }}>{fmtRp(financialSummary.totalNetRevenue)}</span>
+                  </div>
+                  <div className="flex-between" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-color)', color: '#be123c' }}>
+                    <span>4. Total Direct HPP (Bahan Baku + Kemasan)</span>
+                    <span className="mono" style={{ fontWeight: 700 }}>- {fmtRp(financialSummary.totalCOGS)}</span>
+                  </div>
+                  <div className="flex-between" style={{ padding: '8px 10px', background: 'var(--bg-card)', border: '1.5px solid var(--primary)', borderRadius: 6, color: 'var(--primary)', fontWeight: 900 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="trophy" size={14} /> Gross Profit (Kontribusi Sebelum OPEX Terpusat)</span>
+                    <span className="mono" style={{ fontSize: 14 }}>{fmtRp(financialSummary.totalGrossProfit)}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            <div className="section-footer bg-accent-blue" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+              <span style={{ fontWeight: 600 }}>Total Volume Terjual: {financialSummary.totalVolume.toLocaleString('id-ID')} unit</span>
+              <span style={{ fontWeight: 800 }}>Rasio HPP stlh Diskon: {financialSummary.avgHppPctAfterDiscount.toFixed(1)}%</span>
+            </div>
+          </div>
+
         </div>
 
         {/* ══ RIGHT PANEL (STICKY SUMMARY) ═════════════════════ */}
@@ -1089,6 +1364,7 @@ export default function OpexAccumulator({
             {[
               { label: 'Omset Pendapatan Kotor', val: financialSummary.totalRevenue, valColor: '#e2e8f0' },
               ...(financialSummary.totalDiskon > 0 ? [{ label: '↳ Diskon Merchant', val: -financialSummary.totalDiskon, valColor: '#fde68a', indent: true }] : []),
+              ...(financialSummary.totalDiskon > 0 ? [{ label: '= Revenue Setelah Diskon', val: financialSummary.totalEffectiveRevenue, valColor: '#60a5fa', bold: true }] : []),
               ...(financialSummary.totalPlatformCut > 0 ? [{ label: '↳ Komisi Platform', val: -financialSummary.totalPlatformCut, valColor: '#fca5a5', indent: true }] : []),
               ...(financialSummary.totalNetRevenue !== financialSummary.totalRevenue ? [{ label: '= Nett Revenue Diterima', val: financialSummary.totalNetRevenue, valColor: '#c7d2fe', bold: true }] : []),
               { label: '− Total Direct HPP (COGS)', val: -financialSummary.totalCOGS, valColor: '#fed7aa' },
@@ -1142,6 +1418,23 @@ export default function OpexAccumulator({
             <SectionHeader iconEmoji="📊" iconBg="#ecfdf5" title="Analisis Operasional & BEP" badgeText="METRIK" badgeClass="badge-emerald" />
             <div className="section-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               
+              {financialSummary.totalDiskon > 0 && (
+                <div style={{ background: 'var(--bg-app)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border-color)' }}>
+                  <span className="label-xs" style={{ display: 'block', marginBottom: 2 }}>RASIO HPP SETELAH DISKON (RATA-RATA)</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span className="mono" style={{ fontSize: 16, fontWeight: 800, color: financialSummary.avgHppPctAfterDiscount > 60 ? '#ef4444' : 'var(--primary)' }}>
+                      {financialSummary.avgHppPctAfterDiscount.toFixed(1)}%
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                      Total Direct HPP ÷ Revenue Stlh Diskon
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.4, color: 'var(--color-text-muted)' }}>
+                    Porsi beban HPP bahan baku &amp; kemasan terhadap pendapatan efektif setelah potongan diskon promosi.
+                  </div>
+                </div>
+              )}
+
               <div style={{ background: 'var(--bg-app)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border-color)' }}>
                 <span className="label-xs" style={{ display: 'block', marginBottom: 2 }}>BEBAN OPEX RATA-RATA (Metode Rata per Unit)</span>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>

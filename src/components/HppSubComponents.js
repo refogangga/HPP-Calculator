@@ -31,7 +31,9 @@ export function PackCalcModal({ onClose, onApply, initialPackPrice, initialPackQ
       <div className="modal-box">
         <div className="flex-between" style={{ marginBottom: 20 }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--color-text)' }}>🧮 Kalkulator Harga per Satuan</div>
+            <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="calculator" size={18} color="var(--primary)" /> Kalkulator Harga per Satuan
+            </div>
             <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{itemName || 'Item'}</div>
           </div>
           <button className="btn btn-icon" onClick={onClose}><Icon name="x" size={14} /></button>
@@ -46,7 +48,9 @@ export function PackCalcModal({ onClose, onApply, initialPackPrice, initialPackQ
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
           <div>
-            <label className="label-sm" style={{ display: 'block', marginBottom: 5 }}>💰 Harga Beli 1 Pack</label>
+            <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5 }}>
+              <Icon name="dollar" size={12} /> Harga Beli 1 Pack
+            </label>
             <div className="input-prefix-wrap">
               <span className="prefix">Rp</span>
               <FormatInput className="hpp-input" placeholder="35000"
@@ -55,8 +59,8 @@ export function PackCalcModal({ onClose, onApply, initialPackPrice, initialPackQ
             <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Harga saat kamu beli 1 pack</div>
           </div>
           <div>
-            <label className="label-sm" style={{ display: 'block', marginBottom: 5 }}>
-              📦 Isi per Pack ({unitLabel || 'pcs'})
+            <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5 }}>
+              <Icon name="package" size={12} /> Isi per Pack ({unitLabel || 'pcs'})
             </label>
             <div className="input-prefix-wrap has-suffix">
               <input className="hpp-input" type="number" placeholder="50"
@@ -69,8 +73,8 @@ export function PackCalcModal({ onClose, onApply, initialPackPrice, initialPackQ
 
         {/* Result */}
         <div className="pack-result-box">
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', marginBottom: 6 }}>
-            💡 Harga per Satuan ({unitLabel || 'pcs'})
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="info" size={12} /> Harga per Satuan ({unitLabel || 'pcs'})
           </div>
           <div className="pack-result-value mono">{fmtRp(pricePerUnit)}</div>
           {num(packQty) > 0 && num(packPrice) > 0 && (
@@ -105,7 +109,9 @@ export function PackCalcModal({ onClose, onApply, initialPackPrice, initialPackQ
 export function SectionHeader({ iconEmoji, iconBg, title, badgeText, badgeClass, actions }) {
   return (
     <div className="section-header">
-      <div className="section-icon" style={{ background: iconBg }}>{iconEmoji}</div>
+      <div className="section-icon" style={{ background: iconBg }}>
+        {typeof iconEmoji === 'string' ? <Icon name={iconEmoji} size={15} /> : iconEmoji}
+      </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', lineHeight: '1.3' }}>{title}</div>
       </div>

@@ -52,15 +52,87 @@ export const mkOps = () => ({
   ]
 });
 
-export const mkPlatform = () => ({
-  enabled: false,
-  id: 'custom',         // 'shopeefood' | 'gofood' | 'grabfood' | 'custom'
-  name: 'Custom',
-  commissionPct: 20,    // % komisi dari harga jual
-  flatFee: 0,           // biaya penanganan tetap per transaksi (Rp)
-  commissionBasis: 'original', // 'original' | 'effective' (dasar penghitungan komisi)
-  discountType: 'pct',  // 'pct' | 'flat'
-  discountValue: 0,     // nilai diskon (% atau Rp flat)
+/* ─── Master Channel Presets DB & Factory ────────────────── */
+export const CHANNEL_PRESETS_KEY = 'hpp_channel_presets_v1';
+
+export const DEFAULT_CHANNEL_PRESETS = [
+  {
+    id: 'offline', name: 'Offline / Dine-In', emoji: '🏬',
+    color: '#64748b', colorLight: '#f8fafc', colorBorder: '#cbd5e1',
+    commissionPct: 0, flatFee: 0, discountType: 'pct', discountValue: 0,
+    commissionBasis: 'original', isDefault: true
+  },
+  {
+    id: 'shopeefood', name: 'ShopeeFood', emoji: '🛍️',
+    color: '#ee4d2d', colorLight: '#fff1ef', colorBorder: '#ffa590',
+    commissionPct: 20, flatFee: 0, discountType: 'pct', discountValue: 0,
+    commissionBasis: 'original', isDefault: true
+  },
+  {
+    id: 'gofood', name: 'GoFood', emoji: '🟢',
+    color: '#007d3b', colorLight: '#e8f7ef', colorBorder: '#8ecfac',
+    commissionPct: 20, flatFee: 0, discountType: 'pct', discountValue: 0,
+    commissionBasis: 'original', isDefault: true
+  },
+  {
+    id: 'grabfood', name: 'GrabFood', emoji: '🟡',
+    color: '#00b14f', colorLight: '#f0fbf4', colorBorder: '#7dd9a3',
+    commissionPct: 30, flatFee: 0, discountType: 'pct', discountValue: 0,
+    commissionBasis: 'original', isDefault: true
+  },
+  {
+    id: 'custom_online', name: 'Custom Online', emoji: '✏️',
+    color: '#6366f1', colorLight: '#eef2ff', colorBorder: '#a5b4fc',
+    commissionPct: 15, flatFee: 1000, discountType: 'pct', discountValue: 0,
+    commissionBasis: 'original', isDefault: false
+  }
+];
+
+export const mkChannelPreset = (overrides = {}) => ({
+  id: uid(),
+  name: overrides.name || 'Channel Baru',
+  emoji: overrides.emoji || '📱',
+  color: overrides.color || '#6366f1',
+  colorLight: overrides.colorLight || '#eef2ff',
+  colorBorder: overrides.colorBorder || '#a5b4fc',
+  commissionPct: num(overrides.commissionPct),
+  flatFee: num(overrides.flatFee),
+  discountType: overrides.discountType || 'pct',
+  discountValue: num(overrides.discountValue),
+  commissionBasis: overrides.commissionBasis || 'original',
+  isDefault: false,
+  ...overrides,
+});
+
+export const loadChannelPresets = () => {
+  if (typeof window === 'undefined') return DEFAULT_CHANNEL_PRESETS;
+  try {
+    const raw = localStorage.getItem(CHANNEL_PRESETS_KEY);
+    if (!raw) return DEFAULT_CHANNEL_PRESETS;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_CHANNEL_PRESETS;
+    return parsed;
+  } catch (err) {
+    console.error("Failed to load channel presets:", err);
+    return DEFAULT_CHANNEL_PRESETS;
+  }
+};
+
+export const saveChannelPresets = (presets) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(CHANNEL_PRESETS_KEY, JSON.stringify(presets));
+};
+
+export const mkPlatform = (preset = null) => ({
+  enabled: preset ? preset.id !== 'offline' : false,
+  id: preset ? preset.id : 'offline',
+  name: preset ? preset.name : 'Offline / Dine-In',
+  commissionPct: preset ? num(preset.commissionPct) : 0,
+  flatFee: preset ? num(preset.flatFee) : 0,
+  commissionBasis: preset ? preset.commissionBasis || 'original' : 'original',
+  discountType: preset ? preset.discountType || 'pct' : 'pct',
+  discountValue: preset ? num(preset.discountValue) : 0,
+  isOverridden: false,
 });
 
 export const mkMenu = (overrides = {}) => ({

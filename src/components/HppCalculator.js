@@ -7,7 +7,7 @@ import { SectionHeader, IngredientRow, PackagingCard } from './HppSubComponents'
 import PlatformCalculator from './PlatformCalculator';
 import { num, fmtRp, roundPrice, uid, getPenyusutanBulanan, mkPlatform } from '../utils/hpp';
 
-export default function HppCalculator({ menu, onUpdate, showToast }) {
+export default function HppCalculator({ menu, onUpdate, showToast, channelPresets, onOpenChannelModal }) {
   const { ingredients, packaging, ops, margin, targetUnit = 'cup', pcsPerPortion = 1, subUnitLabel = 'pcs', platform } = menu;
   const activePlatform = platform || mkPlatform();
 
@@ -52,19 +52,10 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
     km: (hppKemasan / totalHPP * 100),
   } : { bb: 0, km: 0 }, [totalHPP, hppBahanBaku, hppKemasan]);
 
-  /* ── OPEX per Cup (auto from ops) ── */
-  const opsPerCup = useMemo(() => {
-    const py = getPenyusutanBulanan(ops);
-    const expensesList = Array.isArray(ops.expenses) ? ops.expenses : [];
-    const totalExpenses = expensesList.reduce((s, e) => s + num(e.value), 0);
-    const totalOps = totalExpenses + py;
-    return num(ops.estimasiCup) > 0 ? totalOps / num(ops.estimasiCup) : 0;
-  }, [ops]);
-
   /* ── Platform Calculations (full advanced formula) ── */
   const platformCalc = useMemo(() => {
     if (!activePlatform.enabled || hargaJualBulat <= 0) {
-      return { diskonNominal: 0, hargaEfektif: hargaJualBulat, totalKomisi: 0, revenueBersih: hargaJualBulat, grossMargin: hargaJualBulat - totalHPP, netProfit: hargaJualBulat - totalHPP - opsPerCup, marginPct: 0 };
+      return { diskonNominal: 0, hargaEfektif: hargaJualBulat, totalKomisi: 0, revenueBersih: hargaJualBulat, grossMargin: hargaJualBulat - totalHPP, netProfit: hargaJualBulat - totalHPP, marginPct: 0 };
     }
     const hj = hargaJualBulat;
     const diskonNominal = activePlatform.discountType === 'pct'
@@ -76,24 +67,23 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
     const totalKomisi = komisiNominal + num(activePlatform.flatFee);
     const revenueBersih = hargaEfektif - totalKomisi;
     const grossMargin = revenueBersih - totalHPP;
-    const netProfit = revenueBersih - totalHPP - opsPerCup;
+    const netProfit = revenueBersih - totalHPP;
     const marginPct = hj > 0 ? (netProfit / hj) * 100 : 0;
     return { diskonNominal, hargaEfektif, totalKomisi, revenueBersih, grossMargin, netProfit, marginPct };
-  }, [activePlatform, hargaJualBulat, totalHPP, opsPerCup]);
+  }, [activePlatform, hargaJualBulat, totalHPP]);
 
   const { diskonNominal, hargaEfektif, totalKomisi, revenueBersih, grossMargin, netProfit, marginPct } = platformCalc;
 
-  // 5-segment bar (based on hargaJualBulat = 100%)
+  // 4-segment bar (based on hargaJualBulat = 100%)
   const pctBreakdown = useMemo(() => {
-    if (hargaJualBulat <= 0) return { hpp: 0, opex: 0, diskon: 0, platform: 0, profit: 0 };
+    if (hargaJualBulat <= 0) return { hpp: 0, diskon: 0, platform: 0, profit: 0 };
     const hj = hargaJualBulat;
     const hpp = Math.min(totalHPP / hj * 100, 100);
-    const opex = Math.min(opsPerCup / hj * 100, Math.max(0, 100 - hpp));
-    const diskon = activePlatform.enabled ? Math.min(diskonNominal / hj * 100, Math.max(0, 100 - hpp - opex)) : 0;
-    const platform = activePlatform.enabled ? Math.min(totalKomisi / hj * 100, Math.max(0, 100 - hpp - opex - diskon)) : 0;
-    const profit = Math.max(100 - hpp - opex - diskon - platform, 0);
-    return { hpp, opex, diskon, platform, profit };
-  }, [hargaJualBulat, totalHPP, opsPerCup, activePlatform, diskonNominal, totalKomisi]);
+    const diskon = activePlatform.enabled ? Math.min(diskonNominal / hj * 100, Math.max(0, 100 - hpp)) : 0;
+    const platform = activePlatform.enabled ? Math.min(totalKomisi / hj * 100, Math.max(0, 100 - hpp - diskon)) : 0;
+    const profit = Math.max(100 - hpp - diskon - platform, 0);
+    return { hpp, diskon, platform, profit };
+  }, [hargaJualBulat, totalHPP, activePlatform, diskonNominal, totalKomisi]);
 
   const sliderBg = { '--slider-pct': `${margin}%` };
 
@@ -109,7 +99,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
         {/* ── 1. Bahan Baku ── */}
         <div className="section-card">
           <SectionHeader
-            iconEmoji="🧪" iconBg="#eef2ff"
+            iconEmoji="coffee" iconBg="#eef2ff"
             title="Biaya Bahan Baku (per Cup)"
             badgeText="KOMPONEN 1" badgeClass="badge-indigo"
           />
@@ -138,7 +128,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
         {/* ── 2. Kemasan ── */}
         <div className="section-card">
           <SectionHeader
-            iconEmoji="📦" iconBg="#fff7ed"
+            iconEmoji="package" iconBg="#fff7ed"
             title="Biaya Kemasan (per Cup)"
             badgeText="KOMPONEN 2" badgeClass="badge-orange"
           />
@@ -165,14 +155,15 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
             onUpdate={setPlatform}
             hargaJual={hargaJualBulat}
             totalHPP={totalHPP}
-            opsPerCup={opsPerCup}
+            channelPresets={channelPresets}
+            onOpenChannelModal={onOpenChannelModal}
           />
         </div>
 
         {/* ── 4. Estimasi Penjualan ── */}
         <div className="section-card">
           <SectionHeader
-            iconEmoji="🏪" iconBg="#f0fdf4"
+            iconEmoji="store" iconBg="#f0fdf4"
             title="Estimasi Penjualan Bulanan"
             badgeText="VOLUME" badgeClass="badge-emerald"
           />
@@ -195,7 +186,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
 
         {/* ── 5. Catatan ── */}
         <div className="section-card">
-          <SectionHeader iconEmoji="📝" iconBg="#fafafa" title="Catatan Menu" />
+          <SectionHeader iconEmoji="fileText" iconBg="#fafafa" title="Catatan Menu" />
           <div className="section-body">
             <textarea
               className="hpp-input"
@@ -214,8 +205,8 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
 
         {/* Total HPP dark card */}
         <div className="result-dark-card">
-          <div className="label-xs" style={{ color: '#475569', marginBottom: 12 }}>
-            {menu.emoji} {menu.name || 'Menu'}
+          <div className="label-xs" style={{ color: '#475569', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name={menu.emoji || 'coffee'} size={14} color="var(--primary)" /> {menu.name || 'Menu'}
           </div>
 
           {[
@@ -252,8 +243,8 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
                 <div className="progress-segment" style={{ width: `${pct.km}%`, background: '#fb923c' }} />
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 5, fontSize: 10, color: '#64748b' }}>
-                <span>🟣 {pct.bb.toFixed(0)}% Bahan</span>
-                <span>🟠 {pct.km.toFixed(0)}% Kemasan</span>
+                <span>• {pct.bb.toFixed(0)}% Bahan</span>
+                <span>• {pct.km.toFixed(0)}% Kemasan</span>
               </div>
             </div>
           )}
@@ -262,15 +253,14 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
         {/* ── Platform Breakdown Card (right panel) ── */}
         {activePlatform.enabled && hargaJualBulat > 0 && (
           <div className="platform-breakdown-card animate-fade-in">
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              📊 Ringkasan Profitabilitas Realistis
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="chart" size={13} color="#fca5a5" /> Ringkasan Profitabilitas Realistis
             </div>
 
-            {/* 5-segment bar */}
+            {/* 4-segment bar */}
             <div style={{ marginBottom: 12 }}>
               <div className="progress-bar" style={{ height: 12, borderRadius: 6, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
                 <div className="progress-segment" style={{ width: `${pctBreakdown.hpp}%`, background: 'linear-gradient(90deg,#818cf8,#6366f1)', borderRadius: '6px 0 0 6px' }} />
-                <div className="progress-segment" style={{ width: `${pctBreakdown.opex}%`, background: 'linear-gradient(90deg,#a78bfa,#7c3aed)' }} />
                 <div className="progress-segment" style={{ width: `${pctBreakdown.diskon}%`, background: 'linear-gradient(90deg,#fcd34d,#f59e0b)' }} />
                 <div className="progress-segment" style={{ width: `${pctBreakdown.platform}%`, background: 'linear-gradient(90deg,#f87171,#dc2626)' }} />
                 <div className="progress-segment" style={{
@@ -280,12 +270,11 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
                 }} />
               </div>
               <div style={{ display: 'flex', gap: 6, marginTop: 5, fontSize: 9, flexWrap: 'wrap' }}>
-                <span style={{ color: '#818cf8', fontWeight: 600 }}>🟣 {pctBreakdown.hpp.toFixed(0)}% HPP</span>
-                {opsPerCup > 0 && <span style={{ color: '#a78bfa', fontWeight: 600 }}>🟤 {pctBreakdown.opex.toFixed(0)}% OPEX</span>}
-                {diskonNominal > 0 && <span style={{ color: '#fcd34d', fontWeight: 600 }}>🟡 {pctBreakdown.diskon.toFixed(0)}% Diskon</span>}
-                <span style={{ color: '#f87171', fontWeight: 600 }}>🔴 {pctBreakdown.platform.toFixed(0)}% Platform</span>
+                <span style={{ color: '#818cf8', fontWeight: 600 }}>• {pctBreakdown.hpp.toFixed(0)}% HPP</span>
+                {diskonNominal > 0 && <span style={{ color: '#fcd34d', fontWeight: 600 }}>• {pctBreakdown.diskon.toFixed(0)}% Diskon</span>}
+                <span style={{ color: '#f87171', fontWeight: 600 }}>• {pctBreakdown.platform.toFixed(0)}% Platform</span>
                 <span style={{ color: netProfit >= 0 ? '#34d399' : '#9ca3af', fontWeight: 600 }}>
-                  {netProfit >= 0 ? '🟢' : '⚫'} {pctBreakdown.profit.toFixed(0)}% Profit
+                  • {pctBreakdown.profit.toFixed(0)}% Profit
                 </span>
               </div>
             </div>
@@ -297,7 +286,6 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
               { label: `− Komisi ${activePlatform.name}`, val: totalKomisi, color: '#fca5a5' },
               { label: '= Nett Revenue', val: revenueBersih, color: '#e2e8f0', bold: true },
               { label: `− HPP (Bahan + Kemasan)`, val: totalHPP, color: '#a5b4fc' },
-              ...(opsPerCup > 0 ? [{ label: `− OPEX per Cup`, val: opsPerCup, color: '#c4b5fd' }] : []),
             ].map(({ label, val, color, bold }) => (
               <div key={label} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -318,12 +306,13 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: netProfit >= 0 ? '#a7f3d0' : '#fecaca', marginBottom: 2 }}>
-                    {netProfit >= 0 ? '✅ PROFIT BERSIH FINAL' : '🚨 MERUGI'}
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: netProfit >= 0 ? '#a7f3d0' : '#fecaca', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name={netProfit >= 0 ? "checkCircle" : "alert"} size={12} color={netProfit >= 0 ? "#4ade80" : "#f87171"} />
+                    {netProfit >= 0 ? 'PROFIT BERSIH FINAL' : 'MERUGI'}
                   </div>
                   <div style={{ fontSize: 10, color: '#64748b' }}>
                     Margin bersih: {marginPct.toFixed(1)}%
-                    {marginPct > 20 ? ' — 🟢 Sehat' : marginPct > 0 ? ' — ⚠️ Tipis' : ' — 🚨 Rugi'}
+                    {marginPct > 20 ? ' — Sehat' : marginPct > 0 ? ' — Tipis' : ' — Rugi'}
                   </div>
                 </div>
                 <div className="mono" style={{
@@ -339,7 +328,7 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
         )}
         {/* Pricing */}
         <div className="section-card" style={{ marginBottom: 14 }}>
-          <SectionHeader iconEmoji="🏷️" iconBg="#ecfdf5" title="Penetapan Harga Jual" badgeText="PRICING" badgeClass="badge-emerald" />
+          <SectionHeader iconEmoji="tag" iconBg="#ecfdf5" title="Penetapan Harga Jual" badgeText="PRICING" badgeClass="badge-emerald" />
           <div className="section-body">
             <div style={{ marginBottom: 14 }}>
               <div className="flex-between" style={{ marginBottom: 8 }}>
@@ -392,7 +381,9 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
 
               {/* Main price */}
               <div className="bg-accent-green" style={{ borderRadius: 10, border: '2px solid', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2 }}>💡 Rekomendasi Harga Jual ({targetUnit})</div>
+                <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <Icon name="info" size={13} /> Rekomendasi Harga Jual ({targetUnit})
+                </div>
                 <div className="mono" style={{ fontWeight: 900, fontSize: 24 }}>{fmtRp(hargaJualBulat)}</div>
                 
                 {pcsPerPortion > 1 && (
@@ -416,11 +407,12 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
               <div className={margin < 30 ? 'bg-accent-orange' : 'bg-accent-green'} style={{
                 marginTop: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid'
               }}>
-                <div style={{ fontSize: 11, fontWeight: 600 }}>
-                  {margin < 30 ? '⚠️ Margin rendah — risiko bisnis tinggi' :
-                    margin < 50 ? '✅ Margin sehat — standar industri F&B' :
-                      margin < 70 ? '🏆 Margin bagus — produk premium' :
-                        '💎 Margin sangat tinggi — pastikan value sesuai'}
+                <div style={{ fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name={margin < 30 ? "alert" : "checkCircle"} size={13} />
+                  {margin < 30 ? 'Margin rendah — risiko bisnis tinggi' :
+                    margin < 50 ? 'Margin sehat — standar industri F&B' :
+                      margin < 70 ? 'Margin bagus — produk premium' :
+                        'Margin sangat tinggi — pastikan value sesuai'}
                 </div>
               </div>
             </div>
@@ -428,7 +420,9 @@ export default function HppCalculator({ menu, onUpdate, showToast }) {
             {/* Monthly estimate */}
             {num(ops.estimasiCup) > 0 && (
               <div style={{ marginTop: 10, background: '#1e293b', borderRadius: 10, padding: '12px 14px' }}>
-                <div className="label-xs" style={{ color: '#475569', marginBottom: 6 }}>📊 Estimasi Profit Bulanan</div>
+                <div className="label-xs" style={{ color: '#475569', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="chart" size={12} color="#475569" /> Estimasi Profit Bulanan
+                </div>
                 <div className="flex-between">
                   <span style={{ fontSize: 11, color: '#94a3b8' }}>
                     {num(ops.estimasiCup).toLocaleString('id-ID')} {targetUnit} × {fmtRp(profitPerCup)}
