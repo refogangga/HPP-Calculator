@@ -12,7 +12,8 @@ export default function BepCalculator({
   onSelectProfile,
   bepSettings = [],
   activeOutletId,
-  onUpdateBepSettings
+  onUpdateBepSettings,
+  showToast
 }) {
   const [operationalDays, setOperationalDays] = useState(30);
   const [manualOpex, setManualOpex] = useState(null);
@@ -125,6 +126,8 @@ export default function BepCalculator({
     let totalVolume = 0;
     let weightedNetProfitSum = 0;
     let weightedPriceSum = 0;
+    let weightedHppSum = 0;
+    let weightedPlatformCutSum = 0;
 
     activeMenus.forEach(m => {
       const vol = getMenuVolume(m.id, num(m.ops?.estimasiCup));
@@ -132,14 +135,20 @@ export default function BepCalculator({
       totalVolume += vol;
       weightedNetProfitSum += vol * pc.netProfit;
       weightedPriceSum += vol * pc.hargaJual;
+      weightedHppSum += vol * pc.hpp;
+      weightedPlatformCutSum += vol * pc.totalKomisi;
     });
 
     const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : 0;
     const avgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
+    const avgHpp = totalVolume > 0 ? weightedHppSum / totalVolume : 0;
+    const avgPlatformCut = totalVolume > 0 ? weightedPlatformCutSum / totalVolume : 0;
 
     return {
       avgNetProfit: avgNetProfit || 15000, // fallback
       avgPrice: avgPrice || 25000, // fallback
+      avgHpp: avgHpp || 10000, // fallback
+      avgPlatformCut: avgPlatformCut || 0,
       totalVolume
     };
   }, [activeMenus, activeProfile]);
@@ -252,6 +261,71 @@ export default function BepCalculator({
     statusBg = 'rgba(245, 158, 11, 0.1)';
     statusBorder = 'rgba(245, 158, 11, 0.25)';
   }
+
+  // Risk styling for Recommendations tab
+  let recStatusText = 'SANGAT SEHAT';
+  let recStatusColor = '#10b981'; // Green
+  let recStatusBg = 'rgba(16, 185, 129, 0.08)';
+  let recStatusBorder = 'rgba(16, 185, 129, 0.2)';
+  let recStatusDesc = '';
+
+  if (monthlyNetProfit <= 0) {
+    recStatusText = 'KRITIS (RUGI)';
+    recStatusColor = '#ef4444'; // Red
+    recStatusBg = 'rgba(239, 68, 68, 0.08)';
+    recStatusBorder = 'rgba(239, 68, 68, 0.2)';
+    recStatusDesc = `Target volume penjualan aktual (${volumeVal} cup) berada di bawah BEP Operasional (${bepUnits} cup). Bisnis diproyeksikan rugi ${fmtRp(Math.abs(monthlyNetProfit))} per bulan.`;
+  } else if (paybackPeriodMonths > targetPaybackMonths) {
+    recStatusText = 'RAWAN (TARGET MELESET)';
+    recStatusColor = '#f59e0b'; // Amber
+    recStatusBg = 'rgba(245, 158, 11, 0.08)';
+    recStatusBorder = 'rgba(245, 158, 11, 0.2)';
+    recStatusDesc = `Toko mencetak profit bersih ${fmtRp(monthlyNetProfit)}/bln, namun modal awal baru akan kembali dalam ${paybackText}. Target balik modal ${targetPaybackMonths} bulan meleset.`;
+  } else {
+    recStatusDesc = `Toko sangat profitabel! Profit bersih ${fmtRp(monthlyNetProfit)}/bln sanggup mengembalikan modal awal dalam ${paybackText}, lebih cepat dari target (${targetPaybackMonths} bulan).`;
+  }
+
+  const handleCopyReport = () => {
+    const hppVal = defaultMetrics.avgHpp;
+    const currentPrice = avgPriceVal;
+    const netProfitVal = netProfitPerCup;
+    const netMarginPctVal = currentPrice > 0 ? (netProfitVal / currentPrice) * 100 : 0;
+    const platformCutVal = defaultMetrics.avgPlatformCut;
+    const platformCutPctVal = currentPrice > 0 ? (platformCutVal / currentPrice) * 100 : 0;
+
+    const rec40 = hppVal / (1 - 0.4);
+    const rec50 = hppVal / (1 - 0.5);
+    const rec60 = hppVal / (1 - 0.6);
+
+    const reportText = `=== LAPORAN REKOMENDASI & ANALISIS KELAYAKAN BEP ===
+Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
+
+1. STATUS KELAYAKAN INVESTASI: ${recStatusText}
+   - ${recStatusDesc}
+   - Estimasi Profit Bersih Bulanan: ${fmtRp(monthlyNetProfit)}
+   - Total Modal Awal: ${fmtRp(investmentVal)}
+   - Waktu Balik Modal Riil: ${paybackText}
+
+2. UNIT ECONOMICS (RATA-RATA PER CUP):
+   - Rata-rata Harga Jual: ${fmtRp(currentPrice)}
+   - Rata-rata Direct HPP (Bahan + Kemasan): ${fmtRp(hppVal)}
+   - Komisi Platform Online: ${fmtRp(platformCutVal)} (${platformCutPctVal.toFixed(1)}%)
+   - Margin Bersih per Cup: ${fmtRp(netProfitVal)} (${netMarginPctVal.toFixed(1)}%)
+
+3. REKOMENDASI HARGA JUAL SEHAT (BERDASARKAN TARGET MARGIN):
+   - Target Margin 40% (Batas Bawah): ${fmtRp(Math.round(rec40))}
+   - Target Margin 50% (Ideal/Standar): ${fmtRp(Math.round(rec50))}
+   - Target Margin 60% (Premium/Aman): ${fmtRp(Math.round(rec60))}
+   
+* Laporan dibuat secara otomatis melalui HPP F&B Calculator.`;
+
+    navigator.clipboard.writeText(reportText);
+    if (showToast) {
+      showToast("Laporan berhasil disalin ke clipboard!", "success");
+    } else {
+      alert("Laporan berhasil disalin ke clipboard!");
+    }
+  };
 
   return (
     <div className="main-grid" style={{
@@ -530,7 +604,7 @@ export default function BepCalculator({
           </button>
         </div>
 
-        {activeRightTab === 'operasional' ? (
+        {activeRightTab === 'operasional' && (
           <>
             {/* Hero Summary Banner: Target Penjualan Harian */}
             <div style={{
@@ -653,7 +727,9 @@ export default function BepCalculator({
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {activeRightTab === 'investasi' && (
           <>
             {/* Hero Summary Banner: Target Penjualan Investasi */}
             <div style={{
@@ -779,6 +855,8 @@ export default function BepCalculator({
             </div>
           </>
         )}
+
+
       </div>
     </div>
   );

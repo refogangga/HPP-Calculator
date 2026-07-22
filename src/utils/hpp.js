@@ -303,3 +303,67 @@ export const getPenyusutanBulanan = (ops) => {
   }, 0);
 };
 
+export const getDirectHPP = (menu) => {
+  if (!menu) return 0;
+  const bb = (menu.ingredients || []).reduce((s, i) => {
+    if (!num(i.ukuranKemasan)) return s;
+    return s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup);
+  }, 0);
+  const km = (menu.packaging || []).filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
+  return bb + km;
+};
+
+export const calculatePlatformMetrics = (menu, hjOverride) => {
+  const hpp = getDirectHPP(menu);
+  const hj = hjOverride !== undefined && hjOverride !== null
+    ? num(hjOverride)
+    : roundPrice(menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100));
+  
+  const p = menu.platform || { enabled: false, commissionPct: 0, flatFee: 0, discountType: 'pct', discountValue: 0, commissionBasis: 'original' };
+  
+  if (!p.enabled) {
+    return {
+      hargaJual: hj,
+      hargaEfektif: hj,
+      revenueBersih: hj,
+      hpp,
+      totalKomisi: 0,
+      diskonNominal: 0,
+      netProfit: hj - hpp,
+      diskonPct: 0,
+      hppPct: hj > 0 ? (hpp / hj) * 100 : 0,
+      hppPctAfterDiscount: hj > 0 ? (hpp / hj) * 100 : 0,
+      platformName: 'Offline / Dine-In',
+      commissionPct: 0,
+      hasPlatform: false
+    };
+  }
+
+  const diskonNominal = p.discountType === 'pct' ? (hj * num(p.discountValue) / 100) : num(p.discountValue);
+  const hargaEfektif = Math.max(hj - diskonNominal, 0);
+  const basisKomisi = p.commissionBasis === 'effective' ? hargaEfektif : hj;
+  const komisiNominal = basisKomisi * num(p.commissionPct) / 100;
+  const totalKomisi = komisiNominal + num(p.flatFee);
+  const revenueBersih = hargaEfektif - totalKomisi;
+  const netProfit = revenueBersih - hpp;
+  
+  const diskonPct = p.discountType === 'pct' ? num(p.discountValue) : (hj > 0 ? (diskonNominal / hj) * 100 : 0);
+
+  return {
+    hargaJual: hj,
+    diskonNominal,
+    diskonPct,
+    hargaEfektif,
+    totalKomisi,
+    revenueBersih,
+    hpp,
+    hppPct: hj > 0 ? (hpp / hj) * 100 : 0,
+    hppPctAfterDiscount: hargaEfektif > 0 ? (hpp / hargaEfektif) * 100 : 0,
+    netProfit,
+    platformName: p.name || 'Custom',
+    commissionPct: num(p.commissionPct),
+    hasPlatform: true
+  };
+};
+
+

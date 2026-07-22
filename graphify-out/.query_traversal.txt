@@ -1,0 +1,22 @@
+Traversal: BFS | Start: ['HppCalculator', 'Apple Design System', 'PrismaVersion'] | 12 nodes
+  NODE Apple Design System [src=DESIGN.md loc=L1-L563]
+  NODE HppCalculator [src=src/components/HppCalculator.js loc=L10]
+  NODE PrismaVersion [src=src/generated/client/index.d.ts loc=L255]
+  NODE Photography-First Design Principle [src=DESIGN.md loc=L278-L293]
+  NODE Next.js Project Setup [src=README.md loc=L1-L37]
+  NODE Button Component System [src=DESIGN.md loc=L436-L454]
+  NODE Product Tile Pattern [src=DESIGN.md loc=L458-L466]
+  NODE SF Pro Typography System [src=DESIGN.md loc=L328-L371]
+  NODE Geist Font Family [src=README.md loc=L21]
+  NODE Responsive Breakpoints System [src=DESIGN.md loc=L510-L537]
+  NODE Single Shadow Philosophy [src=DESIGN.md loc=L391-L405]
+  NODE Action Blue Accent Color [src=DESIGN.md loc=L299]
+  EDGE Apple Design System --references [EXTRACTED]--> Action Blue Accent Color
+  EDGE Apple Design System --references [EXTRACTED]--> Button Component System
+  EDGE Apple Design System --references [EXTRACTED]--> Photography-First Design Principle
+  EDGE Apple Design System --references [EXTRACTED]--> Product Tile Pattern
+  EDGE Apple Design System --references [EXTRACTED]--> Responsive Breakpoints System
+  EDGE Apple Design System --references [EXTRACTED]--> SF Pro Typography System
+  EDGE Apple Design System --references [EXTRACTED]--> Single Shadow Philosophy
+  EDGE SF Pro Typography System --semantically_similar_to [INFERRED]--> Geist Font Family
+  EDGE Geist Font Family --references [EXTRACTED]--> Next.js Project Setup

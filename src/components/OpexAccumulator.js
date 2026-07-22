@@ -18,7 +18,9 @@ export default function OpexAccumulator({
   onNavigateToCalculator,
   onNavigateToBep,
   channelPresets = [],
-  onOpenChannelModal
+  onOpenChannelModal,
+  bepSettings = [],
+  activeOutletId
 }) {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Semua');
@@ -74,6 +76,20 @@ export default function OpexAccumulator({
   const activeProfile = useMemo(() => {
     return opexProfiles.find(p => p.id === activeProfileId) || opexProfiles[0] || mkOpexProfile();
   }, [opexProfiles, activeProfileId]);
+
+  // Current active BEP settings
+  const currentBep = useMemo(() => {
+    const s = (bepSettings || []).find(b => b.outletId === activeOutletId) || {};
+    return {
+      operationalDays: s.operationalDays ?? 30,
+      manualOpex: s.manualOpex ?? null,
+      manualMargin: s.manualMargin ?? null,
+      manualPrice: s.manualPrice ?? null,
+      actualVolume: s.actualVolume ?? null,
+      manualInvestment: s.manualInvestment ?? null,
+      targetPaybackMonths: s.targetPaybackMonths ?? 12,
+    };
+  }, [bepSettings, activeOutletId]);
 
   // Get selected menus in this profile
   const selectedMenus = useMemo(() => {
@@ -328,8 +344,11 @@ export default function OpexAccumulator({
   }, [activeProfile]);
 
   const totalOpexVal = useMemo(() => {
+    if (currentBep.manualOpex !== null) {
+      return num(currentBep.manualOpex);
+    }
     return totalExpenses + totalAssetDepreciation;
-  }, [totalExpenses, totalAssetDepreciation]);
+  }, [totalExpenses, totalAssetDepreciation, currentBep.manualOpex]);
 
   // Main KPI values — platform-aware
   const financialSummary = useMemo(() => {
@@ -361,9 +380,13 @@ export default function OpexAccumulator({
     const avgHppPctAfterDiscount = totalEffectiveRevenue > 0 ? (totalCOGS / totalEffectiveRevenue) * 100 : 0;
 
     // BEP based on net revenue
-    const avgNetPrice = totalVolume > 0 ? totalNetRevenue / totalVolume : 0;
+    const avgNetPrice = currentBep.manualPrice !== null
+      ? num(currentBep.manualPrice)
+      : (totalVolume > 0 ? totalNetRevenue / totalVolume : 0);
     const avgHpp = totalVolume > 0 ? totalCOGS / totalVolume : 0;
-    const avgContributionMargin = avgNetPrice - avgHpp;
+    const avgContributionMargin = currentBep.manualMargin !== null
+      ? num(currentBep.manualMargin)
+      : avgNetPrice - avgHpp;
     const bepUnits = avgContributionMargin > 0 ? Math.ceil(totalOpexVal / avgContributionMargin) : 0;
 
     return {
@@ -379,8 +402,11 @@ export default function OpexAccumulator({
       bepUnits,
       totalPlatformCut,
       totalDiskon,
+      avgNetPrice,
+      avgHpp,
+      avgContributionMargin
     };
-  }, [activeMenus, activeProfile.menuVolumes, totalOpexVal]);
+  }, [activeMenus, activeProfile.menuVolumes, totalOpexVal, currentBep.manualPrice, currentBep.manualMargin]);
 
   // Categories profit breakdown
   const categorySummaryBreakdown = useMemo(() => {
@@ -1462,7 +1488,8 @@ export default function OpexAccumulator({
                   </span>
                 </div>
                 <div style={{ fontSize: 10, marginTop: 4 }}>
-                  Volume penjualan gabungan yang dibutuhkan untuk menutup total biaya operasional sebesar <strong>{fmtRp(totalOpexVal)}</strong>.
+                  Volume penjualan gabungan yang dibutuhkan untuk menutup total biaya operasional sebesar <strong>{fmtRp(totalOpexVal)}</strong>
+                  {currentBep.manualOpex !== null && <span style={{ color: 'var(--color-amber)', marginLeft: 4, fontWeight: 700 }}>(Override OPEX Aktif)</span>}.
                 </div>
               </div>
 
@@ -1470,10 +1497,10 @@ export default function OpexAccumulator({
                 <span className="label-xs" style={{ display: 'block', marginBottom: 2 }}>TARGET BEP HARIAN (Cup/Hari)</span>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span className="mono" style={{ fontSize: 16, fontWeight: 800, color: 'var(--primary)' }}>
-                    {Math.ceil(financialSummary.bepUnits / 30)} unit / hari
+                    {Math.ceil(financialSummary.bepUnits / currentBep.operationalDays)} unit / hari
                   </span>
                   <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
-                    BEP Unit ÷ 30 Hari
+                    BEP Unit ÷ {currentBep.operationalDays} Hari
                   </span>
                 </div>
                 <div style={{ fontSize: 10, marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1489,24 +1516,29 @@ export default function OpexAccumulator({
                 </div>
               </div>
 
-              {financialSummary.totalVolume > 0 && (
-                <div style={{ padding: '4px 2px' }}>
-                  <div className="flex-between" style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 4 }}>
-                    <span>Pencapaian Target BEP</span>
-                    <span>{((financialSummary.totalVolume / Math.max(1, financialSummary.bepUnits)) * 100).toFixed(0)}%</span>
+              {(() => {
+                const displayVolume = currentBep.actualVolume !== null ? num(currentBep.actualVolume) : financialSummary.totalVolume;
+                const progressPct = displayVolume / Math.max(1, financialSummary.bepUnits) * 100;
+                if (displayVolume <= 0) return null;
+                return (
+                  <div style={{ padding: '4px 2px' }}>
+                    <div className="flex-between" style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                      <span>Pencapaian Target BEP {currentBep.actualVolume !== null && <span style={{ color: 'var(--color-amber)', fontSize: 9 }}>(Override Volume)</span>}</span>
+                      <span>{progressPct.toFixed(0)}%</span>
+                    </div>
+                    <div className="progress-bar" style={{ height: 8, background: 'var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div
+                        className="progress-segment"
+                        style={{
+                          width: `${Math.min(100, progressPct)}%`,
+                          background: displayVolume >= financialSummary.bepUnits ? 'var(--color-emerald)' : 'var(--color-amber)',
+                          borderRadius: 4
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="progress-bar" style={{ height: 8, background: 'var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div
-                      className="progress-segment"
-                      style={{
-                        width: `${Math.min(100, (financialSummary.totalVolume / Math.max(1, financialSummary.bepUnits)) * 100)}%`,
-                        background: financialSummary.totalVolume >= financialSummary.bepUnits ? 'var(--color-emerald)' : 'var(--color-amber)',
-                        borderRadius: 4
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
 

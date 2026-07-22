@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json(outlets);
   } catch (error) {
     console.error("GET /api/outlets error:", error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
   }
 }
 

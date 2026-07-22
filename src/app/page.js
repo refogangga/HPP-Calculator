@@ -53,15 +53,24 @@ export default function Home() {
       try {
         // 1. Load outlets
         const outletsRes = await fetch('/api/outlets');
+        if (!outletsRes.ok) throw new Error('Gagal memuat outlet dari server');
         let dbOutlets = await outletsRes.json();
         
-        if (!dbOutlets || dbOutlets.length === 0) {
+        if (dbOutlets.error || !Array.isArray(dbOutlets)) {
+          throw new Error(dbOutlets.error || 'Format data outlet tidak valid');
+        }
+        
+        if (dbOutlets.length === 0) {
           const createRes = await fetch('/api/outlets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: 'Outlet Utama' })
           });
+          if (!createRes.ok) throw new Error('Gagal membuat outlet default');
           const newOutlet = await createRes.json();
+          if (newOutlet.error || !newOutlet.id) {
+            throw new Error(newOutlet.error || 'Gagal membuat outlet default');
+          }
           dbOutlets = [newOutlet];
         }
         
@@ -71,16 +80,28 @@ export default function Home() {
 
         // 2. Load BEP settings
         const bepRes = await fetch('/api/bep');
+        if (!bepRes.ok) throw new Error('Gagal memuat BEP dari server');
         const dbBep = await bepRes.json();
+        if (dbBep.error || !Array.isArray(dbBep)) {
+          throw new Error(dbBep.error || 'Format data BEP tidak valid');
+        }
         setBepSettings(dbBep);
 
         // 3. Load Menus
         const menusRes = await fetch('/api/menus');
+        if (!menusRes.ok) throw new Error('Gagal memuat menu dari server');
         let dbMenus = await menusRes.json();
+        if (dbMenus.error || !Array.isArray(dbMenus)) {
+          throw new Error(dbMenus.error || 'Format data menu tidak valid');
+        }
         
         // 4. Load Opex Profiles
         const opexRes = await fetch('/api/opex');
+        if (!opexRes.ok) throw new Error('Gagal memuat opex dari server');
         let dbProfiles = await opexRes.json();
+        if (dbProfiles.error || !Array.isArray(dbProfiles)) {
+          throw new Error(dbProfiles.error || 'Format data opex tidak valid');
+        }
 
         // 5. Fallback migrations (LocalStorage)
         const localMenus = loadDB();
@@ -941,6 +962,8 @@ ${finalPortionLines.trim()}
           bepSettings={bepSettings}
           onUpdateBepSettings={handleUpdateBepSettings}
           showToast={showToast}
+          allMenus={menus}
+          allOpexProfiles={opexProfiles}
         />
       )}
 
@@ -982,6 +1005,8 @@ ${finalPortionLines.trim()}
           }}
           channelPresets={channelPresets}
           onOpenChannelModal={() => setShowChannelModal(true)}
+          bepSettings={bepSettings}
+          activeOutletId={activeOutletId}
         />
       )}
 
@@ -994,6 +1019,7 @@ ${finalPortionLines.trim()}
           bepSettings={bepSettings}
           activeOutletId={activeOutletId}
           onUpdateBepSettings={handleUpdateBepSettings}
+          showToast={showToast}
         />
       )}
 

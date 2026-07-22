@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Icon } from './Icon';
 import FormatInput from './FormatInput';
-import { num, fmtRp, roundPrice, getPenyusutanBulanan, mkOpexProfile } from '../utils/hpp';
+import { num, fmtRp, roundPrice, getPenyusutanBulanan, mkOpexProfile, getDirectHPP, calculatePlatformMetrics } from '../utils/hpp';
 import * as XLSX from 'xlsx';
 
 export default function MenuDatabase({
@@ -28,9 +28,12 @@ export default function MenuDatabase({
   onDeleteOutlet,
   bepSettings = [],
   onUpdateBepSettings,
-  showToast
+  showToast,
+  allMenus = [],
+  allOpexProfiles = []
 }) {
   const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'opex' | 'bep'
+  const [selectedFeasibilityOutlet, setSelectedFeasibilityOutlet] = useState(null);
   
   // Outlet form states
   const [showAddOutlet, setShowAddOutlet] = useState(false);
@@ -47,6 +50,398 @@ export default function MenuDatabase({
   const activeOutlet = useMemo(() => {
     return outlets.find(o => o.id === activeOutletId) || outlets[0] || null;
   }, [outlets, activeOutletId]);
+
+  // Feasibility calculation for selected outlet
+  const feasibilityData = useMemo(() => {
+    if (!selectedFeasibilityOutlet) return null;
+    const outletId = selectedFeasibilityOutlet.id;
+    
+    const oMenus = (allMenus || []).filter(m => m.outletId === outletId);
+    const oProfiles = (allOpexProfiles || []).filter(p => p.outletId === outletId);
+    const oSettings = (bepSettings || []).find(b => b.outletId === outletId) || {};
+    
+    const profile = oProfiles[0] || null;
+    
+    const sOperationalDays = oSettings.operationalDays ?? 30;
+    const sManualOpex = oSettings.manualOpex ?? null;
+    const sManualMargin = oSettings.manualMargin ?? null;
+    const sManualPrice = oSettings.manualPrice ?? null;
+    const sActualVolume = oSettings.actualVolume ?? null;
+    const sManualInvestment = oSettings.manualInvestment ?? null;
+    const sTargetPaybackMonths = oSettings.targetPaybackMonths ?? 12;
+    
+    const expenses = profile ? (profile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0) : 0;
+    const assetDepr = profile ? getPenyusutanBulanan(profile) : 0;
+    const calculatedOpex = expenses + assetDepr;
+    
+    const opexVal = sManualOpex !== null ? num(sManualOpex) : calculatedOpex;
+    
+    const selMenus = profile ? oMenus.filter(m => profile.selectedMenuIds?.includes(m.id)) : [];
+    const actMenus = profile ? selMenus.filter(m => !profile.disabledMenuIds?.includes(m.id)) : [];
+    
+    const getPlatformCalcLocal = (menu) => {
+      let hj = 0;
+      if (profile && profile.menuPrices && profile.menuPrices[menu.id] !== undefined) {
+        hj = profile.menuPrices[menu.id];
+      } else {
+        const hpp = getDirectHPP(menu);
+        hj = roundPrice(menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100));
+      }
+      return calculatePlatformMetrics(menu, hj);
+    };
+
+    let totalVolume = 0;
+    let weightedNetProfitSum = 0;
+    let weightedPriceSum = 0;
+    let weightedHppSum = 0;
+    let weightedPlatformCutSum = 0;
+
+    actMenus.forEach(m => {
+      let vol = 0;
+      if (profile && profile.menuVolumes && profile.menuVolumes[m.id] !== undefined) {
+        vol = num(profile.menuVolumes[m.id]);
+      } else {
+        vol = num(m.ops?.estimasiCup);
+      }
+      
+      const pc = getPlatformCalcLocal(m);
+      totalVolume += vol;
+      weightedNetProfitSum += vol * pc.netProfit;
+      weightedPriceSum += vol * pc.hargaJual;
+      weightedHppSum += vol * pc.hpp;
+      weightedPlatformCutSum += vol * pc.totalKomisi;
+    });
+
+    const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : 0;
+    const avgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
+    const avgHpp = totalVolume > 0 ? weightedHppSum / totalVolume : 0;
+    const avgPlatformCut = totalVolume > 0 ? weightedPlatformCutSum / totalVolume : 0;
+
+    const netProfitPerCup = sManualMargin !== null ? num(sManualMargin) : avgNetProfit;
+    const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgPrice;
+    const volumeVal = sActualVolume !== null ? num(sActualVolume) : (totalVolume || 600);
+    
+    const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0) : 0;
+    const investmentVal = sManualInvestment !== null ? num(sManualInvestment) : calculatedInvestment;
+
+    const bepUnits = netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
+    const bepHarian = sOperationalDays > 0 ? Math.ceil(bepUnits / sOperationalDays) : 0;
+    const bepNominal = bepUnits * avgPriceVal;
+
+    const monthlyNetProfit = (volumeVal * netProfitPerCup) - opexVal;
+    const paybackPeriodMonths = (monthlyNetProfit > 0 && investmentVal > 0) ? (investmentVal / monthlyNetProfit) : 0;
+
+    let paybackText = "N/A";
+    if (monthlyNetProfit <= 0) {
+      paybackText = "Tidak pernah balik modal (bisnis merugi/impas).";
+    } else if (investmentVal <= 0) {
+      paybackText = "0 Bulan (Tanpa modal awal).";
+    } else {
+      const totalMonths = Math.ceil(paybackPeriodMonths);
+      const years = Math.floor(totalMonths / 12);
+      const remainingMonths = totalMonths % 12;
+      let timeStr = "";
+      if (years > 0) timeStr += `${years} Tahun `;
+      if (remainingMonths > 0 || years === 0) timeStr += `${remainingMonths} Bulan`;
+      paybackText = timeStr;
+    }
+
+    const requiredMonthlyProfit = sTargetPaybackMonths > 0 ? investmentVal / sTargetPaybackMonths : 0;
+    const requiredMonthlyGrossProfit = requiredMonthlyProfit + opexVal;
+    const requiredCupMonth = netProfitPerCup > 0 ? Math.ceil(requiredMonthlyGrossProfit / netProfitPerCup) : 0;
+    const requiredCupDay = sOperationalDays > 0 ? Math.ceil(requiredCupMonth / sOperationalDays) : 0;
+    const requiredRevMonth = requiredCupMonth * avgPriceVal;
+    const requiredRevDay = sOperationalDays > 0 ? Math.round(requiredRevMonth / sOperationalDays) : 0;
+
+    let recStatusText = 'SANGAT SEHAT';
+    let recStatusColor = '#10b981'; // Green
+    let recStatusBg = 'rgba(16, 185, 129, 0.08)';
+    let recStatusBorder = 'rgba(16, 185, 129, 0.2)';
+    let recStatusDesc = '';
+
+    if (monthlyNetProfit <= 0) {
+      recStatusText = 'KRITIS (RUGI)';
+      recStatusColor = '#ef4444'; // Red
+      recStatusBg = 'rgba(239, 68, 68, 0.08)';
+      recStatusBorder = 'rgba(239, 68, 68, 0.2)';
+      recStatusDesc = `Target volume penjualan aktual (${volumeVal} cup) berada di bawah BEP Operasional (${bepUnits} cup). Bisnis diproyeksikan rugi ${fmtRp(Math.abs(monthlyNetProfit))} per bulan.`;
+    } else if (paybackPeriodMonths > sTargetPaybackMonths) {
+      recStatusText = 'RAWAN (TARGET MELESET)';
+      recStatusColor = '#f59e0b'; // Amber
+      recStatusBg = 'rgba(245, 158, 11, 0.08)';
+      recStatusBorder = 'rgba(245, 158, 11, 0.2)';
+      recStatusDesc = `Toko mencetak profit bersih ${fmtRp(monthlyNetProfit)}/bln, namun modal awal baru akan kembali dalam ${paybackText}. Target balik modal ${sTargetPaybackMonths} bulan meleset.`;
+    } else {
+      recStatusDesc = `Toko sangat profitabel! Profit bersih ${fmtRp(monthlyNetProfit)}/bln sanggup mengembalikan modal awal dalam ${paybackText}, lebih cepat dari target (${sTargetPaybackMonths} bulan).`;
+    }
+
+    const activeMenusInfo = actMenus.map(m => {
+      const pc = getPlatformCalcLocal(m);
+      let vol = 0;
+      if (profile && profile.menuVolumes && profile.menuVolumes[m.id] !== undefined) {
+        vol = num(profile.menuVolumes[m.id]);
+      } else {
+        vol = num(m.ops?.estimasiCup);
+      }
+      return {
+        id: m.id,
+        name: m.name,
+        emoji: m.emoji || '☕',
+        hpp: pc.hpp,
+        price: pc.hargaJual,
+        margin: pc.netProfit,
+        marginPct: pc.hargaJual > 0 ? (pc.netProfit / pc.hargaJual) * 100 : 0,
+        volume: vol
+      };
+    });
+
+    return {
+      bepUnits,
+      bepHarian,
+      bepNominal,
+      opexVal,
+      netProfitPerCup,
+      avgPriceVal,
+      volumeVal,
+      investmentVal,
+      monthlyNetProfit,
+      paybackPeriodMonths,
+      paybackText,
+      avgHpp,
+      avgPlatformCut,
+      requiredCupDay,
+      requiredRevMonth,
+      requiredRevDay,
+      recStatusText,
+      recStatusColor,
+      recStatusBg,
+      recStatusBorder,
+      recStatusDesc,
+      operationalDays: sOperationalDays,
+      targetPaybackMonths: sTargetPaybackMonths,
+      totalExpenses: expenses,
+      totalAssetDepreciation: assetDepr,
+      totalAssetsValue: calculatedInvestment,
+      activeMenusInfo
+    };
+  }, [selectedFeasibilityOutlet, allMenus, allOpexProfiles, bepSettings]);
+
+  const handleCopyReport = () => {
+    if (!feasibilityData || !selectedFeasibilityOutlet) return;
+    const { avgHpp, avgPriceVal, netProfitPerCup, avgPlatformCut, recStatusText, recStatusDesc, monthlyNetProfit, investmentVal, paybackText, targetPaybackMonths } = feasibilityData;
+    
+    const rec40 = avgHpp / (1 - 0.4);
+    const rec50 = avgHpp / (1 - 0.5);
+    const rec60 = avgHpp / (1 - 0.6);
+    
+    const reportText = `=== LAPORAN REKOMENDASI & ANALISIS KELAYAKAN BEP ===
+Cabang/Outlet: ${selectedFeasibilityOutlet.name}
+Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
+
+1. STATUS KELAYAKAN INVESTASI: ${recStatusText}
+   - ${recStatusDesc}
+   - Estimasi Profit Bersih Bulanan: ${fmtRp(monthlyNetProfit)}
+   - Total Modal Awal: ${fmtRp(investmentVal)}
+   - Waktu Balik Modal Riil: ${paybackText}
+
+2. UNIT ECONOMICS (RATA-RATA PER CUP):
+   - Rata-rata Harga Jual: ${fmtRp(avgPriceVal)}
+   - Rata-rata Direct HPP (Bahan + Kemasan): ${fmtRp(avgHpp)}
+   - Komisi Platform Online: ${fmtRp(avgPlatformCut)} (${avgPriceVal > 0 ? ((avgPlatformCut / avgPriceVal) * 100).toFixed(1) : 0}%)
+   - Margin Bersih per Cup: ${fmtRp(netProfitPerCup)} (${avgPriceVal > 0 ? ((netProfitPerCup / avgPriceVal) * 100).toFixed(1) : 0}%)
+
+3. REKOMENDASI HARGA JUAL SEHAT (BERDASARKAN TARGET MARGIN):
+   - Target Margin 40% (Batas Bawah): ${fmtRp(Math.round(rec40))}
+   - Target Margin 50% (Ideal/Standar): ${fmtRp(Math.round(rec50))}
+   - Target Margin 60% (Premium/Aman): ${fmtRp(Math.round(rec60))}
+   
+* Laporan dibuat secara otomatis melalui HPP F&B Calculator.`;
+
+    navigator.clipboard.writeText(reportText);
+    if (showToast) {
+      showToast("Laporan berhasil disalin ke clipboard!", "success");
+    } else {
+      alert("Laporan berhasil disalin ke clipboard!");
+    }
+  };
+
+  // Feasibility calculation for active outlet
+  const activeOutletFeasibilityData = useMemo(() => {
+    if (!activeOutlet) return null;
+    const outletId = activeOutlet.id;
+    
+    const oMenus = (allMenus || []).filter(m => m.outletId === outletId);
+    const oProfiles = (allOpexProfiles || []).filter(p => p.outletId === outletId);
+    const oSettings = (bepSettings || []).find(b => b.outletId === outletId) || {};
+    
+    const profile = oProfiles[0] || null;
+    
+    const sOperationalDays = oSettings.operationalDays ?? 30;
+    const sManualOpex = oSettings.manualOpex ?? null;
+    const sManualMargin = oSettings.manualMargin ?? null;
+    const sManualPrice = oSettings.manualPrice ?? null;
+    const sActualVolume = oSettings.actualVolume ?? null;
+    const sManualInvestment = oSettings.manualInvestment ?? null;
+    const sTargetPaybackMonths = oSettings.targetPaybackMonths ?? 12;
+    
+    const expenses = profile ? (profile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0) : 0;
+    const assetDepr = profile ? getPenyusutanBulanan(profile) : 0;
+    const calculatedOpex = expenses + assetDepr;
+    
+    const opexVal = sManualOpex !== null ? num(sManualOpex) : calculatedOpex;
+    
+    const selMenus = profile ? oMenus.filter(m => profile.selectedMenuIds?.includes(m.id)) : [];
+    const actMenus = profile ? selMenus.filter(m => !profile.disabledMenuIds?.includes(m.id)) : [];
+    
+    const getPlatformCalcLocal = (menu) => {
+      let hj = 0;
+      if (profile && profile.menuPrices && profile.menuPrices[menu.id] !== undefined) {
+        hj = profile.menuPrices[menu.id];
+      } else {
+        const hpp = getDirectHPP(menu);
+        hj = roundPrice(menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100));
+      }
+      return calculatePlatformMetrics(menu, hj);
+    };
+
+    let totalVolume = 0;
+    let weightedNetProfitSum = 0;
+    let weightedPriceSum = 0;
+    let weightedHppSum = 0;
+    let weightedPlatformCutSum = 0;
+
+    actMenus.forEach(m => {
+      let vol = 0;
+      if (profile && profile.menuVolumes && profile.menuVolumes[m.id] !== undefined) {
+        vol = num(profile.menuVolumes[m.id]);
+      } else {
+        vol = num(m.ops?.estimasiCup);
+      }
+      
+      const pc = getPlatformCalcLocal(m);
+      totalVolume += vol;
+      weightedNetProfitSum += vol * pc.netProfit;
+      weightedPriceSum += vol * pc.hargaJual;
+      weightedHppSum += vol * pc.hpp;
+      weightedPlatformCutSum += vol * pc.totalKomisi;
+    });
+
+    const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : 0;
+    const avgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
+    const avgHpp = totalVolume > 0 ? weightedHppSum / totalVolume : 0;
+    const avgPlatformCut = totalVolume > 0 ? weightedPlatformCutSum / totalVolume : 0;
+
+    const netProfitPerCup = sManualMargin !== null ? num(sManualMargin) : avgNetProfit;
+    const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgPrice;
+    const volumeVal = sActualVolume !== null ? num(sActualVolume) : (totalVolume || 600);
+    
+    const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0) : 0;
+    const investmentVal = sManualInvestment !== null ? num(sManualInvestment) : calculatedInvestment;
+
+    const bepUnits = netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
+    const bepHarian = sOperationalDays > 0 ? Math.ceil(bepUnits / sOperationalDays) : 0;
+    const bepNominal = bepUnits * avgPriceVal;
+
+    const monthlyNetProfit = (volumeVal * netProfitPerCup) - opexVal;
+    const paybackPeriodMonths = (monthlyNetProfit > 0 && investmentVal > 0) ? (investmentVal / monthlyNetProfit) : 0;
+
+    let paybackText = "N/A";
+    if (monthlyNetProfit <= 0) {
+      paybackText = "Tidak pernah balik modal (bisnis merugi/impas).";
+    } else if (investmentVal <= 0) {
+      paybackText = "0 Bulan (Tanpa modal awal).";
+    } else {
+      const totalMonths = Math.ceil(paybackPeriodMonths);
+      const years = Math.floor(totalMonths / 12);
+      const remainingMonths = totalMonths % 12;
+      let timeStr = "";
+      if (years > 0) timeStr += `${years} Tahun `;
+      if (remainingMonths > 0 || years === 0) timeStr += `${remainingMonths} Bulan`;
+      paybackText = timeStr;
+    }
+
+    const requiredMonthlyProfit = sTargetPaybackMonths > 0 ? investmentVal / sTargetPaybackMonths : 0;
+    const requiredMonthlyGrossProfit = requiredMonthlyProfit + opexVal;
+    const requiredCupMonth = netProfitPerCup > 0 ? Math.ceil(requiredMonthlyGrossProfit / netProfitPerCup) : 0;
+    const requiredCupDay = sOperationalDays > 0 ? Math.ceil(requiredCupMonth / sOperationalDays) : 0;
+    const requiredRevMonth = requiredCupMonth * avgPriceVal;
+    const requiredRevDay = sOperationalDays > 0 ? Math.round(requiredRevMonth / sOperationalDays) : 0;
+
+    let recStatusText = 'SANGAT SEHAT';
+    let recStatusColor = '#10b981'; // Green
+    let recStatusBg = 'rgba(16, 185, 129, 0.08)';
+    let recStatusBorder = 'rgba(16, 185, 129, 0.2)';
+    let recStatusDesc = '';
+
+    if (monthlyNetProfit <= 0) {
+      recStatusText = 'KRITIS (RUGI)';
+      recStatusColor = '#ef4444'; // Red
+      recStatusBg = 'rgba(239, 68, 68, 0.08)';
+      recStatusBorder = 'rgba(239, 68, 68, 0.2)';
+      recStatusDesc = `Target volume penjualan aktual (${volumeVal} cup) berada di bawah BEP Operasional (${bepUnits} cup). Bisnis diproyeksikan rugi ${fmtRp(Math.abs(monthlyNetProfit))} per bulan.`;
+    } else if (paybackPeriodMonths > sTargetPaybackMonths) {
+      recStatusText = 'RAWAN (TARGET MELESET)';
+      recStatusColor = '#f59e0b'; // Amber
+      recStatusBg = 'rgba(245, 158, 11, 0.08)';
+      recStatusBorder = 'rgba(245, 158, 11, 0.2)';
+      recStatusDesc = `Toko mencetak profit bersih ${fmtRp(monthlyNetProfit)}/bln, namun modal awal baru akan kembali dalam ${paybackText}. Target balik modal ${sTargetPaybackMonths} bulan meleset.`;
+    } else {
+      recStatusDesc = `Toko sangat profitabel! Profit bersih ${fmtRp(monthlyNetProfit)}/bln sanggup mengembalikan modal awal dalam ${paybackText}, lebih cepat dari target (${sTargetPaybackMonths} bulan).`;
+    }
+
+    const activeMenusInfo = actMenus.map(m => {
+      const pc = getPlatformCalcLocal(m);
+      let vol = 0;
+      if (profile && profile.menuVolumes && profile.menuVolumes[m.id] !== undefined) {
+        vol = num(profile.menuVolumes[m.id]);
+      } else {
+        vol = num(m.ops?.estimasiCup);
+      }
+      return {
+        id: m.id,
+        name: m.name,
+        emoji: m.emoji || '☕',
+        hpp: pc.hpp,
+        price: pc.hargaJual,
+        margin: pc.netProfit,
+        marginPct: pc.hargaJual > 0 ? (pc.netProfit / pc.hargaJual) * 100 : 0,
+        volume: vol
+      };
+    });
+
+    return {
+      bepUnits,
+      bepHarian,
+      bepNominal,
+      opexVal,
+      netProfitPerCup,
+      avgPriceVal,
+      volumeVal,
+      investmentVal,
+      monthlyNetProfit,
+      paybackPeriodMonths,
+      paybackText,
+      avgHpp,
+      avgPlatformCut,
+      requiredCupDay,
+      requiredRevMonth,
+      requiredRevDay,
+      recStatusText,
+      recStatusColor,
+      recStatusBg,
+      recStatusBorder,
+      recStatusDesc,
+      operationalDays: sOperationalDays,
+      targetPaybackMonths: sTargetPaybackMonths,
+      totalExpenses: expenses,
+      totalAssetDepreciation: assetDepr,
+      totalAssetsValue: calculatedInvestment,
+      activeMenusInfo,
+      calculatedOpex,
+      calculatedMarginPerCup: avgNetProfit,
+      calculatedPricePerCup: avgPrice
+    };
+  }, [activeOutlet, allMenus, allOpexProfiles, bepSettings]);
 
   // Retrieve current outlet's BEP settings
   const currentBep = useMemo(() => {
@@ -411,6 +806,14 @@ ${finalPortionLines.trim()}
                 </div>
 
                 <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                  {/* Feasibility Summary Button */}
+                  <button 
+                    onClick={() => setSelectedFeasibilityOutlet(o)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--primary)' }}
+                    title="Ringkasan Kelayakan Cabang"
+                  >
+                    <Icon name="activity" size={11} />
+                  </button>
                   {/* Rename */}
                   <button 
                     onClick={() => {
@@ -448,7 +851,8 @@ ${finalPortionLines.trim()}
         {[
           { id: 'menu', label: 'Database Resep Menu', icon: 'coffee', count: menus.length },
           { id: 'opex', label: 'Database Profil OPEX', icon: 'zap', count: opexProfiles.length },
-          { id: 'bep', label: 'Database & Parameter BEP', icon: 'calendar', count: null }
+          { id: 'bep', label: 'Database & Parameter BEP', icon: 'calendar', count: null },
+          { id: 'rekomendasi', label: 'Rekomendasi & Kelayakan', icon: 'activity', count: null }
         ].map(t => {
           const isAct = activeTab === t.id;
           return (
@@ -754,17 +1158,24 @@ ${finalPortionLines.trim()}
 
               {/* Modal / Investasi */}
               <div>
-                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Modal Investasi Awal (Rp)</label>
+                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
+                  Modal Investasi Awal (Rp)
+                  {currentBep.manualInvestment !== null ? (
+                    <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700 }}> (Override)</span>
+                  ) : (
+                    <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}> (Otomatis)</span>
+                  )}
+                </label>
                 <div className="input-prefix-wrap">
                   <span className="prefix">Rp</span>
                   <FormatInput
                     className="hpp-input"
                     placeholder="0"
-                    value={currentBep.manualInvestment !== null ? currentBep.manualInvestment : ''}
+                    value={currentBep.manualInvestment !== null ? currentBep.manualInvestment : (activeOutletFeasibilityData ? activeOutletFeasibilityData.totalAssetsValue : '')}
                     onChange={(val) => {
                       onUpdateBepSettings && onUpdateBepSettings({
                         ...currentBep,
-                        manualInvestment: val !== null ? Number(val) : null
+                        manualInvestment: val !== null && val !== '' ? Number(val) : null
                       });
                     }}
                   />
@@ -839,17 +1250,24 @@ ${finalPortionLines.trim()}
 
               {/* OPEX override */}
               <div>
-                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Override OPEX Bulanan (Rp)</label>
+                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
+                  Override OPEX Bulanan (Rp)
+                  {currentBep.manualOpex !== null ? (
+                    <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700 }}> (Override)</span>
+                  ) : (
+                    <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}> (Otomatis)</span>
+                  )}
+                </label>
                 <div className="input-prefix-wrap">
                   <span className="prefix">Rp</span>
                   <FormatInput
                     className="hpp-input"
                     placeholder="Auto-fill dari profil"
-                    value={currentBep.manualOpex !== null ? currentBep.manualOpex : ''}
+                    value={currentBep.manualOpex !== null ? currentBep.manualOpex : (activeOutletFeasibilityData ? activeOutletFeasibilityData.calculatedOpex : '')}
                     onChange={(val) => {
                       onUpdateBepSettings && onUpdateBepSettings({
                         ...currentBep,
-                        manualOpex: val !== null ? Number(val) : null
+                        manualOpex: val !== null && val !== '' ? Number(val) : null
                       });
                     }}
                   />
@@ -858,17 +1276,24 @@ ${finalPortionLines.trim()}
 
               {/* Margin override */}
               <div>
-                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Override Margin Bersih / Cup (Rp)</label>
+                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
+                  Override Margin Bersih / Cup (Rp)
+                  {currentBep.manualMargin !== null ? (
+                    <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700 }}> (Override)</span>
+                  ) : (
+                    <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}> (Otomatis)</span>
+                  )}
+                </label>
                 <div className="input-prefix-wrap">
                   <span className="prefix">Rp</span>
                   <FormatInput
                     className="hpp-input"
                     placeholder="Auto-fill dari rata-rata menu"
-                    value={currentBep.manualMargin !== null ? currentBep.manualMargin : ''}
+                    value={currentBep.manualMargin !== null ? currentBep.manualMargin : (activeOutletFeasibilityData ? Math.round(activeOutletFeasibilityData.calculatedMarginPerCup) : '')}
                     onChange={(val) => {
                       onUpdateBepSettings && onUpdateBepSettings({
                         ...currentBep,
-                        manualMargin: val !== null ? Number(val) : null
+                        manualMargin: val !== null && val !== '' ? Number(val) : null
                       });
                     }}
                   />
@@ -877,22 +1302,560 @@ ${finalPortionLines.trim()}
 
               {/* Price override */}
               <div>
-                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Override Harga Jual Rata-rata (Rp)</label>
+                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
+                  Override Harga Jual Rata-rata (Rp)
+                  {currentBep.manualPrice !== null ? (
+                    <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700 }}> (Override)</span>
+                  ) : (
+                    <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}> (Otomatis)</span>
+                  )}
+                </label>
                 <div className="input-prefix-wrap">
                   <span className="prefix">Rp</span>
                   <FormatInput
                     className="hpp-input"
                     placeholder="Auto-fill dari menu"
-                    value={currentBep.manualPrice !== null ? currentBep.manualPrice : ''}
+                    value={currentBep.manualPrice !== null ? currentBep.manualPrice : (activeOutletFeasibilityData ? Math.round(activeOutletFeasibilityData.calculatedPricePerCup) : '')}
                     onChange={(val) => {
                       onUpdateBepSettings && onUpdateBepSettings({
                         ...currentBep,
-                        manualPrice: val !== null ? Number(val) : null
+                        manualPrice: val !== null && val !== '' ? Number(val) : null
                       });
                     }}
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Output Real-time Hasil BEP & Kelayakan */}
+            {activeOutletFeasibilityData && (
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 12,
+                padding: 20,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14
+              }}>
+                <div style={{ fontWeight: 800, fontSize: 13, borderBottom: '1px solid var(--border-color)', paddingBottom: 8, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="activity" size={14} color="var(--primary)" /> Ringkasan BEP &amp; Kelayakan Real-Time
+                </div>
+
+                {/* Status Alert */}
+                <div style={{
+                  background: activeOutletFeasibilityData.recStatusBg,
+                  border: `1.5px solid ${activeOutletFeasibilityData.recStatusBorder}`,
+                  borderRadius: 8,
+                  padding: '8px 10px',
+                  color: activeOutletFeasibilityData.recStatusColor,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  lineHeight: 1.4
+                }}>
+                  Status: {activeOutletFeasibilityData.recStatusText}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div className="flex-between" style={{ fontSize: 11 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Total OPEX Bulanan:</span>
+                    <span className="mono" style={{ fontWeight: 700, color: 'var(--color-text)' }}>{fmtRp(activeOutletFeasibilityData.opexVal)}</span>
+                  </div>
+                  <div className="flex-between" style={{ fontSize: 11 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>BEP Operasional:</span>
+                    <span className="mono" style={{ fontWeight: 700, color: 'var(--color-text)' }}>{activeOutletFeasibilityData.bepUnits.toLocaleString('id-ID')} Cup ({activeOutletFeasibilityData.bepHarian} Cup/hari)</span>
+                  </div>
+                  <div className="flex-between" style={{ fontSize: 11 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Target Balik Modal:</span>
+                    <span className="mono" style={{ fontWeight: 750, color: 'var(--primary)' }}>{activeOutletFeasibilityData.requiredCupDay} Cup/hari</span>
+                  </div>
+                  <div className="flex-between" style={{ fontSize: 11 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Estimasi Profit Bersih:</span>
+                    <span className="mono" style={{ fontWeight: 800, color: activeOutletFeasibilityData.monthlyNetProfit > 0 ? '#10b981' : '#ef4444' }}>
+                      {activeOutletFeasibilityData.monthlyNetProfit > 0 ? fmtRp(activeOutletFeasibilityData.monthlyNetProfit) : `Rugi ${fmtRp(Math.abs(activeOutletFeasibilityData.monthlyNetProfit))}`}
+                    </span>
+                  </div>
+                  <div className="flex-between" style={{ fontSize: 11 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Payback Period Riil:</span>
+                    <span className="mono" style={{ fontWeight: 750, color: 'var(--color-text)' }}>{activeOutletFeasibilityData.paybackText}</span>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 9, color: 'var(--color-text-muted)', lineHeight: 1.5, marginTop: 4, background: 'var(--bg-app)', padding: 8, borderRadius: 6 }}>
+                  * Hasil di atas dihitung otomatis secara real-time berdasarkan HPP resep aktif, biaya opex profil, serta parameter input di sebelah kiri.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── TAB 4: REKOMENDASI & KELAYAKAN TAB ──────────────── */}
+      {activeTab === 'rekomendasi' && activeOutletFeasibilityData && (
+        <div className="section-card" style={{ padding: 22 }}>
+          <div>
+            <h2 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <Icon name="activity" size={18} color="var(--primary)" /> Rekomendasi &amp; Kelayakan Cabang: {activeOutlet?.name}
+            </h2>
+            <p style={{ margin: '0 0 20px', fontSize: 11, color: 'var(--color-text-muted)' }}>
+              Analisis kelayakan investasi, struktur biaya, unit economics, resep menu, serta matriks sensitivitas harga untuk cabang aktif ini.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Status Kelayakan Card */}
+            <div>
+              <div style={{
+                background: activeOutletFeasibilityData.recStatusBg,
+                border: `1.5px solid ${activeOutletFeasibilityData.recStatusBorder}`,
+                borderRadius: 10,
+                padding: '14px 16px',
+                color: activeOutletFeasibilityData.recStatusColor
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 850, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="info" size={14} color={activeOutletFeasibilityData.recStatusColor} /> STATUS OPERASIONAL &amp; KELAYAKAN: {activeOutletFeasibilityData.recStatusText}
+                </div>
+                <div style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--color-text-muted)' }}>
+                  {activeOutletFeasibilityData.recStatusDesc}
+                </div>
+              </div>
+            </div>
+
+            {/* Two Column Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 24, alignItems: 'start' }}>
+              {/* LEFT COLUMN: Metrics & Financial Structure */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Unit Economics */}
+                <div>
+                  <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>1. UNIT ECONOMICS (RATA-RATA GABUNGAN)</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg-app)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                    {[
+                      { label: 'Harga Jual Rata-rata', val: fmtRp(activeOutletFeasibilityData.avgPriceVal), color: 'var(--color-text)' },
+                      { label: 'Direct HPP Rata-rata', val: fmtRp(activeOutletFeasibilityData.avgHpp), color: 'var(--color-text-muted)' },
+                      ...(activeOutletFeasibilityData.avgPlatformCut > 0 ? [{
+                        label: 'Platform Cut Rata-rata',
+                        val: `${fmtRp(activeOutletFeasibilityData.avgPlatformCut)} (${((activeOutletFeasibilityData.avgPlatformCut / Math.max(1, activeOutletFeasibilityData.avgPriceVal)) * 100).toFixed(1)}%)`,
+                        color: '#ef4444'
+                      }] : []),
+                      {
+                        label: 'Margin Bersih per Cup',
+                        val: `${fmtRp(activeOutletFeasibilityData.netProfitPerCup)} (${(activeOutletFeasibilityData.avgPriceVal > 0 ? (activeOutletFeasibilityData.netProfitPerCup / activeOutletFeasibilityData.avgPriceVal) * 100 : 0).toFixed(1)}%)`,
+                        color: activeOutletFeasibilityData.netProfitPerCup > 0 ? '#10b981' : '#ef4444',
+                        bold: true
+                      },
+                    ].map(({ label, val, color, bold }) => (
+                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                        <span style={{ color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                        <span className="mono" style={{ fontWeight: bold ? 800 : 600, color }}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Financial structure */}
+                <div>
+                  <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>2. STRUKTUR BIAYA CABANG</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg-app)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                    {[
+                      { label: 'Modal CapEx Aset Awal', val: fmtRp(activeOutletFeasibilityData.investmentVal) },
+                      { label: 'Beban Overhead Bulanan', val: fmtRp(activeOutletFeasibilityData.totalExpenses) },
+                      { label: 'Penyusutan Peralatan / Bln', val: fmtRp(activeOutletFeasibilityData.totalAssetDepreciation) },
+                      { label: 'Total OPEX Bulanan', val: fmtRp(activeOutletFeasibilityData.opexVal), bold: true, color: 'var(--primary)' },
+                    ].map(({ label, val, color, bold }) => (
+                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                        <span style={{ color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                        <span className="mono" style={{ fontWeight: bold ? 800 : 600, color: color || 'var(--color-text)' }}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* BEP metrics */}
+                <div>
+                  <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>3. TARGET IMPAS &amp; PAYBACK</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg-app)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                    {[
+                      { label: 'BEP Operasional Bulanan', val: `${activeOutletFeasibilityData.bepUnits.toLocaleString('id-ID')} Cup` },
+                      { label: 'BEP Operasional Harian', val: `${activeOutletFeasibilityData.bepHarian} Cup / hari`, bold: true },
+                      { label: 'Target Balik Modal Harian', val: `${activeOutletFeasibilityData.requiredCupDay} Cup / hari`, color: 'var(--primary)' },
+                      { label: 'Target Balik Modal Omset', val: `${fmtRp(activeOutletFeasibilityData.requiredRevMonth)}/bln`, color: 'var(--primary)' },
+                      { label: 'Laba Bersih Bulanan Riil', val: activeOutletFeasibilityData.monthlyNetProfit > 0 ? fmtRp(activeOutletFeasibilityData.monthlyNetProfit) : `Rugi ${fmtRp(Math.abs(activeOutletFeasibilityData.monthlyNetProfit))}`, color: activeOutletFeasibilityData.monthlyNetProfit > 0 ? '#10b981' : '#ef4444', bold: true },
+                      { label: 'Waktu Balik Modal Riil', val: activeOutletFeasibilityData.paybackText, bold: true },
+                    ].map(({ label, val, color, bold }) => (
+                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                        <span style={{ color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                        <span className="mono" style={{ fontWeight: bold ? 800 : 600, color: color || 'var(--color-text)' }}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Menus Economics & Recommendation Matrix */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Active Menus List */}
+                <div>
+                  <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>4. DAFTAR RESEP &amp; KELAYAKAN MENU ({activeOutletFeasibilityData.activeMenusInfo.length})</div>
+                  <div style={{
+                    maxHeight: 280,
+                    overflowY: 'auto',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 10,
+                    background: 'var(--bg-app)'
+                  }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', textAlign: 'left', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                          <th style={{ padding: '8px 10px' }}>Menu</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'right' }}>HPP</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'right' }}>Harga</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'right' }}>Margin Bersih</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeOutletFeasibilityData.activeMenusInfo.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                              Tidak ada menu aktif di cabang ini.
+                            </td>
+                          </tr>
+                        ) : (
+                          activeOutletFeasibilityData.activeMenusInfo.map(m => (
+                            <tr key={m.id} style={{ borderBottom: '1px dashed var(--border-color)', color: 'var(--color-text)' }}>
+                              <td style={{ padding: '8px 10px', fontWeight: 600 }}>{m.emoji} {m.name}</td>
+                              <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'monospace' }}>{fmtRp(m.hpp)}</td>
+                              <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'monospace' }}>{fmtRp(m.price)}</td>
+                              <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: m.margin > 0 ? '#10b981' : '#ef4444' }}>
+                                {fmtRp(m.margin)} ({m.marginPct.toFixed(0)}%)
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Recommendation Matrix */}
+                <div>
+                  <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>5. MATRIKS SENSITIVITAS HARGA JUAL</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg-app)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: 6, marginBottom: 6 }}>
+                      <div>Target Margin</div>
+                      <div style={{ textAlign: 'right' }}>Harga Min.</div>
+                      <div style={{ textAlign: 'right' }}>Margin/Unit</div>
+                    </div>
+                    {[0.35, 0.45, 0.55, 0.65, 0.70].map(rate => {
+                      const price = Math.round(activeOutletFeasibilityData.avgHpp / (1 - rate));
+                      const marginVal = price - activeOutletFeasibilityData.avgHpp;
+                      const isIdeal = rate === 0.55;
+                      return (
+                        <div key={rate} style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1.2fr 1fr 1fr',
+                          fontSize: 11,
+                          color: isIdeal ? 'var(--primary)' : 'var(--color-text)',
+                          fontWeight: isIdeal ? 700 : 400,
+                          padding: '3px 0'
+                        }}>
+                          <div>Margin {Math.round(rate * 100)}% {isIdeal && '(Sangat Sehat)'}</div>
+                          <div style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtRp(price)}</div>
+                          <div style={{ textAlign: 'right', fontFamily: 'monospace', color: marginVal > 0 ? '#10b981' : 'inherit' }}>{fmtRp(marginVal)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                  <button 
+                    onClick={() => {
+                      const { avgHpp, avgPriceVal, netProfitPerCup, avgPlatformCut, recStatusText, recStatusDesc, monthlyNetProfit, investmentVal, paybackText } = activeOutletFeasibilityData;
+                      const rec40 = avgHpp / (1 - 0.4);
+                      const rec50 = avgHpp / (1 - 0.5);
+                      const rec60 = avgHpp / (1 - 0.6);
+                      
+                      const reportText = `=== LAPORAN REKOMENDASI & ANALISIS KELAYAKAN BEP ===
+Cabang/Outlet: ${activeOutlet?.name}
+Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
+
+1. STATUS KELAYAKAN INVESTASI: ${recStatusText}
+   - ${recStatusDesc}
+   - Estimasi Profit Bersih Bulanan: ${fmtRp(monthlyNetProfit)}
+   - Total Modal Awal: ${fmtRp(investmentVal)}
+   - Waktu Balik Modal Riil: ${paybackText}
+
+2. UNIT ECONOMICS (RATA-RATA PER CUP):
+   - Rata-rata Harga Jual: ${fmtRp(avgPriceVal)}
+   - Rata-rata Direct HPP (Bahan + Kemasan): ${fmtRp(avgHpp)}
+   - Komisi Platform Online: ${fmtRp(avgPlatformCut)} (${avgPriceVal > 0 ? ((avgPlatformCut / avgPriceVal) * 100).toFixed(1) : 0}%)
+   - Margin Bersih per Cup: ${fmtRp(netProfitPerCup)} (${avgPriceVal > 0 ? ((netProfitPerCup / avgPriceVal) * 100).toFixed(1) : 0}%)
+
+3. REKOMENDASI HARGA JUAL SEHAT (BERDASARKAN TARGET MARGIN):
+   - Target Margin 40% (Batas Bawah): ${fmtRp(Math.round(rec40))}
+   - Target Margin 50% (Ideal/Standar): ${fmtRp(Math.round(rec50))}
+   - Target Margin 60% (Premium/Aman): ${fmtRp(Math.round(rec60))}
+   
+* Laporan dibuat secara otomatis melalui HPP F&B Calculator.`;
+
+                      navigator.clipboard.writeText(reportText);
+                      showToast("Laporan berhasil disalin ke clipboard!", "success");
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Icon name="copy" size={12} /> Salin Laporan Eksekutif Cabang
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Feasibility Summary */}
+      {selectedFeasibilityOutlet && feasibilityData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 16
+        }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 16,
+            width: '100%',
+            maxWidth: 760,
+            boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: '90vh',
+            overflow: 'hidden'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--border-color)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'var(--bg-app)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="activity" size={18} color="var(--primary)" />
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-text)' }}>Dashboard Kelayakan Bisnis &amp; Rekomendasi Cabang</div>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Cabang: <strong>{selectedFeasibilityOutlet.name}</strong></div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedFeasibilityOutlet(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: 20, fontWeight: 300 }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Status Kelayakan Card */}
+              <div>
+                <div style={{
+                  background: feasibilityData.recStatusBg,
+                  border: `1.5px solid ${feasibilityData.recStatusBorder}`,
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                  color: feasibilityData.recStatusColor
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 850, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Icon name="info" size={13} color={feasibilityData.recStatusColor} /> STATUS OPERASIONAL &amp; KELAYAKAN: {feasibilityData.recStatusText}
+                  </div>
+                  <div style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--color-text-muted)' }}>
+                    {feasibilityData.recStatusDesc}
+                  </div>
+                </div>
+              </div>
+
+              {/* Two Column Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+                {/* LEFT COLUMN: Metrics & Financial Structure */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {/* Unit Economics */}
+                  <div>
+                    <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>1. UNIT ECONOMICS (RATA-RATA GABUNGAN)</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, background: 'var(--bg-app)', padding: 12, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                      {[
+                        { label: 'Harga Jual Rata-rata', val: fmtRp(feasibilityData.avgPriceVal), color: 'var(--color-text)' },
+                        { label: 'Direct HPP Rata-rata', val: fmtRp(feasibilityData.avgHpp), color: 'var(--color-text-muted)' },
+                        ...(feasibilityData.avgPlatformCut > 0 ? [{
+                          label: 'Platform Cut Rata-rata',
+                          val: `${fmtRp(feasibilityData.avgPlatformCut)} (${((feasibilityData.avgPlatformCut / Math.max(1, feasibilityData.avgPriceVal)) * 100).toFixed(1)}%)`,
+                          color: '#ef4444'
+                        }] : []),
+                        {
+                          label: 'Margin Bersih per Cup',
+                          val: `${fmtRp(feasibilityData.netProfitPerCup)} (${(feasibilityData.avgPriceVal > 0 ? (feasibilityData.netProfitPerCup / feasibilityData.avgPriceVal) * 100 : 0).toFixed(1)}%)`,
+                          color: feasibilityData.netProfitPerCup > 0 ? '#10b981' : '#ef4444',
+                          bold: true
+                        },
+                      ].map(({ label, val, color, bold }) => (
+                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                          <span style={{ color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                          <span className="mono" style={{ fontWeight: bold ? 800 : 600, color }}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Financial structure */}
+                  <div>
+                    <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>2. STRUKTUR BIAYA CABANG</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, background: 'var(--bg-app)', padding: 12, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                      {[
+                        { label: 'Modal CapEx Aset Awal', val: fmtRp(feasibilityData.investmentVal) },
+                        { label: 'Beban Overhead Bulanan', val: fmtRp(feasibilityData.totalExpenses) },
+                        { label: 'Penyusutan Peralatan / Bln', val: fmtRp(feasibilityData.totalAssetDepreciation) },
+                        { label: 'Total OPEX Bulanan', val: fmtRp(feasibilityData.opexVal), bold: true, color: 'var(--primary)' },
+                      ].map(({ label, val, color, bold }) => (
+                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                          <span style={{ color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                          <span className="mono" style={{ fontWeight: bold ? 800 : 600, color: color || 'var(--color-text)' }}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* BEP metrics */}
+                  <div>
+                    <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>3. TARGET IMPAS &amp; PAYBACK</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, background: 'var(--bg-app)', padding: 12, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                      {[
+                        { label: 'BEP Operasional Bulanan', val: `${feasibilityData.bepUnits.toLocaleString('id-ID')} Cup` },
+                        { label: 'BEP Operasional Harian', val: `${feasibilityData.bepHarian} Cup / hari`, bold: true },
+                        { label: 'Target Balik Modal Harian', val: `${feasibilityData.requiredCupDay} Cup / hari`, color: 'var(--primary)' },
+                        { label: 'Target Balik Modal Omset', val: `${fmtRp(feasibilityData.requiredRevMonth)}/bln`, color: 'var(--primary)' },
+                        { label: 'Laba Bersih Bulanan Riil', val: feasibilityData.monthlyNetProfit > 0 ? fmtRp(feasibilityData.monthlyNetProfit) : `Rugi ${fmtRp(Math.abs(feasibilityData.monthlyNetProfit))}`, color: feasibilityData.monthlyNetProfit > 0 ? '#10b981' : '#ef4444', bold: true },
+                        { label: 'Waktu Balik Modal Riil', val: feasibilityData.paybackText, bold: true },
+                      ].map(({ label, val, color, bold }) => (
+                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                          <span style={{ color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                          <span className="mono" style={{ fontWeight: bold ? 800 : 600, color: color || 'var(--color-text)' }}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: Menus Economics & Recommendation Matrix */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {/* Active Menus List */}
+                  <div>
+                    <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>4. DAFTAR RESEP &amp; KELAYAKAN MENU ({feasibilityData.activeMenusInfo.length})</div>
+                    <div style={{
+                      maxHeight: 180,
+                      overflowY: 'auto',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 10,
+                      background: 'var(--bg-app)'
+                    }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', textAlign: 'left', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                            <th style={{ padding: '6px 8px' }}>Menu</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'right' }}>HPP</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Harga</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Margin Bersih</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {feasibilityData.activeMenusInfo.length === 0 ? (
+                            <tr>
+                              <td colSpan="4" style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                                Tidak ada menu aktif di cabang ini.
+                              </td>
+                            </tr>
+                          ) : (
+                            feasibilityData.activeMenusInfo.map(m => (
+                              <tr key={m.id} style={{ borderBottom: '1px dashed var(--border-color)', color: 'var(--color-text)' }}>
+                                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{m.emoji} {m.name}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'monospace' }}>{fmtRp(m.hpp)}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'monospace' }}>{fmtRp(m.price)}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: m.margin > 0 ? '#10b981' : '#ef4444' }}>
+                                  {fmtRp(m.margin)} ({m.marginPct.toFixed(0)}%)
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Recommendation Matrix */}
+                  <div>
+                    <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>5. MATRIKS SENSITIVITAS HARGA JUAL</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, background: 'var(--bg-app)', padding: 12, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: 4, marginBottom: 4 }}>
+                        <div>Target Margin</div>
+                        <div style={{ textAlign: 'right' }}>Harga Min.</div>
+                        <div style={{ textAlign: 'right' }}>Margin/Unit</div>
+                      </div>
+                      {[0.35, 0.45, 0.55, 0.65, 0.70].map(rate => {
+                        const price = Math.round(feasibilityData.avgHpp / (1 - rate));
+                        const marginVal = price - feasibilityData.avgHpp;
+                        const isIdeal = rate === 0.55;
+                        return (
+                          <div key={rate} style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.2fr 1fr 1fr',
+                            fontSize: 10,
+                            color: isIdeal ? 'var(--primary)' : 'var(--color-text)',
+                            fontWeight: isIdeal ? 700 : 400,
+                            padding: '2px 0'
+                          }}>
+                            <div>Margin {Math.round(rate * 100)}% {isIdeal && '(Sangat Sehat)'}</div>
+                            <div style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtRp(price)}</div>
+                            <div style={{ textAlign: 'right', fontFamily: 'monospace', color: marginVal > 0 ? '#10b981' : 'inherit' }}>{fmtRp(marginVal)}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '12px 20px',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              gap: 8,
+              justifyContent: 'flex-end',
+              background: 'var(--bg-app)'
+            }}>
+              <button 
+                onClick={handleCopyReport}
+                className="btn btn-ghost btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Icon name="copy" size={12} /> Salin Laporan Eksekutif
+              </button>
+              <button 
+                onClick={() => setSelectedFeasibilityOutlet(null)}
+                className="btn btn-primary btn-sm"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>

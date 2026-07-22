@@ -74,27 +74,6 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
 
   const { diskonNominal, hargaEfektif, totalKomisi, revenueBersih, grossMargin, netProfit, marginPct } = platformCalc;
 
-  const bepMetrics = useMemo(() => {
-    if (!activeProfile) return null;
-    const expenses = (activeProfile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0);
-    const assetDepr = getPenyusutanBulanan(activeProfile);
-    const totalOpex = expenses + assetDepr;
-    
-    // margin per cup for this menu is netProfit
-    const marginPerCup = netProfit; 
-    const bepUnits = marginPerCup > 0 ? Math.ceil(totalOpex / marginPerCup) : 0;
-    const bepHarian = Math.ceil(bepUnits / 30);
-    const bepNominal = bepUnits * hargaJualBulat;
-
-    return {
-      totalOpex,
-      bepUnits,
-      bepHarian,
-      bepNominal,
-      profileName: activeProfile.name
-    };
-  }, [activeProfile, netProfit, hargaJualBulat]);
-
   // 4-segment bar (based on hargaJualBulat = 100%)
   const pctBreakdown = useMemo(() => {
     if (hargaJualBulat <= 0) return { hpp: 0, diskon: 0, platform: 0, profit: 0 };
@@ -462,39 +441,7 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
               </div>
             )}
 
-            {/* Integrated BEP analysis card */}
-            {bepMetrics && (
-              <div style={{ marginTop: 10, background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '12px 14px' }}>
-                <div className="label-xs" style={{ color: 'var(--color-text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name="calculator" size={12} color="var(--primary)" /> Analisis Impas (BEP) Menu Singel
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <div style={{ background: 'var(--bg-app)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>BEP Harian</div>
-                    <div className="mono" style={{ fontSize: 14, fontWeight: 800, color: 'var(--color-text)', marginTop: 2 }}>{bepMetrics.bepHarian} {targetUnit}</div>
-                  </div>
-                  <div style={{ background: 'var(--bg-app)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>BEP Bulanan</div>
-                    <div className="mono" style={{ fontSize: 14, fontWeight: 800, color: 'var(--color-text)', marginTop: 2 }}>{bepMetrics.bepUnits.toLocaleString('id-ID')} {targetUnit}</div>
-                  </div>
-                </div>
 
-                <div className="flex-between" style={{ fontSize: 11, marginBottom: 4 }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>BEP Nominal Bulanan:</span>
-                  <span className="mono" style={{ fontWeight: 700, color: '#10b981' }}>{fmtRp(bepMetrics.bepNominal)}</span>
-                </div>
-                
-                <div className="flex-between" style={{ fontSize: 11, paddingBottom: 6, borderBottom: '1px dashed var(--border-color)' }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>Biaya OPEX Terintegrasi:</span>
-                  <span className="mono" style={{ fontWeight: 700, color: '#f59e0b' }}>{fmtRp(bepMetrics.totalOpex)}</span>
-                </div>
-
-                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 6, lineHeight: 1.4 }}>
-                  Berdasarkan profil OPEX <strong style={{ color: 'var(--color-text)' }}>{bepMetrics.profileName}</strong>. Jika menu ini menanggung seluruh beban toko, dibutuhkan penjualan rata-rata <strong style={{ color: 'var(--primary)' }}>{bepMetrics.bepHarian} {targetUnit}/hari</strong>.
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
