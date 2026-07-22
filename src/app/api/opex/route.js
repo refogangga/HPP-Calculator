@@ -28,7 +28,8 @@ export async function POST(request) {
         menuPrices: body.menuPrices || {},
         selectedMenuIds: body.selectedMenuIds || [],
         assets: body.assets || [],
-        expenses: body.expenses || []
+        expenses: body.expenses || [],
+        outletId: body.outletId || null
       }
     });
     return NextResponse.json(newProfile, { status: 201 });
@@ -44,13 +45,19 @@ export async function PUT(request) {
     
     // Bulk Sync
     if (Array.isArray(body)) {
-      const existing = await prisma.opexProfile.findMany({ select: { id: true } });
-      const existingIds = existing.map(e => e.id);
       const incomingIds = body.map(p => p.id);
+      const activeOutletIdsInPayload = [...new Set(body.map(p => p.outletId).filter(Boolean))];
       
-      const toDelete = existingIds.filter(id => !incomingIds.includes(id));
-      if (toDelete.length > 0) {
-        await prisma.opexProfile.deleteMany({ where: { id: { in: toDelete } } });
+      if (activeOutletIdsInPayload.length > 0) {
+        const existing = await prisma.opexProfile.findMany({
+          where: { outletId: { in: activeOutletIdsInPayload } },
+          select: { id: true }
+        });
+        const existingIds = existing.map(e => e.id);
+        const toDelete = existingIds.filter(id => !incomingIds.includes(id));
+        if (toDelete.length > 0) {
+          await prisma.opexProfile.deleteMany({ where: { id: { in: toDelete } } });
+        }
       }
       
       const upserts = body.map(p => 
@@ -66,7 +73,8 @@ export async function PUT(request) {
             menuPrices: p.menuPrices || {},
             selectedMenuIds: p.selectedMenuIds || [],
             assets: p.assets || [],
-            expenses: p.expenses || []
+            expenses: p.expenses || [],
+            outletId: p.outletId || null
           },
           create: {
             id: p.id,
@@ -79,7 +87,8 @@ export async function PUT(request) {
             menuPrices: p.menuPrices || {},
             selectedMenuIds: p.selectedMenuIds || [],
             assets: p.assets || [],
-            expenses: p.expenses || []
+            expenses: p.expenses || [],
+            outletId: p.outletId || null
           }
         })
       );
@@ -104,7 +113,8 @@ export async function PUT(request) {
         menuPrices: body.menuPrices,
         selectedMenuIds: body.selectedMenuIds,
         assets: body.assets,
-        expenses: body.expenses
+        expenses: body.expenses,
+        outletId: body.outletId !== undefined ? body.outletId : undefined
       }
     });
     return NextResponse.json(updatedProfile);

@@ -25,7 +25,8 @@ export async function POST(request) {
         margin: Number(body.margin) || 50,
         ingredients: body.ingredients || [],
         packaging: body.packaging || [],
-        ops: body.ops || {}
+        ops: body.ops || {},
+        outletId: body.outletId || null
       }
     });
     return NextResponse.json(newMenu, { status: 201 });
@@ -41,13 +42,30 @@ export async function PUT(request) {
     
     // Bulk Sync
     if (Array.isArray(body)) {
-      const existing = await prisma.menu.findMany({ select: { id: true } });
-      const existingIds = existing.map(e => e.id);
+      // Find what needs to be deleted or updated
       const incomingIds = body.map(m => m.id);
       
-      const toDelete = existingIds.filter(id => !incomingIds.includes(id));
-      if (toDelete.length > 0) {
-        await prisma.menu.deleteMany({ where: { id: { in: toDelete } } });
+      // If the bulk sync payload has elements, let's look up which ones to delete.
+      // However, we want to delete only from the specific outlet if possible,
+      // but to keep it simple, if they send a list of menus for sync:
+      // We look at all menus in the DB and if any of them are NOT in incomingIds,
+      // we check if they belong to the active outlet of this sync (if provided).
+      // Wait, let's just delete menus that are in the database but NOT in incomingIds,
+      // but only those that belong to the outlet(s) present in the payload to avoid cross-outlet deletion!
+      // This is VERY IMPORTANT! If we delete blindly, it will clear out menus from other outlets!
+      const activeOutletIdsInPayload = [...new Set(body.map(m => m.outletId).filter(Boolean))];
+      
+      if (activeOutletIdsInPayload.length > 0) {
+        const existing = await prisma.menu.findMany({
+          where: { outletId: { in: activeOutletIdsInPayload } },
+          select: { id: true }
+        });
+        const existingIds = existing.map(e => e.id);
+        const toDelete = existingIds.filter(id => !incomingIds.includes(id));
+        
+        if (toDelete.length > 0) {
+          await prisma.menu.deleteMany({ where: { id: { in: toDelete } } });
+        }
       }
       
       const upserts = body.map(m => 
@@ -60,7 +78,8 @@ export async function PUT(request) {
             margin: Number(m.margin) || 50,
             ingredients: m.ingredients || [],
             packaging: m.packaging || [],
-            ops: m.ops || {}
+            ops: m.ops || {},
+            outletId: m.outletId || null
           },
           create: {
             id: m.id,
@@ -70,7 +89,8 @@ export async function PUT(request) {
             margin: Number(m.margin) || 50,
             ingredients: m.ingredients || [],
             packaging: m.packaging || [],
-            ops: m.ops || {}
+            ops: m.ops || {},
+            outletId: m.outletId || null
           }
         })
       );
@@ -92,7 +112,8 @@ export async function PUT(request) {
         margin: body.margin !== undefined ? Number(body.margin) : undefined,
         ingredients: body.ingredients,
         packaging: body.packaging,
-        ops: body.ops
+        ops: body.ops,
+        outletId: body.outletId !== undefined ? body.outletId : undefined
       }
     });
     return NextResponse.json(updatedMenu);

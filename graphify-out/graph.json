@@ -1,0 +1,5252 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "graphify_skill_ecosystem",
+        "label": "Graphify Skill Ecosystem",
+        "nodes": [
+          "claude_skills_graphify_skill",
+          "claude_skills_graphify_references_extraction_spec",
+          "claude_skills_graphify_references_query",
+          "claude_skills_graphify_references_update",
+          "claude_skills_graphify_references_exports"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": ".claude/skills/graphify/SKILL.md"
+      },
+      {
+        "id": "design_system_core",
+        "label": "Apple Design System Core",
+        "nodes": [
+          "design_apple_design_system",
+          "design_photography_first_principle",
+          "design_action_blue_accent",
+          "design_sf_pro_typography",
+          "design_button_system"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "DESIGN.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "GET",
+      "file_type": "code",
+      "source_file": "src/app/api/bep/route.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_app_api_bep_route_get",
+      "community": 9,
+      "norm_label": "get"
+    },
+    {
+      "label": "PUT",
+      "file_type": "code",
+      "source_file": "src/app/api/bep/route.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_app_api_bep_route_put",
+      "community": 10,
+      "norm_label": "put"
+    },
+    {
+      "label": "GET",
+      "file_type": "code",
+      "source_file": "src/app/api/menus/route.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_app_api_menus_route_get",
+      "community": 12,
+      "norm_label": "get"
+    },
+    {
+      "label": "POST",
+      "file_type": "code",
+      "source_file": "src/app/api/menus/route.js",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "src_app_api_menus_route_post",
+      "community": 13,
+      "norm_label": "post"
+    },
+    {
+      "label": "PUT",
+      "file_type": "code",
+      "source_file": "src/app/api/menus/route.js",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "src_app_api_menus_route_put",
+      "community": 14,
+      "norm_label": "put"
+    },
+    {
+      "label": "DELETE",
+      "file_type": "code",
+      "source_file": "src/app/api/menus/route.js",
+      "source_location": "L126",
+      "_origin": "ast",
+      "id": "src_app_api_menus_route_delete",
+      "community": 11,
+      "norm_label": "delete"
+    },
+    {
+      "label": "GET",
+      "file_type": "code",
+      "source_file": "src/app/api/opex/route.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_app_api_opex_route_get",
+      "community": 16,
+      "norm_label": "get"
+    },
+    {
+      "label": "POST",
+      "file_type": "code",
+      "source_file": "src/app/api/opex/route.js",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "src_app_api_opex_route_post",
+      "community": 17,
+      "norm_label": "post"
+    },
+    {
+      "label": "PUT",
+      "file_type": "code",
+      "source_file": "src/app/api/opex/route.js",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "src_app_api_opex_route_put",
+      "community": 18,
+      "norm_label": "put"
+    },
+    {
+      "label": "DELETE",
+      "file_type": "code",
+      "source_file": "src/app/api/opex/route.js",
+      "source_location": "L127",
+      "_origin": "ast",
+      "id": "src_app_api_opex_route_delete",
+      "community": 15,
+      "norm_label": "delete"
+    },
+    {
+      "label": "GET",
+      "file_type": "code",
+      "source_file": "src/app/api/outlets/route.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_app_api_outlets_route_get",
+      "community": 20,
+      "norm_label": "get"
+    },
+    {
+      "label": "POST",
+      "file_type": "code",
+      "source_file": "src/app/api/outlets/route.js",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "src_app_api_outlets_route_post",
+      "community": 21,
+      "norm_label": "post"
+    },
+    {
+      "label": "PUT",
+      "file_type": "code",
+      "source_file": "src/app/api/outlets/route.js",
+      "source_location": "L115",
+      "_origin": "ast",
+      "id": "src_app_api_outlets_route_put",
+      "community": 22,
+      "norm_label": "put"
+    },
+    {
+      "label": "DELETE",
+      "file_type": "code",
+      "source_file": "src/app/api/outlets/route.js",
+      "source_location": "L132",
+      "_origin": "ast",
+      "id": "src_app_api_outlets_route_delete",
+      "community": 19,
+      "norm_label": "delete"
+    },
+    {
+      "label": "RootLayout",
+      "file_type": "code",
+      "source_file": "src/app/layout.js",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "src_app_layout_rootlayout",
+      "community": 23,
+      "norm_label": "rootlayout"
+    },
+    {
+      "label": "Home",
+      "file_type": "code",
+      "source_file": "src/app/page.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_app_page_home",
+      "community": 24,
+      "norm_label": "home"
+    },
+    {
+      "label": "BepCalculator",
+      "file_type": "code",
+      "source_file": "src/components/BepCalculator.js",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "src_components_bepcalculator_bepcalculator",
+      "community": 25,
+      "norm_label": "bepcalculator"
+    },
+    {
+      "label": "ChannelPresetsModal",
+      "file_type": "code",
+      "source_file": "src/components/ChannelPresetsModal.js",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "src_components_channelpresetsmodal_channelpresetsmodal",
+      "community": 26,
+      "norm_label": "channelpresetsmodal"
+    },
+    {
+      "label": "FormatInput",
+      "file_type": "code",
+      "source_file": "src/components/FormatInput.js",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "src_components_formatinput_formatinput",
+      "community": 27,
+      "norm_label": "formatinput"
+    },
+    {
+      "label": "HppCalculator",
+      "file_type": "code",
+      "source_file": "src/components/HppCalculator.js",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "src_components_hppcalculator_hppcalculator",
+      "community": 28,
+      "norm_label": "hppcalculator"
+    },
+    {
+      "label": "ToastContainer",
+      "file_type": "code",
+      "source_file": "src/components/HppSubComponents.js",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "src_components_hppsubcomponents_toastcontainer",
+      "community": 34,
+      "norm_label": "toastcontainer"
+    },
+    {
+      "label": "PackCalcModal",
+      "file_type": "code",
+      "source_file": "src/components/HppSubComponents.js",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "src_components_hppsubcomponents_packcalcmodal",
+      "community": 32,
+      "norm_label": "packcalcmodal"
+    },
+    {
+      "label": "SectionHeader",
+      "file_type": "code",
+      "source_file": "src/components/HppSubComponents.js",
+      "source_location": "L109",
+      "_origin": "ast",
+      "id": "src_components_hppsubcomponents_sectionheader",
+      "community": 33,
+      "norm_label": "sectionheader"
+    },
+    {
+      "label": "IngredientRow",
+      "file_type": "code",
+      "source_file": "src/components/HppSubComponents.js",
+      "source_location": "L124",
+      "_origin": "ast",
+      "id": "src_components_hppsubcomponents_ingredientrow",
+      "community": 29,
+      "norm_label": "ingredientrow"
+    },
+    {
+      "label": "PackagingCard",
+      "file_type": "code",
+      "source_file": "src/components/HppSubComponents.js",
+      "source_location": "L240",
+      "_origin": "ast",
+      "id": "src_components_hppsubcomponents_packagingcard",
+      "community": 31,
+      "norm_label": "packagingcard"
+    },
+    {
+      "label": "MenuMetaModal",
+      "file_type": "code",
+      "source_file": "src/components/HppSubComponents.js",
+      "source_location": "L347",
+      "_origin": "ast",
+      "id": "src_components_hppsubcomponents_menumetamodal",
+      "community": 30,
+      "norm_label": "menumetamodal"
+    },
+    {
+      "label": "MenuDatabase",
+      "file_type": "code",
+      "source_file": "src/components/MenuDatabase.js",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "src_components_menudatabase_menudatabase",
+      "community": 35,
+      "norm_label": "menudatabase"
+    },
+    {
+      "label": "OpexAccumulator",
+      "file_type": "code",
+      "source_file": "src/components/OpexAccumulator.js",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "src_components_opexaccumulator_opexaccumulator",
+      "community": 36,
+      "norm_label": "opexaccumulator"
+    },
+    {
+      "label": "PlatformCalculator",
+      "file_type": "code",
+      "source_file": "src/components/PlatformCalculator.js",
+      "source_location": "L88",
+      "_origin": "ast",
+      "id": "src_components_platformcalculator_platformcalculator",
+      "community": 37,
+      "norm_label": "platformcalculator"
+    },
+    {
+      "label": "PrismaPromise",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prismapromise",
+      "community": 3,
+      "norm_label": "prismapromise"
+    },
+    {
+      "label": "Outlet",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outlet",
+      "community": 345,
+      "norm_label": "outlet"
+    },
+    {
+      "label": "Menu",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menu",
+      "community": 167,
+      "norm_label": "menu"
+    },
+    {
+      "label": "OpexProfile",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofile",
+      "community": 271,
+      "norm_label": "opexprofile"
+    },
+    {
+      "label": "BepSettings",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L35",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettings",
+      "community": 44,
+      "norm_label": "bepsettings"
+    },
+    {
+      "label": "PrismaClient",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prismaclient",
+      "community": 431,
+      "norm_label": "prismaclient"
+    },
+    {
+      "label": "DecimalJsLike",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L231",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_decimaljslike",
+      "community": 122,
+      "norm_label": "decimaljslike"
+    },
+    {
+      "label": "Metrics",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L236",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_metrics",
+      "community": 243,
+      "norm_label": "metrics"
+    },
+    {
+      "label": "Metric",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L237",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_metric",
+      "community": 240,
+      "norm_label": "metric"
+    },
+    {
+      "label": "MetricHistogram",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L238",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_metrichistogram",
+      "community": 241,
+      "norm_label": "metrichistogram"
+    },
+    {
+      "label": "MetricHistogramBucket",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L239",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_metrichistogrambucket",
+      "community": 242,
+      "norm_label": "metrichistogrambucket"
+    },
+    {
+      "label": "PrismaVersion",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L255",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prismaversion",
+      "community": 433,
+      "norm_label": "prismaversion"
+    },
+    {
+      "label": "PromiseType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L351",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_promisetype",
+      "community": 435,
+      "norm_label": "promisetype"
+    },
+    {
+      "label": "PromiseReturnType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L356",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_promisereturntype",
+      "community": 434,
+      "norm_label": "promisereturntype"
+    },
+    {
+      "label": "Enumerable",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L366",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_enumerable",
+      "community": 124,
+      "norm_label": "enumerable"
+    },
+    {
+      "label": "RequiredKeys",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L368",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_requiredkeys",
+      "community": 438,
+      "norm_label": "requiredkeys"
+    },
+    {
+      "label": "TruthyKeys",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L372",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_truthykeys",
+      "community": 455,
+      "norm_label": "truthykeys"
+    },
+    {
+      "label": "TrueKeys",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L376",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_truekeys",
+      "community": 454,
+      "norm_label": "truekeys"
+    },
+    {
+      "label": "Subset",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L382",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_subset",
+      "community": 449,
+      "norm_label": "subset"
+    },
+    {
+      "label": "SelectSubset",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L391",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_selectsubset",
+      "community": 439,
+      "norm_label": "selectsubset"
+    },
+    {
+      "label": "SubsetIntersection",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L404",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_subsetintersection",
+      "community": 450,
+      "norm_label": "subsetintersection"
+    },
+    {
+      "label": "UnEnumerate",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L441",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_unenumerate",
+      "community": 457,
+      "norm_label": "unenumerate"
+    },
+    {
+      "label": "Union",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L472",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_union",
+      "community": 458,
+      "norm_label": "union"
+    },
+    {
+      "label": "IntersectOf",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L479",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_intersectof",
+      "community": 145,
+      "norm_label": "intersectof"
+    },
+    {
+      "label": "Overwrite",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L485",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_overwrite",
+      "community": 429,
+      "norm_label": "overwrite"
+    },
+    {
+      "label": "At",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L497",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_at",
+      "community": 42,
+      "norm_label": "at"
+    },
+    {
+      "label": "ComputeRaw",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L502",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_computeraw",
+      "community": 115,
+      "norm_label": "computeraw"
+    },
+    {
+      "label": "OptionalFlat",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L506",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_optionalflat",
+      "community": 343,
+      "norm_label": "optionalflat"
+    },
+    {
+      "label": "Strict",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L526",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_strict",
+      "community": 442,
+      "norm_label": "strict"
+    },
+    {
+      "label": "Merge",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L529",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_merge",
+      "community": 239,
+      "norm_label": "merge"
+    },
+    {
+      "label": "Boolean",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L534",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_boolean",
+      "community": 109,
+      "norm_label": "boolean"
+    },
+    {
+      "label": "True",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L539",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_true",
+      "community": 453,
+      "norm_label": "true"
+    },
+    {
+      "label": "False",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L544",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_false",
+      "community": 128,
+      "norm_label": "false"
+    },
+    {
+      "label": "Not",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L546",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_not",
+      "community": 265,
+      "norm_label": "not"
+    },
+    {
+      "label": "Extends",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L551",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_extends",
+      "community": 127,
+      "norm_label": "extends"
+    },
+    {
+      "label": "Has",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L557",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_has",
+      "community": 144,
+      "norm_label": "has"
+    },
+    {
+      "label": "Or",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L561",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_or",
+      "community": 344,
+      "norm_label": "or"
+    },
+    {
+      "label": "Keys",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L572",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_keys",
+      "community": 163,
+      "norm_label": "keys"
+    },
+    {
+      "label": "GetScalarType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L584",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_getscalartype",
+      "community": 142,
+      "norm_label": "getscalartype"
+    },
+    {
+      "label": "FieldRef",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L629",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_fieldref",
+      "community": 129,
+      "norm_label": "fieldref"
+    },
+    {
+      "label": "ModelName",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L641",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_modelname",
+      "community": 244,
+      "norm_label": "modelname"
+    },
+    {
+      "label": "Datasources",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L644",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_datasources",
+      "community": 117,
+      "norm_label": "datasources"
+    },
+    {
+      "label": "TypeMap",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L652",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_typemap",
+      "community": 456,
+      "norm_label": "typemap"
+    },
+    {
+      "label": "DefaultPrismaClient",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L950",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_defaultprismaclient",
+      "community": 123,
+      "norm_label": "defaultprismaclient"
+    },
+    {
+      "label": "ErrorFormat",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L951",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_errorformat",
+      "community": 126,
+      "norm_label": "errorformat"
+    },
+    {
+      "label": "PrismaClientOptions",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L952",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prismaclientoptions",
+      "community": 432,
+      "norm_label": "prismaclientoptions"
+    },
+    {
+      "label": "GlobalOmitConfig",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1020",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_globalomitconfig",
+      "community": 143,
+      "norm_label": "globalomitconfig"
+    },
+    {
+      "label": "LogLevel",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1028",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_loglevel",
+      "community": 166,
+      "norm_label": "loglevel"
+    },
+    {
+      "label": "LogDefinition",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1029",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_logdefinition",
+      "community": 164,
+      "norm_label": "logdefinition"
+    },
+    {
+      "label": "CheckIsLogLevel",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1034",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_checkisloglevel",
+      "community": 114,
+      "norm_label": "checkisloglevel"
+    },
+    {
+      "label": "GetLogType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1036",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_getlogtype",
+      "community": 138,
+      "norm_label": "getlogtype"
+    },
+    {
+      "label": "GetEvents",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1040",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_getevents",
+      "community": 137,
+      "norm_label": "getevents"
+    },
+    {
+      "label": "QueryEvent",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1044",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_queryevent",
+      "community": 436,
+      "norm_label": "queryevent"
+    },
+    {
+      "label": "LogEvent",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1052",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_logevent",
+      "community": 165,
+      "norm_label": "logevent"
+    },
+    {
+      "label": "PrismaAction",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1060",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prismaaction",
+      "community": 430,
+      "norm_label": "prismaaction"
+    },
+    {
+      "label": "TransactionClient",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1089",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_transactionclient",
+      "community": 451,
+      "norm_label": "transactionclient"
+    },
+    {
+      "label": "Datasource",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1091",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_datasource",
+      "community": 116,
+      "norm_label": "datasource"
+    },
+    {
+      "label": "OutletCountOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1104",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountoutputtype",
+      "community": 353,
+      "norm_label": "outletcountoutputtype"
+    },
+    {
+      "label": "OutletCountOutputTypeSelect",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1109",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountoutputtypeselect",
+      "community": 357,
+      "norm_label": "outletcountoutputtypeselect"
+    },
+    {
+      "label": "OutletCountOutputTypeDefaultArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1118",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountoutputtypedefaultargs",
+      "community": 356,
+      "norm_label": "outletcountoutputtypedefaultargs"
+    },
+    {
+      "label": "OutletCountOutputTypeCountMenusArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1128",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountoutputtypecountmenusargs",
+      "community": 354,
+      "norm_label": "outletcountoutputtypecountmenusargs"
+    },
+    {
+      "label": "OutletCountOutputTypeCountOpexProfilesArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1135",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountoutputtypecountopexprofilesargs",
+      "community": 355,
+      "norm_label": "outletcountoutputtypecountopexprofilesargs"
+    },
+    {
+      "label": "AggregateOutlet",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1148",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_aggregateoutlet",
+      "community": 41,
+      "norm_label": "aggregateoutlet"
+    },
+    {
+      "label": "OutletMinAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1154",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletminaggregateoutputtype",
+      "community": 387,
+      "norm_label": "outletminaggregateoutputtype"
+    },
+    {
+      "label": "OutletMaxAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1161",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletmaxaggregateoutputtype",
+      "community": 384,
+      "norm_label": "outletmaxaggregateoutputtype"
+    },
+    {
+      "label": "OutletCountAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1168",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountaggregateoutputtype",
+      "community": 351,
+      "norm_label": "outletcountaggregateoutputtype"
+    },
+    {
+      "label": "OutletMinAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1177",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletminaggregateinputtype",
+      "community": 386,
+      "norm_label": "outletminaggregateinputtype"
+    },
+    {
+      "label": "OutletMaxAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1184",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletmaxaggregateinputtype",
+      "community": 383,
+      "norm_label": "outletmaxaggregateinputtype"
+    },
+    {
+      "label": "OutletCountAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1191",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountaggregateinputtype",
+      "community": 350,
+      "norm_label": "outletcountaggregateinputtype"
+    },
+    {
+      "label": "OutletAggregateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1199",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletaggregateargs",
+      "community": 349,
+      "norm_label": "outletaggregateargs"
+    },
+    {
+      "label": "GetOutletAggregateType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1248",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_getoutletaggregatetype",
+      "community": 141,
+      "norm_label": "getoutletaggregatetype"
+    },
+    {
+      "label": "OutletGroupByArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1259",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletgroupbyargs",
+      "community": 380,
+      "norm_label": "outletgroupbyargs"
+    },
+    {
+      "label": "OutletGroupByOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1271",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletgroupbyoutputtype",
+      "community": 381,
+      "norm_label": "outletgroupbyoutputtype"
+    },
+    {
+      "label": "OutletSelect",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1295",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletselect",
+      "community": 399,
+      "norm_label": "outletselect"
+    },
+    {
+      "label": "OutletSelectScalar",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1308",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletselectscalar",
+      "community": 400,
+      "norm_label": "outletselectscalar"
+    },
+    {
+      "label": "OutletOmit",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1315",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletomit",
+      "community": 390,
+      "norm_label": "outletomit"
+    },
+    {
+      "label": "OutletInclude",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1316",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletinclude",
+      "community": 382,
+      "norm_label": "outletinclude"
+    },
+    {
+      "label": "$OutletPayload",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1323",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletpayload",
+      "community": 395,
+      "norm_label": "$outletpayload"
+    },
+    {
+      "label": "OutletDelegate",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1346",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletdelegate",
+      "community": 372,
+      "norm_label": "outletdelegate"
+    },
+    {
+      "label": "Prisma__OutletClient",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1673",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prisma_outletclient",
+      "community": 3,
+      "norm_label": "prisma__outletclient"
+    },
+    {
+      "label": "OutletFindUniqueArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1718",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletfinduniqueargs",
+      "community": 378,
+      "norm_label": "outletfinduniqueargs"
+    },
+    {
+      "label": "OutletFindUniqueOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1740",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletfinduniqueorthrowargs",
+      "community": 379,
+      "norm_label": "outletfinduniqueorthrowargs"
+    },
+    {
+      "label": "OutletFindFirstArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1762",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletfindfirstargs",
+      "community": 375,
+      "norm_label": "outletfindfirstargs"
+    },
+    {
+      "label": "OutletFindFirstOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1814",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletfindfirstorthrowargs",
+      "community": 376,
+      "norm_label": "outletfindfirstorthrowargs"
+    },
+    {
+      "label": "OutletFindManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1866",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletfindmanyargs",
+      "community": 377,
+      "norm_label": "outletfindmanyargs"
+    },
+    {
+      "label": "OutletCreateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1913",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreateargs",
+      "community": 358,
+      "norm_label": "outletcreateargs"
+    },
+    {
+      "label": "OutletCreateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1935",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatemanyargs",
+      "community": 360,
+      "norm_label": "outletcreatemanyargs"
+    },
+    {
+      "label": "OutletUpdateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1946",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdateargs",
+      "community": 410,
+      "norm_label": "outletupdateargs"
+    },
+    {
+      "label": "OutletUpdateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1972",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatemanyargs",
+      "community": 412,
+      "norm_label": "outletupdatemanyargs"
+    },
+    {
+      "label": "OutletUpsertArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1990",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupsertargs",
+      "community": 423,
+      "norm_label": "outletupsertargs"
+    },
+    {
+      "label": "OutletDeleteArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2020",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletdeleteargs",
+      "community": 373,
+      "norm_label": "outletdeleteargs"
+    },
+    {
+      "label": "OutletDeleteManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2042",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletdeletemanyargs",
+      "community": 374,
+      "norm_label": "outletdeletemanyargs"
+    },
+    {
+      "label": "Outlet$menusArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2056",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outlet_menusargs",
+      "community": 347,
+      "norm_label": "outlet$menusargs"
+    },
+    {
+      "label": "Outlet$opexProfilesArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2080",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outlet_opexprofilesargs",
+      "community": 348,
+      "norm_label": "outlet$opexprofilesargs"
+    },
+    {
+      "label": "Outlet$bepSettingsArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2104",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outlet_bepsettingsargs",
+      "community": 346,
+      "norm_label": "outlet$bepsettingsargs"
+    },
+    {
+      "label": "OutletDefaultArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2123",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletdefaultargs",
+      "community": 371,
+      "norm_label": "outletdefaultargs"
+    },
+    {
+      "label": "AggregateMenu",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2143",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_aggregatemenu",
+      "community": 39,
+      "norm_label": "aggregatemenu"
+    },
+    {
+      "label": "MenuAvgAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2151",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuavgaggregateoutputtype",
+      "community": 171,
+      "norm_label": "menuavgaggregateoutputtype"
+    },
+    {
+      "label": "MenuSumAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2155",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menusumaggregateoutputtype",
+      "community": 217,
+      "norm_label": "menusumaggregateoutputtype"
+    },
+    {
+      "label": "MenuMinAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2159",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuminaggregateoutputtype",
+      "community": 202,
+      "norm_label": "menuminaggregateoutputtype"
+    },
+    {
+      "label": "MenuMaxAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2170",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menumaxaggregateoutputtype",
+      "community": 199,
+      "norm_label": "menumaxaggregateoutputtype"
+    },
+    {
+      "label": "MenuCountAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2181",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucountaggregateoutputtype",
+      "community": 174,
+      "norm_label": "menucountaggregateoutputtype"
+    },
+    {
+      "label": "MenuAvgAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2197",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuavgaggregateinputtype",
+      "community": 170,
+      "norm_label": "menuavgaggregateinputtype"
+    },
+    {
+      "label": "MenuSumAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2201",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menusumaggregateinputtype",
+      "community": 216,
+      "norm_label": "menusumaggregateinputtype"
+    },
+    {
+      "label": "MenuMinAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2205",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuminaggregateinputtype",
+      "community": 201,
+      "norm_label": "menuminaggregateinputtype"
+    },
+    {
+      "label": "MenuMaxAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2216",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menumaxaggregateinputtype",
+      "community": 198,
+      "norm_label": "menumaxaggregateinputtype"
+    },
+    {
+      "label": "MenuCountAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2227",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucountaggregateinputtype",
+      "community": 173,
+      "norm_label": "menucountaggregateinputtype"
+    },
+    {
+      "label": "MenuAggregateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2242",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuaggregateargs",
+      "community": 169,
+      "norm_label": "menuaggregateargs"
+    },
+    {
+      "label": "GetMenuAggregateType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2303",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_getmenuaggregatetype",
+      "community": 139,
+      "norm_label": "getmenuaggregatetype"
+    },
+    {
+      "label": "MenuGroupByArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2314",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menugroupbyargs",
+      "community": 194,
+      "norm_label": "menugroupbyargs"
+    },
+    {
+      "label": "MenuGroupByOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2328",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menugroupbyoutputtype",
+      "community": 195,
+      "norm_label": "menugroupbyoutputtype"
+    },
+    {
+      "label": "MenuSelect",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2361",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuselect",
+      "community": 214,
+      "norm_label": "menuselect"
+    },
+    {
+      "label": "MenuSelectScalar",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2378",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuselectscalar",
+      "community": 215,
+      "norm_label": "menuselectscalar"
+    },
+    {
+      "label": "MenuOmit",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2392",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuomit",
+      "community": 204,
+      "norm_label": "menuomit"
+    },
+    {
+      "label": "MenuInclude",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2393",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuinclude",
+      "community": 196,
+      "norm_label": "menuinclude"
+    },
+    {
+      "label": "$MenuPayload",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2397",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menupayload",
+      "community": 210,
+      "norm_label": "$menupayload"
+    },
+    {
+      "label": "MenuDelegate",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2425",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menudelegate",
+      "community": 186,
+      "norm_label": "menudelegate"
+    },
+    {
+      "label": "Prisma__MenuClient",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2752",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prisma_menuclient",
+      "community": 3,
+      "norm_label": "prisma__menuclient"
+    },
+    {
+      "label": "MenuFindUniqueArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2802",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menufinduniqueargs",
+      "community": 192,
+      "norm_label": "menufinduniqueargs"
+    },
+    {
+      "label": "MenuFindUniqueOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2824",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menufinduniqueorthrowargs",
+      "community": 193,
+      "norm_label": "menufinduniqueorthrowargs"
+    },
+    {
+      "label": "MenuFindFirstArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2846",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menufindfirstargs",
+      "community": 189,
+      "norm_label": "menufindfirstargs"
+    },
+    {
+      "label": "MenuFindFirstOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2898",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menufindfirstorthrowargs",
+      "community": 190,
+      "norm_label": "menufindfirstorthrowargs"
+    },
+    {
+      "label": "MenuFindManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2950",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menufindmanyargs",
+      "community": 191,
+      "norm_label": "menufindmanyargs"
+    },
+    {
+      "label": "MenuCreateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2997",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreateargs",
+      "community": 176,
+      "norm_label": "menucreateargs"
+    },
+    {
+      "label": "MenuCreateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3019",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreatemanyargs",
+      "community": 178,
+      "norm_label": "menucreatemanyargs"
+    },
+    {
+      "label": "MenuUpdateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3030",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdateargs",
+      "community": 227,
+      "norm_label": "menuupdateargs"
+    },
+    {
+      "label": "MenuUpdateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3056",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdatemanyargs",
+      "community": 229,
+      "norm_label": "menuupdatemanyargs"
+    },
+    {
+      "label": "MenuUpsertArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3074",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupsertargs",
+      "community": 235,
+      "norm_label": "menuupsertargs"
+    },
+    {
+      "label": "MenuDeleteArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3104",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menudeleteargs",
+      "community": 187,
+      "norm_label": "menudeleteargs"
+    },
+    {
+      "label": "MenuDeleteManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3126",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menudeletemanyargs",
+      "community": 188,
+      "norm_label": "menudeletemanyargs"
+    },
+    {
+      "label": "Menu$outletArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3140",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menu_outletargs",
+      "community": 168,
+      "norm_label": "menu$outletargs"
+    },
+    {
+      "label": "MenuDefaultArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3159",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menudefaultargs",
+      "community": 185,
+      "norm_label": "menudefaultargs"
+    },
+    {
+      "label": "AggregateOpexProfile",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3179",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_aggregateopexprofile",
+      "community": 40,
+      "norm_label": "aggregateopexprofile"
+    },
+    {
+      "label": "OpexProfileAvgAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3187",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileavgaggregateoutputtype",
+      "community": 275,
+      "norm_label": "opexprofileavgaggregateoutputtype"
+    },
+    {
+      "label": "OpexProfileSumAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3192",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilesumaggregateoutputtype",
+      "community": 321,
+      "norm_label": "opexprofilesumaggregateoutputtype"
+    },
+    {
+      "label": "OpexProfileMinAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3197",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileminaggregateoutputtype",
+      "community": 306,
+      "norm_label": "opexprofileminaggregateoutputtype"
+    },
+    {
+      "label": "OpexProfileMaxAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3209",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilemaxaggregateoutputtype",
+      "community": 303,
+      "norm_label": "opexprofilemaxaggregateoutputtype"
+    },
+    {
+      "label": "OpexProfileCountAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3221",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecountaggregateoutputtype",
+      "community": 278,
+      "norm_label": "opexprofilecountaggregateoutputtype"
+    },
+    {
+      "label": "OpexProfileAvgAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3240",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileavgaggregateinputtype",
+      "community": 274,
+      "norm_label": "opexprofileavgaggregateinputtype"
+    },
+    {
+      "label": "OpexProfileSumAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3245",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilesumaggregateinputtype",
+      "community": 320,
+      "norm_label": "opexprofilesumaggregateinputtype"
+    },
+    {
+      "label": "OpexProfileMinAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3250",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileminaggregateinputtype",
+      "community": 305,
+      "norm_label": "opexprofileminaggregateinputtype"
+    },
+    {
+      "label": "OpexProfileMaxAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3262",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilemaxaggregateinputtype",
+      "community": 302,
+      "norm_label": "opexprofilemaxaggregateinputtype"
+    },
+    {
+      "label": "OpexProfileCountAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3274",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecountaggregateinputtype",
+      "community": 277,
+      "norm_label": "opexprofilecountaggregateinputtype"
+    },
+    {
+      "label": "OpexProfileAggregateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3292",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileaggregateargs",
+      "community": 273,
+      "norm_label": "opexprofileaggregateargs"
+    },
+    {
+      "label": "GetOpexProfileAggregateType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3353",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_getopexprofileaggregatetype",
+      "community": 140,
+      "norm_label": "getopexprofileaggregatetype"
+    },
+    {
+      "label": "OpexProfileGroupByArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3364",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilegroupbyargs",
+      "community": 298,
+      "norm_label": "opexprofilegroupbyargs"
+    },
+    {
+      "label": "OpexProfileGroupByOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3378",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilegroupbyoutputtype",
+      "community": 299,
+      "norm_label": "opexprofilegroupbyoutputtype"
+    },
+    {
+      "label": "OpexProfileSelect",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3414",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileselect",
+      "community": 318,
+      "norm_label": "opexprofileselect"
+    },
+    {
+      "label": "OpexProfileSelectScalar",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3434",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileselectscalar",
+      "community": 319,
+      "norm_label": "opexprofileselectscalar"
+    },
+    {
+      "label": "OpexProfileOmit",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3451",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileomit",
+      "community": 308,
+      "norm_label": "opexprofileomit"
+    },
+    {
+      "label": "OpexProfileInclude",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3452",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileinclude",
+      "community": 300,
+      "norm_label": "opexprofileinclude"
+    },
+    {
+      "label": "$OpexProfilePayload",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3456",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilepayload",
+      "community": 314,
+      "norm_label": "$opexprofilepayload"
+    },
+    {
+      "label": "OpexProfileDelegate",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3487",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofiledelegate",
+      "community": 290,
+      "norm_label": "opexprofiledelegate"
+    },
+    {
+      "label": "Prisma__OpexProfileClient",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3814",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prisma_opexprofileclient",
+      "community": 3,
+      "norm_label": "prisma__opexprofileclient"
+    },
+    {
+      "label": "OpexProfileFindUniqueArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3867",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilefinduniqueargs",
+      "community": 296,
+      "norm_label": "opexprofilefinduniqueargs"
+    },
+    {
+      "label": "OpexProfileFindUniqueOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3889",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilefinduniqueorthrowargs",
+      "community": 297,
+      "norm_label": "opexprofilefinduniqueorthrowargs"
+    },
+    {
+      "label": "OpexProfileFindFirstArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3911",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilefindfirstargs",
+      "community": 293,
+      "norm_label": "opexprofilefindfirstargs"
+    },
+    {
+      "label": "OpexProfileFindFirstOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3963",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilefindfirstorthrowargs",
+      "community": 294,
+      "norm_label": "opexprofilefindfirstorthrowargs"
+    },
+    {
+      "label": "OpexProfileFindManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4015",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilefindmanyargs",
+      "community": 295,
+      "norm_label": "opexprofilefindmanyargs"
+    },
+    {
+      "label": "OpexProfileCreateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4062",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreateargs",
+      "community": 280,
+      "norm_label": "opexprofilecreateargs"
+    },
+    {
+      "label": "OpexProfileCreateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4084",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreatemanyargs",
+      "community": 282,
+      "norm_label": "opexprofilecreatemanyargs"
+    },
+    {
+      "label": "OpexProfileUpdateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4095",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdateargs",
+      "community": 331,
+      "norm_label": "opexprofileupdateargs"
+    },
+    {
+      "label": "OpexProfileUpdateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4121",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdatemanyargs",
+      "community": 333,
+      "norm_label": "opexprofileupdatemanyargs"
+    },
+    {
+      "label": "OpexProfileUpsertArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4139",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupsertargs",
+      "community": 339,
+      "norm_label": "opexprofileupsertargs"
+    },
+    {
+      "label": "OpexProfileDeleteArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4169",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofiledeleteargs",
+      "community": 291,
+      "norm_label": "opexprofiledeleteargs"
+    },
+    {
+      "label": "OpexProfileDeleteManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4191",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofiledeletemanyargs",
+      "community": 292,
+      "norm_label": "opexprofiledeletemanyargs"
+    },
+    {
+      "label": "OpexProfile$outletArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4205",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofile_outletargs",
+      "community": 272,
+      "norm_label": "opexprofile$outletargs"
+    },
+    {
+      "label": "OpexProfileDefaultArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4224",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofiledefaultargs",
+      "community": 289,
+      "norm_label": "opexprofiledefaultargs"
+    },
+    {
+      "label": "AggregateBepSettings",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4244",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_aggregatebepsettings",
+      "community": 38,
+      "norm_label": "aggregatebepsettings"
+    },
+    {
+      "label": "BepSettingsAvgAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4252",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsavgaggregateoutputtype",
+      "community": 47,
+      "norm_label": "bepsettingsavgaggregateoutputtype"
+    },
+    {
+      "label": "BepSettingsSumAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4262",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingssumaggregateoutputtype",
+      "community": 89,
+      "norm_label": "bepsettingssumaggregateoutputtype"
+    },
+    {
+      "label": "BepSettingsMinAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4272",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsminaggregateoutputtype",
+      "community": 75,
+      "norm_label": "bepsettingsminaggregateoutputtype"
+    },
+    {
+      "label": "BepSettingsMaxAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4286",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsmaxaggregateoutputtype",
+      "community": 72,
+      "norm_label": "bepsettingsmaxaggregateoutputtype"
+    },
+    {
+      "label": "BepSettingsCountAggregateOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4300",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscountaggregateoutputtype",
+      "community": 50,
+      "norm_label": "bepsettingscountaggregateoutputtype"
+    },
+    {
+      "label": "BepSettingsAvgAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4316",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsavgaggregateinputtype",
+      "community": 46,
+      "norm_label": "bepsettingsavgaggregateinputtype"
+    },
+    {
+      "label": "BepSettingsSumAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4326",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingssumaggregateinputtype",
+      "community": 88,
+      "norm_label": "bepsettingssumaggregateinputtype"
+    },
+    {
+      "label": "BepSettingsMinAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4336",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsminaggregateinputtype",
+      "community": 74,
+      "norm_label": "bepsettingsminaggregateinputtype"
+    },
+    {
+      "label": "BepSettingsMaxAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4350",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsmaxaggregateinputtype",
+      "community": 71,
+      "norm_label": "bepsettingsmaxaggregateinputtype"
+    },
+    {
+      "label": "BepSettingsCountAggregateInputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4364",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscountaggregateinputtype",
+      "community": 49,
+      "norm_label": "bepsettingscountaggregateinputtype"
+    },
+    {
+      "label": "BepSettingsAggregateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4379",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsaggregateargs",
+      "community": 45,
+      "norm_label": "bepsettingsaggregateargs"
+    },
+    {
+      "label": "GetBepSettingsAggregateType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4440",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_getbepsettingsaggregatetype",
+      "community": 136,
+      "norm_label": "getbepsettingsaggregatetype"
+    },
+    {
+      "label": "BepSettingsGroupByArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4451",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsgroupbyargs",
+      "community": 68,
+      "norm_label": "bepsettingsgroupbyargs"
+    },
+    {
+      "label": "BepSettingsGroupByOutputType",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4465",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsgroupbyoutputtype",
+      "community": 69,
+      "norm_label": "bepsettingsgroupbyoutputtype"
+    },
+    {
+      "label": "BepSettingsSelect",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4498",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsselect",
+      "community": 86,
+      "norm_label": "bepsettingsselect"
+    },
+    {
+      "label": "BepSettingsSelectScalar",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4515",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsselectscalar",
+      "community": 87,
+      "norm_label": "bepsettingsselectscalar"
+    },
+    {
+      "label": "BepSettingsOmit",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4529",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsomit",
+      "community": 78,
+      "norm_label": "bepsettingsomit"
+    },
+    {
+      "label": "BepSettingsInclude",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4530",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsinclude",
+      "community": 70,
+      "norm_label": "bepsettingsinclude"
+    },
+    {
+      "label": "$BepSettingsPayload",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4534",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingspayload",
+      "community": 83,
+      "norm_label": "$bepsettingspayload"
+    },
+    {
+      "label": "BepSettingsDelegate",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4562",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsdelegate",
+      "community": 60,
+      "norm_label": "bepsettingsdelegate"
+    },
+    {
+      "label": "Prisma__BepSettingsClient",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4889",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_prisma_bepsettingsclient",
+      "community": 3,
+      "norm_label": "prisma__bepsettingsclient"
+    },
+    {
+      "label": "BepSettingsFindUniqueArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4939",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsfinduniqueargs",
+      "community": 66,
+      "norm_label": "bepsettingsfinduniqueargs"
+    },
+    {
+      "label": "BepSettingsFindUniqueOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4961",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsfinduniqueorthrowargs",
+      "community": 67,
+      "norm_label": "bepsettingsfinduniqueorthrowargs"
+    },
+    {
+      "label": "BepSettingsFindFirstArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4983",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsfindfirstargs",
+      "community": 63,
+      "norm_label": "bepsettingsfindfirstargs"
+    },
+    {
+      "label": "BepSettingsFindFirstOrThrowArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5035",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsfindfirstorthrowargs",
+      "community": 64,
+      "norm_label": "bepsettingsfindfirstorthrowargs"
+    },
+    {
+      "label": "BepSettingsFindManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5087",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsfindmanyargs",
+      "community": 65,
+      "norm_label": "bepsettingsfindmanyargs"
+    },
+    {
+      "label": "BepSettingsCreateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5134",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscreateargs",
+      "community": 52,
+      "norm_label": "bepsettingscreateargs"
+    },
+    {
+      "label": "BepSettingsCreateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5156",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscreatemanyargs",
+      "community": 54,
+      "norm_label": "bepsettingscreatemanyargs"
+    },
+    {
+      "label": "BepSettingsUpdateArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5167",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupdateargs",
+      "community": 98,
+      "norm_label": "bepsettingsupdateargs"
+    },
+    {
+      "label": "BepSettingsUpdateManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5193",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupdatemanyargs",
+      "community": 100,
+      "norm_label": "bepsettingsupdatemanyargs"
+    },
+    {
+      "label": "BepSettingsUpsertArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5211",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupsertargs",
+      "community": 105,
+      "norm_label": "bepsettingsupsertargs"
+    },
+    {
+      "label": "BepSettingsDeleteArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5241",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsdeleteargs",
+      "community": 61,
+      "norm_label": "bepsettingsdeleteargs"
+    },
+    {
+      "label": "BepSettingsDeleteManyArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5263",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsdeletemanyargs",
+      "community": 62,
+      "norm_label": "bepsettingsdeletemanyargs"
+    },
+    {
+      "label": "BepSettingsDefaultArgs",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5277",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsdefaultargs",
+      "community": 59,
+      "norm_label": "bepsettingsdefaultargs"
+    },
+    {
+      "label": "TransactionIsolationLevel",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5304",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_transactionisolationlevel",
+      "community": 452,
+      "norm_label": "transactionisolationlevel"
+    },
+    {
+      "label": "OutletScalarFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5314",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletscalarfieldenum",
+      "community": 396,
+      "norm_label": "outletscalarfieldenum"
+    },
+    {
+      "label": "MenuScalarFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5331",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuscalarfieldenum",
+      "community": 211,
+      "norm_label": "menuscalarfieldenum"
+    },
+    {
+      "label": "OpexProfileScalarFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5351",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilescalarfieldenum",
+      "community": 315,
+      "norm_label": "opexprofilescalarfieldenum"
+    },
+    {
+      "label": "BepSettingsScalarFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5368",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsscalarfieldenum",
+      "community": 84,
+      "norm_label": "bepsettingsscalarfieldenum"
+    },
+    {
+      "label": "SortOrder",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5376",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_sortorder",
+      "community": 440,
+      "norm_label": "sortorder"
+    },
+    {
+      "label": "JsonNullValueInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5383",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonnullvalueinput",
+      "community": 160,
+      "norm_label": "jsonnullvalueinput"
+    },
+    {
+      "label": "NullableJsonNullValueInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5391",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nullablejsonnullvalueinput",
+      "community": 268,
+      "norm_label": "nullablejsonnullvalueinput"
+    },
+    {
+      "label": "OutletOrderByRelevanceFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5399",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletorderbyrelevancefieldenum",
+      "community": 391,
+      "norm_label": "outletorderbyrelevancefieldenum"
+    },
+    {
+      "label": "JsonNullValueFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5408",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonnullvaluefilter",
+      "community": 159,
+      "norm_label": "jsonnullvaluefilter"
+    },
+    {
+      "label": "QueryMode",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5416",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_querymode",
+      "community": 437,
+      "norm_label": "querymode"
+    },
+    {
+      "label": "NullsOrder",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5424",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nullsorder",
+      "community": 270,
+      "norm_label": "nullsorder"
+    },
+    {
+      "label": "MenuOrderByRelevanceFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5435",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuorderbyrelevancefieldenum",
+      "community": 206,
+      "norm_label": "menuorderbyrelevancefieldenum"
+    },
+    {
+      "label": "OpexProfileOrderByRelevanceFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5444",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileorderbyrelevancefieldenum",
+      "community": 310,
+      "norm_label": "opexprofileorderbyrelevancefieldenum"
+    },
+    {
+      "label": "BepSettingsOrderByRelevanceFieldEnum",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5452",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsorderbyrelevancefieldenum",
+      "community": 79,
+      "norm_label": "bepsettingsorderbyrelevancefieldenum"
+    },
+    {
+      "label": "StringFieldRefInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5463",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_stringfieldrefinput",
+      "community": 443,
+      "norm_label": "stringfieldrefinput"
+    },
+    {
+      "label": "DateTimeFieldRefInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5470",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_datetimefieldrefinput",
+      "community": 118,
+      "norm_label": "datetimefieldrefinput"
+    },
+    {
+      "label": "FloatFieldRefInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5477",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_floatfieldrefinput",
+      "community": 130,
+      "norm_label": "floatfieldrefinput"
+    },
+    {
+      "label": "JsonFieldRefInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5484",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonfieldrefinput",
+      "community": 152,
+      "norm_label": "jsonfieldrefinput"
+    },
+    {
+      "label": "EnumQueryModeFieldRefInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5491",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_enumquerymodefieldrefinput",
+      "community": 125,
+      "norm_label": "enumquerymodefieldrefinput"
+    },
+    {
+      "label": "BooleanFieldRefInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5498",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_booleanfieldrefinput",
+      "community": 110,
+      "norm_label": "booleanfieldrefinput"
+    },
+    {
+      "label": "IntFieldRefInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5505",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_intfieldrefinput",
+      "community": 146,
+      "norm_label": "intfieldrefinput"
+    },
+    {
+      "label": "OutletWhereInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5512",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletwhereinput",
+      "community": 427,
+      "norm_label": "outletwhereinput"
+    },
+    {
+      "label": "OutletOrderByWithRelationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5525",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletorderbywithrelationinput",
+      "community": 394,
+      "norm_label": "outletorderbywithrelationinput"
+    },
+    {
+      "label": "OutletWhereUniqueInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5536",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletwhereuniqueinput",
+      "community": 428,
+      "norm_label": "outletwhereuniqueinput"
+    },
+    {
+      "label": "OutletOrderByWithAggregationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5549",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletorderbywithaggregationinput",
+      "community": 393,
+      "norm_label": "outletorderbywithaggregationinput"
+    },
+    {
+      "label": "OutletScalarWhereWithAggregatesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5559",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletscalarwherewithaggregatesinput",
+      "community": 398,
+      "norm_label": "outletscalarwherewithaggregatesinput"
+    },
+    {
+      "label": "MenuWhereInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5569",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuwhereinput",
+      "community": 237,
+      "norm_label": "menuwhereinput"
+    },
+    {
+      "label": "MenuOrderByWithRelationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5587",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuorderbywithrelationinput",
+      "community": 209,
+      "norm_label": "menuorderbywithrelationinput"
+    },
+    {
+      "label": "MenuWhereUniqueInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5603",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuwhereuniqueinput",
+      "community": 238,
+      "norm_label": "menuwhereuniqueinput"
+    },
+    {
+      "label": "MenuOrderByWithAggregationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5621",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuorderbywithaggregationinput",
+      "community": 208,
+      "norm_label": "menuorderbywithaggregationinput"
+    },
+    {
+      "label": "MenuScalarWhereWithAggregatesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5640",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuscalarwherewithaggregatesinput",
+      "community": 213,
+      "norm_label": "menuscalarwherewithaggregatesinput"
+    },
+    {
+      "label": "OpexProfileWhereInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5657",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilewhereinput",
+      "community": 341,
+      "norm_label": "opexprofilewhereinput"
+    },
+    {
+      "label": "OpexProfileOrderByWithRelationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5678",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileorderbywithrelationinput",
+      "community": 313,
+      "norm_label": "opexprofileorderbywithrelationinput"
+    },
+    {
+      "label": "OpexProfileWhereUniqueInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5697",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilewhereuniqueinput",
+      "community": 342,
+      "norm_label": "opexprofilewhereuniqueinput"
+    },
+    {
+      "label": "OpexProfileOrderByWithAggregationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5718",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileorderbywithaggregationinput",
+      "community": 312,
+      "norm_label": "opexprofileorderbywithaggregationinput"
+    },
+    {
+      "label": "OpexProfileScalarWhereWithAggregatesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5740",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilescalarwherewithaggregatesinput",
+      "community": 317,
+      "norm_label": "opexprofilescalarwherewithaggregatesinput"
+    },
+    {
+      "label": "BepSettingsWhereInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5760",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingswhereinput",
+      "community": 107,
+      "norm_label": "bepsettingswhereinput"
+    },
+    {
+      "label": "BepSettingsOrderByWithRelationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5778",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsorderbywithrelationinput",
+      "community": 82,
+      "norm_label": "bepsettingsorderbywithrelationinput"
+    },
+    {
+      "label": "BepSettingsWhereUniqueInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5794",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingswhereuniqueinput",
+      "community": 108,
+      "norm_label": "bepsettingswhereuniqueinput"
+    },
+    {
+      "label": "BepSettingsOrderByWithAggregationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5812",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsorderbywithaggregationinput",
+      "community": 81,
+      "norm_label": "bepsettingsorderbywithaggregationinput"
+    },
+    {
+      "label": "BepSettingsScalarWhereWithAggregatesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5831",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsscalarwherewithaggregatesinput",
+      "community": 85,
+      "norm_label": "bepsettingsscalarwherewithaggregatesinput"
+    },
+    {
+      "label": "OutletCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5848",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreateinput",
+      "community": 359,
+      "norm_label": "outletcreateinput"
+    },
+    {
+      "label": "OutletUncheckedCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5858",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedcreateinput",
+      "community": 401,
+      "norm_label": "outletuncheckedcreateinput"
+    },
+    {
+      "label": "OutletUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5868",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdateinput",
+      "community": 411,
+      "norm_label": "outletupdateinput"
+    },
+    {
+      "label": "OutletUncheckedUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5878",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedupdateinput",
+      "community": 405,
+      "norm_label": "outletuncheckedupdateinput"
+    },
+    {
+      "label": "OutletCreateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5888",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatemanyinput",
+      "community": 361,
+      "norm_label": "outletcreatemanyinput"
+    },
+    {
+      "label": "OutletUpdateManyMutationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5895",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatemanymutationinput",
+      "community": 413,
+      "norm_label": "outletupdatemanymutationinput"
+    },
+    {
+      "label": "OutletUncheckedUpdateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5902",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedupdatemanyinput",
+      "community": 406,
+      "norm_label": "outletuncheckedupdatemanyinput"
+    },
+    {
+      "label": "MenuCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5909",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreateinput",
+      "community": 177,
+      "norm_label": "menucreateinput"
+    },
+    {
+      "label": "MenuUncheckedCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5923",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedcreateinput",
+      "community": 219,
+      "norm_label": "menuuncheckedcreateinput"
+    },
+    {
+      "label": "MenuUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5937",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdateinput",
+      "community": 228,
+      "norm_label": "menuupdateinput"
+    },
+    {
+      "label": "MenuUncheckedUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5951",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedupdateinput",
+      "community": 222,
+      "norm_label": "menuuncheckedupdateinput"
+    },
+    {
+      "label": "MenuCreateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5965",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreatemanyinput",
+      "community": 179,
+      "norm_label": "menucreatemanyinput"
+    },
+    {
+      "label": "MenuUpdateManyMutationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5979",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdatemanymutationinput",
+      "community": 230,
+      "norm_label": "menuupdatemanymutationinput"
+    },
+    {
+      "label": "MenuUncheckedUpdateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L5992",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedupdatemanyinput",
+      "community": 223,
+      "norm_label": "menuuncheckedupdatemanyinput"
+    },
+    {
+      "label": "OpexProfileCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6006",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreateinput",
+      "community": 281,
+      "norm_label": "opexprofilecreateinput"
+    },
+    {
+      "label": "OpexProfileUncheckedCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6023",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedcreateinput",
+      "community": 323,
+      "norm_label": "opexprofileuncheckedcreateinput"
+    },
+    {
+      "label": "OpexProfileUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6040",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdateinput",
+      "community": 332,
+      "norm_label": "opexprofileupdateinput"
+    },
+    {
+      "label": "OpexProfileUncheckedUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6057",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedupdateinput",
+      "community": 326,
+      "norm_label": "opexprofileuncheckedupdateinput"
+    },
+    {
+      "label": "OpexProfileCreateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6074",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreatemanyinput",
+      "community": 283,
+      "norm_label": "opexprofilecreatemanyinput"
+    },
+    {
+      "label": "OpexProfileUpdateManyMutationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6091",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdatemanymutationinput",
+      "community": 334,
+      "norm_label": "opexprofileupdatemanymutationinput"
+    },
+    {
+      "label": "OpexProfileUncheckedUpdateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6107",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedupdatemanyinput",
+      "community": 327,
+      "norm_label": "opexprofileuncheckedupdatemanyinput"
+    },
+    {
+      "label": "BepSettingsCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6124",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscreateinput",
+      "community": 53,
+      "norm_label": "bepsettingscreateinput"
+    },
+    {
+      "label": "BepSettingsUncheckedCreateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6138",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsuncheckedcreateinput",
+      "community": 91,
+      "norm_label": "bepsettingsuncheckedcreateinput"
+    },
+    {
+      "label": "BepSettingsUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6152",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupdateinput",
+      "community": 99,
+      "norm_label": "bepsettingsupdateinput"
+    },
+    {
+      "label": "BepSettingsUncheckedUpdateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6166",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsuncheckedupdateinput",
+      "community": 94,
+      "norm_label": "bepsettingsuncheckedupdateinput"
+    },
+    {
+      "label": "BepSettingsCreateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6180",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscreatemanyinput",
+      "community": 55,
+      "norm_label": "bepsettingscreatemanyinput"
+    },
+    {
+      "label": "BepSettingsUpdateManyMutationInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6194",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupdatemanymutationinput",
+      "community": 101,
+      "norm_label": "bepsettingsupdatemanymutationinput"
+    },
+    {
+      "label": "BepSettingsUncheckedUpdateManyInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6207",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsuncheckedupdatemanyinput",
+      "community": 95,
+      "norm_label": "bepsettingsuncheckedupdatemanyinput"
+    },
+    {
+      "label": "StringFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6221",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_stringfilter",
+      "community": 445,
+      "norm_label": "stringfilter"
+    },
+    {
+      "label": "DateTimeFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6236",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_datetimefilter",
+      "community": 120,
+      "norm_label": "datetimefilter"
+    },
+    {
+      "label": "MenuListRelationFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6247",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menulistrelationfilter",
+      "community": 197,
+      "norm_label": "menulistrelationfilter"
+    },
+    {
+      "label": "OpexProfileListRelationFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6253",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilelistrelationfilter",
+      "community": 301,
+      "norm_label": "opexprofilelistrelationfilter"
+    },
+    {
+      "label": "BepSettingsNullableScalarRelationFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6259",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsnullablescalarrelationfilter",
+      "community": 77,
+      "norm_label": "bepsettingsnullablescalarrelationfilter"
+    },
+    {
+      "label": "MenuOrderByRelationAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6264",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuorderbyrelationaggregateinput",
+      "community": 205,
+      "norm_label": "menuorderbyrelationaggregateinput"
+    },
+    {
+      "label": "OpexProfileOrderByRelationAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6268",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileorderbyrelationaggregateinput",
+      "community": 309,
+      "norm_label": "opexprofileorderbyrelationaggregateinput"
+    },
+    {
+      "label": "OutletOrderByRelevanceInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6272",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletorderbyrelevanceinput",
+      "community": 392,
+      "norm_label": "outletorderbyrelevanceinput"
+    },
+    {
+      "label": "OutletCountOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6278",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcountorderbyaggregateinput",
+      "community": 352,
+      "norm_label": "outletcountorderbyaggregateinput"
+    },
+    {
+      "label": "OutletMaxOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6285",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletmaxorderbyaggregateinput",
+      "community": 385,
+      "norm_label": "outletmaxorderbyaggregateinput"
+    },
+    {
+      "label": "OutletMinOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6292",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletminorderbyaggregateinput",
+      "community": 388,
+      "norm_label": "outletminorderbyaggregateinput"
+    },
+    {
+      "label": "StringWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6299",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_stringwithaggregatesfilter",
+      "community": 448,
+      "norm_label": "stringwithaggregatesfilter"
+    },
+    {
+      "label": "DateTimeWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6317",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_datetimewithaggregatesfilter",
+      "community": 121,
+      "norm_label": "datetimewithaggregatesfilter"
+    },
+    {
+      "label": "FloatFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6331",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_floatfilter",
+      "community": 132,
+      "norm_label": "floatfilter"
+    },
+    {
+      "label": "JsonFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6341",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonfilter",
+      "community": 153,
+      "norm_label": "jsonfilter"
+    },
+    {
+      "label": "JsonFilterBase",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6348",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonfilterbase",
+      "community": 154,
+      "norm_label": "jsonfilterbase"
+    },
+    {
+      "label": "JsonNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6364",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonnullablefilter",
+      "community": 155,
+      "norm_label": "jsonnullablefilter"
+    },
+    {
+      "label": "JsonNullableFilterBase",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6371",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonnullablefilterbase",
+      "community": 156,
+      "norm_label": "jsonnullablefilterbase"
+    },
+    {
+      "label": "StringNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6388",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_stringnullablefilter",
+      "community": 446,
+      "norm_label": "stringnullablefilter"
+    },
+    {
+      "label": "OutletNullableScalarRelationFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6403",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletnullablescalarrelationfilter",
+      "community": 389,
+      "norm_label": "outletnullablescalarrelationfilter"
+    },
+    {
+      "label": "SortOrderInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6408",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_sortorderinput",
+      "community": 441,
+      "norm_label": "sortorderinput"
+    },
+    {
+      "label": "MenuOrderByRelevanceInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6413",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuorderbyrelevanceinput",
+      "community": 207,
+      "norm_label": "menuorderbyrelevanceinput"
+    },
+    {
+      "label": "MenuCountOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6419",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucountorderbyaggregateinput",
+      "community": 175,
+      "norm_label": "menucountorderbyaggregateinput"
+    },
+    {
+      "label": "MenuAvgOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6433",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuavgorderbyaggregateinput",
+      "community": 172,
+      "norm_label": "menuavgorderbyaggregateinput"
+    },
+    {
+      "label": "MenuMaxOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6437",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menumaxorderbyaggregateinput",
+      "community": 200,
+      "norm_label": "menumaxorderbyaggregateinput"
+    },
+    {
+      "label": "MenuMinOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6448",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuminorderbyaggregateinput",
+      "community": 203,
+      "norm_label": "menuminorderbyaggregateinput"
+    },
+    {
+      "label": "MenuSumOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6459",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menusumorderbyaggregateinput",
+      "community": 218,
+      "norm_label": "menusumorderbyaggregateinput"
+    },
+    {
+      "label": "FloatWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6463",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_floatwithaggregatesfilter",
+      "community": 135,
+      "norm_label": "floatwithaggregatesfilter"
+    },
+    {
+      "label": "JsonWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6478",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonwithaggregatesfilter",
+      "community": 161,
+      "norm_label": "jsonwithaggregatesfilter"
+    },
+    {
+      "label": "JsonWithAggregatesFilterBase",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6485",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonwithaggregatesfilterbase",
+      "community": 162,
+      "norm_label": "jsonwithaggregatesfilterbase"
+    },
+    {
+      "label": "JsonNullableWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6504",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonnullablewithaggregatesfilter",
+      "community": 157,
+      "norm_label": "jsonnullablewithaggregatesfilter"
+    },
+    {
+      "label": "JsonNullableWithAggregatesFilterBase",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6511",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_jsonnullablewithaggregatesfilterbase",
+      "community": 158,
+      "norm_label": "jsonnullablewithaggregatesfilterbase"
+    },
+    {
+      "label": "StringNullableWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6531",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_stringnullablewithaggregatesfilter",
+      "community": 447,
+      "norm_label": "stringnullablewithaggregatesfilter"
+    },
+    {
+      "label": "BoolFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6549",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_boolfilter",
+      "community": 112,
+      "norm_label": "boolfilter"
+    },
+    {
+      "label": "IntFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6554",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_intfilter",
+      "community": 148,
+      "norm_label": "intfilter"
+    },
+    {
+      "label": "OpexProfileOrderByRelevanceInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6565",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileorderbyrelevanceinput",
+      "community": 311,
+      "norm_label": "opexprofileorderbyrelevanceinput"
+    },
+    {
+      "label": "OpexProfileCountOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6571",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecountorderbyaggregateinput",
+      "community": 279,
+      "norm_label": "opexprofilecountorderbyaggregateinput"
+    },
+    {
+      "label": "OpexProfileAvgOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6588",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileavgorderbyaggregateinput",
+      "community": 276,
+      "norm_label": "opexprofileavgorderbyaggregateinput"
+    },
+    {
+      "label": "OpexProfileMaxOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6593",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilemaxorderbyaggregateinput",
+      "community": 304,
+      "norm_label": "opexprofilemaxorderbyaggregateinput"
+    },
+    {
+      "label": "OpexProfileMinOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6605",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileminorderbyaggregateinput",
+      "community": 307,
+      "norm_label": "opexprofileminorderbyaggregateinput"
+    },
+    {
+      "label": "OpexProfileSumOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6617",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilesumorderbyaggregateinput",
+      "community": 322,
+      "norm_label": "opexprofilesumorderbyaggregateinput"
+    },
+    {
+      "label": "BoolWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6622",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_boolwithaggregatesfilter",
+      "community": 113,
+      "norm_label": "boolwithaggregatesfilter"
+    },
+    {
+      "label": "IntWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6630",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_intwithaggregatesfilter",
+      "community": 151,
+      "norm_label": "intwithaggregatesfilter"
+    },
+    {
+      "label": "FloatNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6646",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_floatnullablefilter",
+      "community": 133,
+      "norm_label": "floatnullablefilter"
+    },
+    {
+      "label": "IntNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6657",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_intnullablefilter",
+      "community": 149,
+      "norm_label": "intnullablefilter"
+    },
+    {
+      "label": "OutletScalarRelationFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6668",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletscalarrelationfilter",
+      "community": 397,
+      "norm_label": "outletscalarrelationfilter"
+    },
+    {
+      "label": "BepSettingsOrderByRelevanceInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6673",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsorderbyrelevanceinput",
+      "community": 80,
+      "norm_label": "bepsettingsorderbyrelevanceinput"
+    },
+    {
+      "label": "BepSettingsCountOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6679",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscountorderbyaggregateinput",
+      "community": 51,
+      "norm_label": "bepsettingscountorderbyaggregateinput"
+    },
+    {
+      "label": "BepSettingsAvgOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6693",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsavgorderbyaggregateinput",
+      "community": 48,
+      "norm_label": "bepsettingsavgorderbyaggregateinput"
+    },
+    {
+      "label": "BepSettingsMaxOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6703",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsmaxorderbyaggregateinput",
+      "community": 73,
+      "norm_label": "bepsettingsmaxorderbyaggregateinput"
+    },
+    {
+      "label": "BepSettingsMinOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6717",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsminorderbyaggregateinput",
+      "community": 76,
+      "norm_label": "bepsettingsminorderbyaggregateinput"
+    },
+    {
+      "label": "BepSettingsSumOrderByAggregateInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6731",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingssumorderbyaggregateinput",
+      "community": 90,
+      "norm_label": "bepsettingssumorderbyaggregateinput"
+    },
+    {
+      "label": "FloatNullableWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6741",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_floatnullablewithaggregatesfilter",
+      "community": 134,
+      "norm_label": "floatnullablewithaggregatesfilter"
+    },
+    {
+      "label": "IntNullableWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6757",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_intnullablewithaggregatesfilter",
+      "community": 150,
+      "norm_label": "intnullablewithaggregatesfilter"
+    },
+    {
+      "label": "MenuCreateNestedManyWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6773",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreatenestedmanywithoutoutletinput",
+      "community": 182,
+      "norm_label": "menucreatenestedmanywithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileCreateNestedManyWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6780",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreatenestedmanywithoutoutletinput",
+      "community": 286,
+      "norm_label": "opexprofilecreatenestedmanywithoutoutletinput"
+    },
+    {
+      "label": "BepSettingsCreateNestedOneWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6787",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscreatenestedonewithoutoutletinput",
+      "community": 56,
+      "norm_label": "bepsettingscreatenestedonewithoutoutletinput"
+    },
+    {
+      "label": "MenuUncheckedCreateNestedManyWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6793",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedcreatenestedmanywithoutoutletinput",
+      "community": 220,
+      "norm_label": "menuuncheckedcreatenestedmanywithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileUncheckedCreateNestedManyWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6800",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedcreatenestedmanywithoutoutletinput",
+      "community": 324,
+      "norm_label": "opexprofileuncheckedcreatenestedmanywithoutoutletinput"
+    },
+    {
+      "label": "BepSettingsUncheckedCreateNestedOneWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6807",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsuncheckedcreatenestedonewithoutoutletinput",
+      "community": 92,
+      "norm_label": "bepsettingsuncheckedcreatenestedonewithoutoutletinput"
+    },
+    {
+      "label": "StringFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6813",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_stringfieldupdateoperationsinput",
+      "community": 444,
+      "norm_label": "stringfieldupdateoperationsinput"
+    },
+    {
+      "label": "DateTimeFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6817",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_datetimefieldupdateoperationsinput",
+      "community": 119,
+      "norm_label": "datetimefieldupdateoperationsinput"
+    },
+    {
+      "label": "MenuUpdateManyWithoutOutletNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6821",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdatemanywithoutoutletnestedinput",
+      "community": 231,
+      "norm_label": "menuupdatemanywithoutoutletnestedinput"
+    },
+    {
+      "label": "OpexProfileUpdateManyWithoutOutletNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6835",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdatemanywithoutoutletnestedinput",
+      "community": 335,
+      "norm_label": "opexprofileupdatemanywithoutoutletnestedinput"
+    },
+    {
+      "label": "BepSettingsUpdateOneWithoutOutletNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6849",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupdateonewithoutoutletnestedinput",
+      "community": 102,
+      "norm_label": "bepsettingsupdateonewithoutoutletnestedinput"
+    },
+    {
+      "label": "MenuUncheckedUpdateManyWithoutOutletNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6859",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedupdatemanywithoutoutletnestedinput",
+      "community": 225,
+      "norm_label": "menuuncheckedupdatemanywithoutoutletnestedinput"
+    },
+    {
+      "label": "OpexProfileUncheckedUpdateManyWithoutOutletNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6873",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedupdatemanywithoutoutletnestedinput",
+      "community": 329,
+      "norm_label": "opexprofileuncheckedupdatemanywithoutoutletnestedinput"
+    },
+    {
+      "label": "BepSettingsUncheckedUpdateOneWithoutOutletNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6887",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsuncheckedupdateonewithoutoutletnestedinput",
+      "community": 96,
+      "norm_label": "bepsettingsuncheckedupdateonewithoutoutletnestedinput"
+    },
+    {
+      "label": "OutletCreateNestedOneWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6897",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatenestedonewithoutmenusinput",
+      "community": 363,
+      "norm_label": "outletcreatenestedonewithoutmenusinput"
+    },
+    {
+      "label": "FloatFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6903",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_floatfieldupdateoperationsinput",
+      "community": 131,
+      "norm_label": "floatfieldupdateoperationsinput"
+    },
+    {
+      "label": "OutletUpdateOneWithoutMenusNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6911",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdateonewithoutmenusnestedinput",
+      "community": 415,
+      "norm_label": "outletupdateonewithoutmenusnestedinput"
+    },
+    {
+      "label": "NullableStringFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6921",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nullablestringfieldupdateoperationsinput",
+      "community": 269,
+      "norm_label": "nullablestringfieldupdateoperationsinput"
+    },
+    {
+      "label": "OutletCreateNestedOneWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6925",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatenestedonewithoutopexprofilesinput",
+      "community": 364,
+      "norm_label": "outletcreatenestedonewithoutopexprofilesinput"
+    },
+    {
+      "label": "BoolFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6931",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_boolfieldupdateoperationsinput",
+      "community": 111,
+      "norm_label": "boolfieldupdateoperationsinput"
+    },
+    {
+      "label": "IntFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6935",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_intfieldupdateoperationsinput",
+      "community": 147,
+      "norm_label": "intfieldupdateoperationsinput"
+    },
+    {
+      "label": "OutletUpdateOneWithoutOpexProfilesNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6943",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdateonewithoutopexprofilesnestedinput",
+      "community": 416,
+      "norm_label": "outletupdateonewithoutopexprofilesnestedinput"
+    },
+    {
+      "label": "OutletCreateNestedOneWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6953",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatenestedonewithoutbepsettingsinput",
+      "community": 362,
+      "norm_label": "outletcreatenestedonewithoutbepsettingsinput"
+    },
+    {
+      "label": "NullableFloatFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6959",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nullablefloatfieldupdateoperationsinput",
+      "community": 266,
+      "norm_label": "nullablefloatfieldupdateoperationsinput"
+    },
+    {
+      "label": "NullableIntFieldUpdateOperationsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6967",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nullableintfieldupdateoperationsinput",
+      "community": 267,
+      "norm_label": "nullableintfieldupdateoperationsinput"
+    },
+    {
+      "label": "OutletUpdateOneRequiredWithoutBepSettingsNestedInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6975",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdateonerequiredwithoutbepsettingsnestedinput",
+      "community": 414,
+      "norm_label": "outletupdateonerequiredwithoutbepsettingsnestedinput"
+    },
+    {
+      "label": "NestedStringFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6983",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedstringfilter",
+      "community": 261,
+      "norm_label": "nestedstringfilter"
+    },
+    {
+      "label": "NestedDateTimeFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L6998",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nesteddatetimefilter",
+      "community": 247,
+      "norm_label": "nesteddatetimefilter"
+    },
+    {
+      "label": "NestedStringWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7009",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedstringwithaggregatesfilter",
+      "community": 264,
+      "norm_label": "nestedstringwithaggregatesfilter"
+    },
+    {
+      "label": "NestedIntFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7027",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedintfilter",
+      "community": 253,
+      "norm_label": "nestedintfilter"
+    },
+    {
+      "label": "NestedDateTimeWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7038",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nesteddatetimewithaggregatesfilter",
+      "community": 248,
+      "norm_label": "nesteddatetimewithaggregatesfilter"
+    },
+    {
+      "label": "NestedFloatFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7052",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedfloatfilter",
+      "community": 249,
+      "norm_label": "nestedfloatfilter"
+    },
+    {
+      "label": "NestedStringNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7063",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedstringnullablefilter",
+      "community": 262,
+      "norm_label": "nestedstringnullablefilter"
+    },
+    {
+      "label": "NestedFloatWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7078",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedfloatwithaggregatesfilter",
+      "community": 252,
+      "norm_label": "nestedfloatwithaggregatesfilter"
+    },
+    {
+      "label": "NestedJsonFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7093",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedjsonfilter",
+      "community": 257,
+      "norm_label": "nestedjsonfilter"
+    },
+    {
+      "label": "NestedJsonFilterBase",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7100",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedjsonfilterbase",
+      "community": 258,
+      "norm_label": "nestedjsonfilterbase"
+    },
+    {
+      "label": "NestedIntNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7117",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedintnullablefilter",
+      "community": 254,
+      "norm_label": "nestedintnullablefilter"
+    },
+    {
+      "label": "NestedJsonNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7127",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedjsonnullablefilter",
+      "community": 259,
+      "norm_label": "nestedjsonnullablefilter"
+    },
+    {
+      "label": "NestedJsonNullableFilterBase",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7134",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedjsonnullablefilterbase",
+      "community": 260,
+      "norm_label": "nestedjsonnullablefilterbase"
+    },
+    {
+      "label": "NestedStringNullableWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7151",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedstringnullablewithaggregatesfilter",
+      "community": 263,
+      "norm_label": "nestedstringnullablewithaggregatesfilter"
+    },
+    {
+      "label": "NestedBoolFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7169",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedboolfilter",
+      "community": 245,
+      "norm_label": "nestedboolfilter"
+    },
+    {
+      "label": "NestedBoolWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7174",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedboolwithaggregatesfilter",
+      "community": 246,
+      "norm_label": "nestedboolwithaggregatesfilter"
+    },
+    {
+      "label": "NestedIntWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7182",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedintwithaggregatesfilter",
+      "community": 256,
+      "norm_label": "nestedintwithaggregatesfilter"
+    },
+    {
+      "label": "NestedFloatNullableFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7198",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedfloatnullablefilter",
+      "community": 250,
+      "norm_label": "nestedfloatnullablefilter"
+    },
+    {
+      "label": "NestedFloatNullableWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7209",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedfloatnullablewithaggregatesfilter",
+      "community": 251,
+      "norm_label": "nestedfloatnullablewithaggregatesfilter"
+    },
+    {
+      "label": "NestedIntNullableWithAggregatesFilter",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7225",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_nestedintnullablewithaggregatesfilter",
+      "community": 255,
+      "norm_label": "nestedintnullablewithaggregatesfilter"
+    },
+    {
+      "label": "MenuCreateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7241",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreatewithoutoutletinput",
+      "community": 184,
+      "norm_label": "menucreatewithoutoutletinput"
+    },
+    {
+      "label": "MenuUncheckedCreateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7254",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedcreatewithoutoutletinput",
+      "community": 221,
+      "norm_label": "menuuncheckedcreatewithoutoutletinput"
+    },
+    {
+      "label": "MenuCreateOrConnectWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7267",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreateorconnectwithoutoutletinput",
+      "community": 183,
+      "norm_label": "menucreateorconnectwithoutoutletinput"
+    },
+    {
+      "label": "MenuCreateManyOutletInputEnvelope",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7272",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreatemanyoutletinputenvelope",
+      "community": 181,
+      "norm_label": "menucreatemanyoutletinputenvelope"
+    },
+    {
+      "label": "OpexProfileCreateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7277",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreatewithoutoutletinput",
+      "community": 288,
+      "norm_label": "opexprofilecreatewithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileUncheckedCreateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7293",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedcreatewithoutoutletinput",
+      "community": 325,
+      "norm_label": "opexprofileuncheckedcreatewithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileCreateOrConnectWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7309",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreateorconnectwithoutoutletinput",
+      "community": 287,
+      "norm_label": "opexprofilecreateorconnectwithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileCreateManyOutletInputEnvelope",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7314",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreatemanyoutletinputenvelope",
+      "community": 285,
+      "norm_label": "opexprofilecreatemanyoutletinputenvelope"
+    },
+    {
+      "label": "BepSettingsCreateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7319",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscreatewithoutoutletinput",
+      "community": 58,
+      "norm_label": "bepsettingscreatewithoutoutletinput"
+    },
+    {
+      "label": "BepSettingsUncheckedCreateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7332",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsuncheckedcreatewithoutoutletinput",
+      "community": 93,
+      "norm_label": "bepsettingsuncheckedcreatewithoutoutletinput"
+    },
+    {
+      "label": "BepSettingsCreateOrConnectWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7345",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingscreateorconnectwithoutoutletinput",
+      "community": 57,
+      "norm_label": "bepsettingscreateorconnectwithoutoutletinput"
+    },
+    {
+      "label": "MenuUpsertWithWhereUniqueWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7350",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupsertwithwhereuniquewithoutoutletinput",
+      "community": 236,
+      "norm_label": "menuupsertwithwhereuniquewithoutoutletinput"
+    },
+    {
+      "label": "MenuUpdateWithWhereUniqueWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7356",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdatewithwhereuniquewithoutoutletinput",
+      "community": 234,
+      "norm_label": "menuupdatewithwhereuniquewithoutoutletinput"
+    },
+    {
+      "label": "MenuUpdateManyWithWhereWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7361",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdatemanywithwherewithoutoutletinput",
+      "community": 232,
+      "norm_label": "menuupdatemanywithwherewithoutoutletinput"
+    },
+    {
+      "label": "MenuScalarWhereInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7366",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuscalarwhereinput",
+      "community": 212,
+      "norm_label": "menuscalarwhereinput"
+    },
+    {
+      "label": "OpexProfileUpsertWithWhereUniqueWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7383",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupsertwithwhereuniquewithoutoutletinput",
+      "community": 340,
+      "norm_label": "opexprofileupsertwithwhereuniquewithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileUpdateWithWhereUniqueWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7389",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdatewithwhereuniquewithoutoutletinput",
+      "community": 338,
+      "norm_label": "opexprofileupdatewithwhereuniquewithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileUpdateManyWithWhereWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7394",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdatemanywithwherewithoutoutletinput",
+      "community": 336,
+      "norm_label": "opexprofileupdatemanywithwherewithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileScalarWhereInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7399",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilescalarwhereinput",
+      "community": 316,
+      "norm_label": "opexprofilescalarwhereinput"
+    },
+    {
+      "label": "BepSettingsUpsertWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7419",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupsertwithoutoutletinput",
+      "community": 106,
+      "norm_label": "bepsettingsupsertwithoutoutletinput"
+    },
+    {
+      "label": "BepSettingsUpdateToOneWithWhereWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7425",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupdatetoonewithwherewithoutoutletinput",
+      "community": 103,
+      "norm_label": "bepsettingsupdatetoonewithwherewithoutoutletinput"
+    },
+    {
+      "label": "BepSettingsUpdateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7430",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsupdatewithoutoutletinput",
+      "community": 104,
+      "norm_label": "bepsettingsupdatewithoutoutletinput"
+    },
+    {
+      "label": "BepSettingsUncheckedUpdateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7443",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_bepsettingsuncheckedupdatewithoutoutletinput",
+      "community": 97,
+      "norm_label": "bepsettingsuncheckedupdatewithoutoutletinput"
+    },
+    {
+      "label": "OutletCreateWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7456",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatewithoutmenusinput",
+      "community": 369,
+      "norm_label": "outletcreatewithoutmenusinput"
+    },
+    {
+      "label": "OutletUncheckedCreateWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7465",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedcreatewithoutmenusinput",
+      "community": 403,
+      "norm_label": "outletuncheckedcreatewithoutmenusinput"
+    },
+    {
+      "label": "OutletCreateOrConnectWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7474",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreateorconnectwithoutmenusinput",
+      "community": 366,
+      "norm_label": "outletcreateorconnectwithoutmenusinput"
+    },
+    {
+      "label": "OutletUpsertWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7479",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupsertwithoutmenusinput",
+      "community": 425,
+      "norm_label": "outletupsertwithoutmenusinput"
+    },
+    {
+      "label": "OutletUpdateToOneWithWhereWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7485",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatetoonewithwherewithoutmenusinput",
+      "community": 418,
+      "norm_label": "outletupdatetoonewithwherewithoutmenusinput"
+    },
+    {
+      "label": "OutletUpdateWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7490",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatewithoutmenusinput",
+      "community": 421,
+      "norm_label": "outletupdatewithoutmenusinput"
+    },
+    {
+      "label": "OutletUncheckedUpdateWithoutMenusInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7499",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedupdatewithoutmenusinput",
+      "community": 408,
+      "norm_label": "outletuncheckedupdatewithoutmenusinput"
+    },
+    {
+      "label": "OutletCreateWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7508",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatewithoutopexprofilesinput",
+      "community": 370,
+      "norm_label": "outletcreatewithoutopexprofilesinput"
+    },
+    {
+      "label": "OutletUncheckedCreateWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7517",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedcreatewithoutopexprofilesinput",
+      "community": 404,
+      "norm_label": "outletuncheckedcreatewithoutopexprofilesinput"
+    },
+    {
+      "label": "OutletCreateOrConnectWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7526",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreateorconnectwithoutopexprofilesinput",
+      "community": 367,
+      "norm_label": "outletcreateorconnectwithoutopexprofilesinput"
+    },
+    {
+      "label": "OutletUpsertWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7531",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupsertwithoutopexprofilesinput",
+      "community": 426,
+      "norm_label": "outletupsertwithoutopexprofilesinput"
+    },
+    {
+      "label": "OutletUpdateToOneWithWhereWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7537",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatetoonewithwherewithoutopexprofilesinput",
+      "community": 419,
+      "norm_label": "outletupdatetoonewithwherewithoutopexprofilesinput"
+    },
+    {
+      "label": "OutletUpdateWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7542",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatewithoutopexprofilesinput",
+      "community": 422,
+      "norm_label": "outletupdatewithoutopexprofilesinput"
+    },
+    {
+      "label": "OutletUncheckedUpdateWithoutOpexProfilesInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7551",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedupdatewithoutopexprofilesinput",
+      "community": 409,
+      "norm_label": "outletuncheckedupdatewithoutopexprofilesinput"
+    },
+    {
+      "label": "OutletCreateWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7560",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreatewithoutbepsettingsinput",
+      "community": 368,
+      "norm_label": "outletcreatewithoutbepsettingsinput"
+    },
+    {
+      "label": "OutletUncheckedCreateWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7569",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedcreatewithoutbepsettingsinput",
+      "community": 402,
+      "norm_label": "outletuncheckedcreatewithoutbepsettingsinput"
+    },
+    {
+      "label": "OutletCreateOrConnectWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7578",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletcreateorconnectwithoutbepsettingsinput",
+      "community": 365,
+      "norm_label": "outletcreateorconnectwithoutbepsettingsinput"
+    },
+    {
+      "label": "OutletUpsertWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7583",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupsertwithoutbepsettingsinput",
+      "community": 424,
+      "norm_label": "outletupsertwithoutbepsettingsinput"
+    },
+    {
+      "label": "OutletUpdateToOneWithWhereWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7589",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatetoonewithwherewithoutbepsettingsinput",
+      "community": 417,
+      "norm_label": "outletupdatetoonewithwherewithoutbepsettingsinput"
+    },
+    {
+      "label": "OutletUpdateWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7594",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletupdatewithoutbepsettingsinput",
+      "community": 420,
+      "norm_label": "outletupdatewithoutbepsettingsinput"
+    },
+    {
+      "label": "OutletUncheckedUpdateWithoutBepSettingsInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7603",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_outletuncheckedupdatewithoutbepsettingsinput",
+      "community": 407,
+      "norm_label": "outletuncheckedupdatewithoutbepsettingsinput"
+    },
+    {
+      "label": "MenuCreateManyOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7612",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menucreatemanyoutletinput",
+      "community": 180,
+      "norm_label": "menucreatemanyoutletinput"
+    },
+    {
+      "label": "OpexProfileCreateManyOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7625",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofilecreatemanyoutletinput",
+      "community": 284,
+      "norm_label": "opexprofilecreatemanyoutletinput"
+    },
+    {
+      "label": "MenuUpdateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7641",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuupdatewithoutoutletinput",
+      "community": 233,
+      "norm_label": "menuupdatewithoutoutletinput"
+    },
+    {
+      "label": "MenuUncheckedUpdateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7654",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedupdatewithoutoutletinput",
+      "community": 226,
+      "norm_label": "menuuncheckedupdatewithoutoutletinput"
+    },
+    {
+      "label": "MenuUncheckedUpdateManyWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7667",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_menuuncheckedupdatemanywithoutoutletinput",
+      "community": 224,
+      "norm_label": "menuuncheckedupdatemanywithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileUpdateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7680",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileupdatewithoutoutletinput",
+      "community": 337,
+      "norm_label": "opexprofileupdatewithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileUncheckedUpdateWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7696",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedupdatewithoutoutletinput",
+      "community": 330,
+      "norm_label": "opexprofileuncheckedupdatewithoutoutletinput"
+    },
+    {
+      "label": "OpexProfileUncheckedUpdateManyWithoutOutletInput",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7712",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_opexprofileuncheckedupdatemanywithoutoutletinput",
+      "community": 328,
+      "norm_label": "opexprofileuncheckedupdatemanywithoutoutletinput"
+    },
+    {
+      "label": "BatchPayload",
+      "file_type": "code",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L7734",
+      "_origin": "ast",
+      "id": "src_generated_client_index_d_batchpayload",
+      "community": 43,
+      "norm_label": "batchpayload"
+    },
+    {
+      "label": "Constructor",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/index-browser.d.ts",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_index_browser_d_constructor",
+      "community": 460,
+      "norm_label": "constructor"
+    },
+    {
+      "label": "Instance",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/index-browser.d.ts",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_index_browser_d_instance",
+      "community": 461,
+      "norm_label": "instance"
+    },
+    {
+      "label": "Rounding",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/index-browser.d.ts",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_index_browser_d_rounding",
+      "community": 463,
+      "norm_label": "rounding"
+    },
+    {
+      "label": "Modulo",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/index-browser.d.ts",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_index_browser_d_modulo",
+      "community": 462,
+      "norm_label": "modulo"
+    },
+    {
+      "label": "Value",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/index-browser.d.ts",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_index_browser_d_value",
+      "community": 464,
+      "norm_label": "value"
+    },
+    {
+      "label": "Config",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/index-browser.d.ts",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_index_browser_d_config",
+      "community": 459,
+      "norm_label": "config"
+    },
+    {
+      "label": "Constructor",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/library.d.ts",
+      "source_location": "L433",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_library_d_constructor",
+      "community": 466,
+      "norm_label": "constructor"
+    },
+    {
+      "label": "Instance",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/library.d.ts",
+      "source_location": "L434",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_library_d_instance",
+      "community": 467,
+      "norm_label": "instance"
+    },
+    {
+      "label": "Rounding",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/library.d.ts",
+      "source_location": "L435",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_library_d_rounding",
+      "community": 469,
+      "norm_label": "rounding"
+    },
+    {
+      "label": "Modulo",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/library.d.ts",
+      "source_location": "L436",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_library_d_modulo",
+      "community": 468,
+      "norm_label": "modulo"
+    },
+    {
+      "label": "Value",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/library.d.ts",
+      "source_location": "L437",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_library_d_value",
+      "community": 470,
+      "norm_label": "value"
+    },
+    {
+      "label": "Config",
+      "file_type": "code",
+      "source_file": "src/generated/client/runtime/library.d.ts",
+      "source_location": "L440",
+      "_origin": "ast",
+      "id": "src_generated_client_runtime_library_d_config",
+      "community": 465,
+      "norm_label": "config"
+    },
+    {
+      "label": "Apple Design System",
+      "file_type": "document",
+      "source_file": "DESIGN.md",
+      "source_location": "L1-L563",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_apple_design_system",
+      "community": 0,
+      "norm_label": "apple design system"
+    },
+    {
+      "label": "Photography-First Design Principle",
+      "file_type": "rationale",
+      "source_file": "DESIGN.md",
+      "source_location": "L278-L293",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_photography_first_principle",
+      "community": 0,
+      "norm_label": "photography-first design principle"
+    },
+    {
+      "label": "Action Blue Accent Color",
+      "file_type": "concept",
+      "source_file": "DESIGN.md",
+      "source_location": "L299",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_action_blue_accent",
+      "community": 0,
+      "norm_label": "action blue accent color"
+    },
+    {
+      "label": "SF Pro Typography System",
+      "file_type": "concept",
+      "source_file": "DESIGN.md",
+      "source_location": "L328-L371",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_sf_pro_typography",
+      "community": 2,
+      "norm_label": "sf pro typography system"
+    },
+    {
+      "label": "Product Tile Pattern",
+      "file_type": "concept",
+      "source_file": "DESIGN.md",
+      "source_location": "L458-L466",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_product_tile_pattern",
+      "community": 0,
+      "norm_label": "product tile pattern"
+    },
+    {
+      "label": "Single Shadow Philosophy",
+      "file_type": "rationale",
+      "source_file": "DESIGN.md",
+      "source_location": "L391-L405",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_single_shadow_philosophy",
+      "community": 0,
+      "norm_label": "single shadow philosophy"
+    },
+    {
+      "label": "Responsive Breakpoints System",
+      "file_type": "concept",
+      "source_file": "DESIGN.md",
+      "source_location": "L510-L537",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_responsive_breakpoints",
+      "community": 0,
+      "norm_label": "responsive breakpoints system"
+    },
+    {
+      "label": "Button Component System",
+      "file_type": "concept",
+      "source_file": "DESIGN.md",
+      "source_location": "L436-L454",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "design_button_system",
+      "community": 0,
+      "norm_label": "button component system"
+    },
+    {
+      "label": "Next.js Project Setup",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1-L37",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_nextjs_project",
+      "community": 2,
+      "norm_label": "next.js project setup"
+    },
+    {
+      "label": "Geist Font Family",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "L21",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_geist_font",
+      "community": 2,
+      "norm_label": "geist font family"
+    },
+    {
+      "label": "Next.js Agent Rules",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_nextjs_agent_rules",
+      "community": 4,
+      "norm_label": "next.js agent rules"
+    },
+    {
+      "label": "Graphify Integration Config",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_graphify_integration",
+      "community": 1,
+      "norm_label": "graphify integration config"
+    },
+    {
+      "label": "Graphify Skill Definition",
+      "file_type": "document",
+      "source_file": ".claude/skills/graphify/SKILL.md",
+      "source_location": "L1-L738",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_skills_graphify_skill",
+      "community": 1,
+      "norm_label": "graphify skill definition"
+    },
+    {
+      "label": "Extraction Specification",
+      "file_type": "document",
+      "source_file": ".claude/skills/graphify/references/extraction-spec.md",
+      "source_location": "L1-L71",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_skills_graphify_references_extraction_spec",
+      "community": 1,
+      "norm_label": "extraction specification"
+    },
+    {
+      "label": "Graph Query Reference",
+      "file_type": "document",
+      "source_file": ".claude/skills/graphify/references/query.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_skills_graphify_references_query",
+      "community": 1,
+      "norm_label": "graph query reference"
+    },
+    {
+      "label": "Graph Update Reference",
+      "file_type": "document",
+      "source_file": ".claude/skills/graphify/references/update.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_skills_graphify_references_update",
+      "community": 1,
+      "norm_label": "graph update reference"
+    },
+    {
+      "label": "Graph Export Reference",
+      "file_type": "document",
+      "source_file": ".claude/skills/graphify/references/exports.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_skills_graphify_references_exports",
+      "community": 1,
+      "norm_label": "graph export reference"
+    },
+    {
+      "label": "Static Backup HTML Calculator",
+      "file_type": "document",
+      "source_file": "backup-static/index.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "backup_static_index_html",
+      "community": 5,
+      "norm_label": "static backup html calculator"
+    },
+    {
+      "label": "File Icon SVG",
+      "file_type": "image",
+      "source_file": "public/file.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_file_svg",
+      "community": 6,
+      "norm_label": "file icon svg"
+    },
+    {
+      "label": "Globe Icon SVG",
+      "file_type": "image",
+      "source_file": "public/globe.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_globe_svg",
+      "community": 7,
+      "norm_label": "globe icon svg"
+    },
+    {
+      "label": "Next.js Logo SVG",
+      "file_type": "image",
+      "source_file": "public/next.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_next_svg",
+      "community": 2,
+      "norm_label": "next.js logo svg"
+    },
+    {
+      "label": "Vercel Logo SVG",
+      "file_type": "image",
+      "source_file": "public/vercel.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_vercel_svg",
+      "community": 2,
+      "norm_label": "vercel logo svg"
+    },
+    {
+      "label": "Window Icon SVG",
+      "file_type": "image",
+      "source_file": "public/window.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_window_svg",
+      "community": 8,
+      "norm_label": "window icon svg"
+    }
+  ],
+  "links": [
+    {
+      "relation": "inherits",
+      "context": "type",
+      "confidence": "EXTRACTED",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L4889",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_generated_client_index_d_prisma_bepsettingsclient",
+      "target": "src_generated_client_index_d_prismapromise",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "context": "type",
+      "confidence": "EXTRACTED",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L2752",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_generated_client_index_d_prisma_menuclient",
+      "target": "src_generated_client_index_d_prismapromise",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "context": "type",
+      "confidence": "EXTRACTED",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L3814",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_generated_client_index_d_prisma_opexprofileclient",
+      "target": "src_generated_client_index_d_prismapromise",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "context": "type",
+      "confidence": "EXTRACTED",
+      "source_file": "src/generated/client/index.d.ts",
+      "source_location": "L1673",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_generated_client_index_d_prisma_outletclient",
+      "target": "src_generated_client_index_d_prismapromise",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md",
+      "source_location": "L299",
+      "weight": 1.0,
+      "source": "design_apple_design_system",
+      "target": "design_action_blue_accent"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md",
+      "source_location": "L436",
+      "weight": 1.0,
+      "source": "design_apple_design_system",
+      "target": "design_button_system"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md",
+      "source_location": "L278",
+      "weight": 1.0,
+      "source": "design_apple_design_system",
+      "target": "design_photography_first_principle"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md",
+      "source_location": "L458",
+      "weight": 1.0,
+      "source": "design_apple_design_system",
+      "target": "design_product_tile_pattern"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md",
+      "source_location": "L510",
+      "weight": 1.0,
+      "source": "design_apple_design_system",
+      "target": "design_responsive_breakpoints"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md",
+      "source_location": "L328",
+      "weight": 1.0,
+      "source": "design_apple_design_system",
+      "target": "design_sf_pro_typography"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md",
+      "source_location": "L391",
+      "weight": 1.0,
+      "source": "design_apple_design_system",
+      "target": "design_single_shadow_philosophy"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "DESIGN.md",
+      "source_location": null,
+      "weight": 0.75,
+      "source": "design_sf_pro_typography",
+      "target": "readme_geist_font"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "public/next.svg",
+      "source_location": null,
+      "weight": 0.85,
+      "source": "public_next_svg",
+      "target": "readme_nextjs_project"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "public/vercel.svg",
+      "source_location": null,
+      "weight": 0.85,
+      "source": "public_vercel_svg",
+      "target": "readme_nextjs_project"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "readme_nextjs_project",
+      "target": "readme_geist_font"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 0.95,
+      "source": "claude_graphify_integration",
+      "target": "claude_skills_graphify_skill"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/graphify/SKILL.md",
+      "source_location": "L564",
+      "weight": 1.0,
+      "source": "claude_skills_graphify_skill",
+      "target": "claude_skills_graphify_references_exports"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/graphify/SKILL.md",
+      "source_location": "L296",
+      "weight": 1.0,
+      "source": "claude_skills_graphify_skill",
+      "target": "claude_skills_graphify_references_extraction_spec"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/graphify/SKILL.md",
+      "source_location": "L702",
+      "weight": 1.0,
+      "source": "claude_skills_graphify_skill",
+      "target": "claude_skills_graphify_references_query"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/graphify/SKILL.md",
+      "source_location": "L690",
+      "weight": 1.0,
+      "source": "claude_skills_graphify_skill",
+      "target": "claude_skills_graphify_references_update"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "graphify_skill_ecosystem",
+      "label": "Graphify Skill Ecosystem",
+      "nodes": [
+        "claude_skills_graphify_skill",
+        "claude_skills_graphify_references_extraction_spec",
+        "claude_skills_graphify_references_query",
+        "claude_skills_graphify_references_update",
+        "claude_skills_graphify_references_exports"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/graphify/SKILL.md"
+    },
+    {
+      "id": "design_system_core",
+      "label": "Apple Design System Core",
+      "nodes": [
+        "design_apple_design_system",
+        "design_photography_first_principle",
+        "design_action_blue_accent",
+        "design_sf_pro_typography",
+        "design_button_system"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DESIGN.md"
+    }
+  ],
+  "built_at_commit": "14b9dab24625ce3f2217349afa3d166e4567fafd"
+}

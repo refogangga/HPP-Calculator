@@ -1,0 +1,785 @@
+"use client";
+
+import React, { useState, useMemo, useEffect } from 'react';
+import { Icon } from './Icon';
+import FormatInput from './FormatInput';
+import { num, fmtRp, roundPrice, getPenyusutanBulanan } from '../utils/hpp';
+
+export default function BepCalculator({
+  menus = [],
+  opexProfiles = [],
+  activeProfileId,
+  onSelectProfile,
+  bepSettings = [],
+  activeOutletId,
+  onUpdateBepSettings
+}) {
+  const [operationalDays, setOperationalDays] = useState(30);
+  const [manualOpex, setManualOpex] = useState(null);
+  const [manualMargin, setManualMargin] = useState(null);
+  const [manualPrice, setManualPrice] = useState(null);
+  const [actualVolume, setActualVolume] = useState(null);
+  const [manualInvestment, setManualInvestment] = useState(null);
+  const [targetPaybackMonths, setTargetPaybackMonths] = useState(12);
+  const [activeRightTab, setActiveRightTab] = useState('operasional'); // 'operasional' | 'investasi'
+
+  // Sync with database/parent settings when active outlet changes
+  useEffect(() => {
+    const s = bepSettings.find(x => x.outletId === activeOutletId) || {};
+    setOperationalDays(s.operationalDays ?? 30);
+    setManualOpex(s.manualOpex ?? null);
+    setManualMargin(s.manualMargin ?? null);
+    setManualPrice(s.manualPrice ?? null);
+    setActualVolume(s.actualVolume ?? null);
+    setManualInvestment(s.manualInvestment ?? null);
+    setTargetPaybackMonths(s.targetPaybackMonths ?? 12);
+  }, [activeOutletId, bepSettings]);
+
+  // Helper to persist to parent / database
+  const saveSettings = (updatedFields) => {
+    const base = bepSettings.find(x => x.outletId === activeOutletId) || { outletId: activeOutletId };
+    onUpdateBepSettings && onUpdateBepSettings({
+      ...base,
+      operationalDays,
+      manualOpex,
+      manualMargin,
+      manualPrice,
+      actualVolume,
+      manualInvestment,
+      targetPaybackMonths,
+      ...updatedFields
+    });
+  };
+
+  // Get active profile
+  const activeProfile = useMemo(() => {
+    return opexProfiles.find(p => p.id === activeProfileId) || opexProfiles[0] || null;
+  }, [opexProfiles, activeProfileId]);
+
+  // Selected menus inside active profile
+  const selectedMenus = useMemo(() => {
+    if (!activeProfile) return [];
+    return menus.filter(m => activeProfile.selectedMenuIds?.includes(m.id));
+  }, [menus, activeProfile]);
+
+  // Enabled menus in simulation
+  const activeMenus = useMemo(() => {
+    if (!activeProfile) return [];
+    return selectedMenus.filter(m => !activeProfile.disabledMenuIds?.includes(m.id));
+  }, [selectedMenus, activeProfile]);
+
+  // Calculate default OPEX from profile
+  const calculatedOpex = useMemo(() => {
+    if (!activeProfile) return 0;
+    const expenses = (activeProfile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0);
+    const assetDepr = getPenyusutanBulanan(activeProfile);
+    return expenses + assetDepr;
+  }, [activeProfile]);
+
+  // Get current platform calculations helper
+  const getPlatformCalc = (menu) => {
+    const hj = roundPrice(menu.margin >= 100 ? 0 : getDirectHPP(menu) / (1 - menu.margin / 100));
+    const hpp = getDirectHPP(menu);
+    const platform = menu.platform || { enabled: false, commissionPct: 0, flatFee: 0, discountType: 'pct', discountValue: 0, commissionBasis: 'original' };
+    
+    if (!platform.enabled) {
+      return { hargaJual: hj, hargaEfektif: hj, revenueBersih: hj, hpp, totalKomisi: 0, diskonNominal: 0, netProfit: hj - hpp };
+    }
+
+    const diskonNominal = platform.discountType === 'pct' ? (hj * num(platform.discountValue) / 100) : num(platform.discountValue);
+    const hargaEfektif = Math.max(hj - diskonNominal, 0);
+    const basisKomisi = platform.commissionBasis === 'effective' ? hargaEfektif : hj;
+    const komisiNominal = basisKomisi * num(platform.commissionPct) / 100;
+    const totalKomisi = komisiNominal + num(platform.flatFee);
+    const revenueBersih = hargaEfektif - totalKomisi;
+
+    return {
+      hargaJual: hj,
+      hargaEfektif,
+      revenueBersih,
+      hpp,
+      totalKomisi,
+      diskonNominal,
+      netProfit: revenueBersih - hpp
+    };
+  };
+
+  const getDirectHPP = (menu) => {
+    const bb = menu.ingredients.reduce((s, i) => {
+      if (!num(i.ukuranKemasan)) return s;
+      return s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup);
+    }, 0);
+    const km = menu.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
+    return bb + km;
+  };
+
+  const getMenuVolume = (menuId, defaultVal) => {
+    if (activeProfile?.menuVolumes && activeProfile.menuVolumes[menuId] !== undefined) {
+      return num(activeProfile.menuVolumes[menuId]);
+    }
+    return num(defaultVal);
+  };
+
+  // Calculate default values based on actual database menus
+  const defaultMetrics = useMemo(() => {
+    let totalVolume = 0;
+    let weightedNetProfitSum = 0;
+    let weightedPriceSum = 0;
+
+    activeMenus.forEach(m => {
+      const vol = getMenuVolume(m.id, num(m.ops?.estimasiCup));
+      const pc = getPlatformCalc(m);
+      totalVolume += vol;
+      weightedNetProfitSum += vol * pc.netProfit;
+      weightedPriceSum += vol * pc.hargaJual;
+    });
+
+    const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : 0;
+    const avgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
+
+    return {
+      avgNetProfit: avgNetProfit || 15000, // fallback
+      avgPrice: avgPrice || 25000, // fallback
+      totalVolume
+    };
+  }, [activeMenus, activeProfile]);
+
+  // Synchronize state when defaults change
+  useEffect(() => {
+    if (actualVolume === null && defaultMetrics.totalVolume > 0) {
+      setActualVolume(defaultMetrics.totalVolume);
+    }
+  }, [defaultMetrics.totalVolume]);
+
+  // Values used in calculation (either overwritten or calculated)
+  const opexVal = manualOpex !== null ? num(manualOpex) : calculatedOpex;
+  const netProfitPerCup = manualMargin !== null ? num(manualMargin) : defaultMetrics.avgNetProfit;
+  const avgPriceVal = manualPrice !== null ? num(manualPrice) : defaultMetrics.avgPrice;
+  const volumeVal = actualVolume !== null ? num(actualVolume) : (defaultMetrics.totalVolume || 600);
+
+  // Formulasi Perhitungan BEP
+  const bepUnits = useMemo(() => {
+    return netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
+  }, [opexVal, netProfitPerCup]);
+
+  const bepHarian = useMemo(() => {
+    return operationalDays > 0 ? Math.ceil(bepUnits / operationalDays) : 0;
+  }, [bepUnits, operationalDays]);
+
+  const bepNominal = useMemo(() => {
+    return bepUnits * avgPriceVal;
+  }, [bepUnits, avgPriceVal]);
+
+  const actualVolumeHarian = useMemo(() => {
+    return operationalDays > 0 ? Math.round(volumeVal / operationalDays) : 0;
+  }, [volumeVal, operationalDays]);
+
+  const calculatedInvestment = useMemo(() => {
+    if (!activeProfile) return 0;
+    return (activeProfile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0);
+  }, [activeProfile]);
+
+  const investmentVal = manualInvestment !== null ? num(manualInvestment) : calculatedInvestment;
+
+  const monthlyNetProfit = useMemo(() => {
+    return (volumeVal * netProfitPerCup) - opexVal;
+  }, [volumeVal, netProfitPerCup, opexVal]);
+
+  const paybackPeriodMonths = useMemo(() => {
+    if (monthlyNetProfit <= 0 || investmentVal <= 0) return 0;
+    return investmentVal / monthlyNetProfit;
+  }, [investmentVal, monthlyNetProfit]);
+
+  const paybackText = useMemo(() => {
+    if (monthlyNetProfit <= 0) {
+      return "Tidak pernah balik modal (bisnis merugi/impas).";
+    }
+    if (investmentVal <= 0) {
+      return "0 Bulan (Tanpa modal awal).";
+    }
+    const totalMonths = Math.ceil(paybackPeriodMonths);
+    const years = Math.floor(totalMonths / 12);
+    const remainingMonths = totalMonths % 12;
+
+    let timeStr = "";
+    if (years > 0) {
+      timeStr += `${years} Tahun `;
+    }
+    if (remainingMonths > 0 || years === 0) {
+      timeStr += `${remainingMonths} Bulan`;
+    }
+
+    return timeStr;
+  }, [paybackPeriodMonths, monthlyNetProfit, investmentVal]);
+
+  const goalSeek = useMemo(() => {
+    if (targetPaybackMonths <= 0 || netProfitPerCup <= 0 || investmentVal <= 0) {
+      return { requiredMonthlyProfit: 0, requiredCupMonth: 0, requiredCupDay: 0, requiredRevMonth: 0, requiredRevDay: 0 };
+    }
+    const requiredMonthlyProfit = investmentVal / targetPaybackMonths;
+    const requiredMonthlyGrossProfit = requiredMonthlyProfit + opexVal;
+    const requiredCupMonth = Math.ceil(requiredMonthlyGrossProfit / netProfitPerCup);
+    const requiredCupDay = operationalDays > 0 ? Math.ceil(requiredCupMonth / operationalDays) : 0;
+    const requiredRevMonth = requiredCupMonth * avgPriceVal;
+    const requiredRevDay = operationalDays > 0 ? Math.round(requiredRevMonth / operationalDays) : 0;
+
+    return {
+      requiredMonthlyProfit,
+      requiredCupMonth,
+      requiredCupDay,
+      requiredRevMonth,
+      requiredRevDay
+    };
+  }, [targetPaybackMonths, investmentVal, opexVal, netProfitPerCup, avgPriceVal, operationalDays]);
+
+  // Status & Danger Level
+  const marginGap = actualVolumeHarian - bepHarian;
+  const targetPct = bepHarian > 0 ? Math.min(100, (actualVolumeHarian / bepHarian) * 100) : 0;
+
+  let statusText = 'DI BAWAH BEP';
+  let statusColor = '#ef4444'; // Red
+  let statusBg = 'rgba(239, 68, 68, 0.1)';
+  let statusBorder = 'rgba(239, 68, 68, 0.25)';
+
+  if (marginGap >= 5) {
+    statusText = 'PROFIT SEHAT';
+    statusColor = '#10b981'; // Green
+    statusBg = 'rgba(16, 185, 129, 0.1)';
+    statusBorder = 'rgba(16, 185, 129, 0.25)';
+  } else if (marginGap >= 0) {
+    statusText = 'RAWAN BEP';
+    statusColor = '#f59e0b'; // Amber
+    statusBg = 'rgba(245, 158, 11, 0.1)';
+    statusBorder = 'rgba(245, 158, 11, 0.25)';
+  }
+
+  return (
+    <div className="main-grid" style={{
+      display: 'grid', gridTemplateColumns: '1fr 390px', gap: 20,
+      padding: '20px 28px', alignItems: 'start'
+    }}>
+      {/* ══ LEFT PANEL (INPUTS) ══════════════════════════════ */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="section-card">
+          <div className="section-header" style={{ padding: '16px 22px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-app)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: '#e0f2fe', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="calculator" size={18} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text)' }}>Kalkulator BEP Operasional Bisnis</div>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1 }}>Simulasikan BEP usaha berdasarkan alokasi OPEX &amp; margin aktual</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="section-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 22 }}>
+            {/* Profile Selector */}
+            {opexProfiles.length > 1 && (
+              <div>
+                <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Profil Simulasi Toko</label>
+                <select
+                  className="hpp-input"
+                  value={activeProfileId || ''}
+                  onChange={e => onSelectProfile && onSelectProfile(e.target.value)}
+                  style={{ fontWeight: 600 }}
+                >
+                  {opexProfiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* 1. PARAMETER BEP OPERASIONAL */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', borderBottom: '1.5px solid var(--border-color)', paddingBottom: 6, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="zap" size={13} /> 1. PARAMETER BEP OPERASIONAL (TOKO)
+            </div>
+
+            {/* Total OPEX Bulanan */}
+            <div>
+              <div className="flex-between" style={{ marginBottom: 6 }}>
+                <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Total OPEX Bulanan (Rp)
+                </label>
+                {manualOpex !== null ? (
+                  <button onClick={() => { setManualOpex(null); saveSettings({ manualOpex: null }); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                    Reset ke Profil
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Auto-fill dari profil</span>
+                )}
+              </div>
+              <div className="input-prefix-wrap">
+                <span className="prefix">Rp</span>
+                <FormatInput
+                  className="hpp-input"
+                  placeholder={calculatedOpex.toString()}
+                  value={manualOpex !== null ? manualOpex : calculatedOpex}
+                  onChange={(val) => { setManualOpex(val); saveSettings({ manualOpex: val }); }}
+                />
+              </div>
+              {manualOpex === null && (
+                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                  Total pos overhead ({fmtRp((activeProfile?.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0))}) + penyusutan ({fmtRp(getPenyusutanBulanan(activeProfile))})
+                </div>
+              )}
+            </div>
+
+            {/* Rata-Rata Margin Bersih per Cup */}
+            <div>
+              <div className="flex-between" style={{ marginBottom: 6 }}>
+                <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Margin Bersih per Cup (Rp/Cup)
+                </label>
+                {manualMargin !== null ? (
+                  <button onClick={() => { setManualMargin(null); saveSettings({ manualMargin: null }); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                    Reset ke Rata-rata
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Rata-rata tertimbang menu</span>
+                )}
+              </div>
+              <div className="input-prefix-wrap">
+                <span className="prefix">Rp</span>
+                <FormatInput
+                  className="hpp-input"
+                  placeholder={Math.round(defaultMetrics.avgNetProfit).toString()}
+                  value={manualMargin !== null ? manualMargin : Math.round(defaultMetrics.avgNetProfit)}
+                  onChange={(val) => { setManualMargin(val); saveSettings({ manualMargin: val }); }}
+                />
+              </div>
+            </div>
+
+            {/* Rata-rata Harga Jual */}
+            <div>
+              <div className="flex-between" style={{ marginBottom: 6 }}>
+                <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Harga Jual per Cup (Rata-rata)
+                </label>
+                {manualPrice !== null ? (
+                  <button onClick={() => { setManualPrice(null); saveSettings({ manualPrice: null }); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                    Reset ke Rata-rata
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Berdasarkan list harga</span>
+                )}
+              </div>
+              <div className="input-prefix-wrap">
+                <span className="prefix">Rp</span>
+                <FormatInput
+                  className="hpp-input"
+                  placeholder={Math.round(defaultMetrics.avgPrice).toString()}
+                  value={manualPrice !== null ? manualPrice : Math.round(defaultMetrics.avgPrice)}
+                  onChange={(val) => { setManualPrice(val); saveSettings({ manualPrice: val }); }}
+                />
+              </div>
+            </div>
+
+            {/* Hari Operasional per Bulan */}
+            <div>
+              <div className="flex-between" style={{ marginBottom: 6 }}>
+                <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Hari Operasional Bulanan
+                </label>
+                <span className="mono" style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 14 }}>
+                  {operationalDays} hari
+                </span>
+              </div>
+              <input
+                className="hpp-slider"
+                type="range"
+                min="15"
+                max="31"
+                value={operationalDays}
+                onChange={e => { const val = Number(e.target.value); setOperationalDays(val); saveSettings({ operationalDays: val }); }}
+                style={{ '--slider-pct': `${((operationalDays - 15) / 16) * 100}%` }}
+              />
+              <div className="flex-between" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                <span>15 Hari</span>
+                <span>26 Hari</span>
+                <span>30 Hari</span>
+              </div>
+            </div>
+
+            {/* 2. PARAMETER BEP INVESTASI */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#3b82f6', borderBottom: '1.5px solid var(--border-color)', paddingBottom: 6, marginTop: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="package" size={13} /> 2. PARAMETER BEP INVESTASI (BALIK MODAL)
+            </div>
+
+            {/* Total Investasi Awal / Modal Awal (Rp) */}
+            <div>
+              <div className="flex-between" style={{ marginBottom: 6 }}>
+                <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Total Investasi / Modal Awal (Rp)
+                </label>
+                {manualInvestment !== null ? (
+                  <button onClick={() => { setManualInvestment(null); saveSettings({ manualInvestment: null }); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                    Reset ke Profil
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Auto-fill dari daftar aset</span>
+                )}
+              </div>
+              <div className="input-prefix-wrap">
+                <span className="prefix">Rp</span>
+                <FormatInput
+                  className="hpp-input"
+                  placeholder={calculatedInvestment.toString()}
+                  value={manualInvestment !== null ? manualInvestment : calculatedInvestment}
+                  onChange={(val) => { setManualInvestment(val); saveSettings({ manualInvestment: val }); }}
+                />
+              </div>
+              {manualInvestment === null && (
+                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                  Total nilai aset terdaftar: {fmtRp(calculatedInvestment)}
+                </div>
+              )}
+            </div>
+
+            {/* Target Waktu Balik Modal (Bulan) */}
+            <div>
+              <div className="flex-between" style={{ marginBottom: 6 }}>
+                <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Target Waktu Balik Modal (Bulan)
+                </label>
+                <span className="mono" style={{ fontWeight: 800, color: '#3b82f6', fontSize: 14 }}>
+                  {targetPaybackMonths} bulan
+                </span>
+              </div>
+              <input
+                className="hpp-slider"
+                type="range"
+                min="1"
+                max="60"
+                value={targetPaybackMonths}
+                onChange={e => { const val = Number(e.target.value); setTargetPaybackMonths(val); saveSettings({ targetPaybackMonths: val }); }}
+                style={{ '--slider-pct': `${((targetPaybackMonths - 1) / 59) * 100}%` }}
+              />
+              <div className="flex-between" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                <span>1 Bln</span>
+                <span>12 Bln (1 Thn)</span>
+                <span>36 Bln (3 Thn)</span>
+                <span>60 Bln (5 Thn)</span>
+              </div>
+            </div>
+
+            {/* Target Penjualan Bulanan Aktual */}
+            <div>
+              <label className="label-sm" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                Estimasi/Target Volume Penjualan Aktual (Cup/Bulan)
+              </label>
+              <input
+                className="hpp-input"
+                type="number"
+                placeholder={defaultMetrics.totalVolume.toString() || '600'}
+                value={actualVolume !== null ? actualVolume : defaultMetrics.totalVolume}
+                onChange={e => { const val = e.target.value; setActualVolume(val); saveSettings({ actualVolume: val }); }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ══ RIGHT PANEL (RESULTS & HERO BANNER) ══════════════ */}
+      <div className="result-sticky" style={{ position: 'sticky', top: 90, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        
+        {/* Navigation Tabs for Right Panel */}
+        <div style={{ display: 'flex', gap: 6, background: 'var(--bg-app)', padding: 4, borderRadius: 10, border: '1px solid var(--border-color)', marginBottom: 2 }}>
+          <button
+            onClick={() => setActiveRightTab('operasional')}
+            style={{
+              flex: 1,
+              padding: '8px 10px',
+              borderRadius: 6,
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: 11,
+              background: activeRightTab === 'operasional' ? 'linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%)' : 'transparent',
+              color: activeRightTab === 'operasional' ? '#fff' : 'var(--color-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              transition: 'all 0.15s'
+            }}
+          >
+            <Icon name="zap" size={12} /> BEP Operasional
+          </button>
+          <button
+            onClick={() => setActiveRightTab('investasi')}
+            style={{
+              flex: 1,
+              padding: '8px 10px',
+              borderRadius: 6,
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: 11,
+              background: activeRightTab === 'investasi' ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'transparent',
+              color: activeRightTab === 'investasi' ? '#fff' : 'var(--color-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              transition: 'all 0.15s'
+            }}
+          >
+            <Icon name="package" size={12} /> BEP Investasi
+          </button>
+        </div>
+
+        {activeRightTab === 'operasional' ? (
+          <>
+            {/* Hero Summary Banner: Target Penjualan Harian */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              borderRadius: 16,
+              padding: '24px 20px',
+              color: '#fff',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.18)',
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', right: '-15%', top: '-25%', width: 140, height: 140, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.12)', filter: 'blur(24px)' }} />
+              <div className="label-xs" style={{ color: '#38bdf8', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 10 }}>
+                TARGET HARIAN ANTI-RUGI (OPERASIONAL)
+              </div>
+              <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>Target Penjualan Harian agar Tidak Rugi:</div>
+              <div className="mono" style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', textShadow: '0 2px 10px rgba(0,0,0,0.4)' }}>
+                {bepHarian} <span style={{ fontSize: 16, fontWeight: 700, color: '#38bdf8' }}>Cup / Hari</span>
+              </div>
+              <div style={{ fontSize: 10, color: '#64748b', marginTop: 10 }}>
+                Mencakup HPP &amp; target menutupi operasional bulanan {fmtRp(opexVal)}
+              </div>
+            </div>
+
+            {/* Status Gauge & Actual Performance Card */}
+            <div className="result-dark-card" style={{ padding: 20 }}>
+              <div className="flex-between" style={{ marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>PERBANDINGAN TERJUAL vs BEP</span>
+                <div style={{
+                  background: statusBg,
+                  border: `1.5px solid ${statusBorder}`,
+                  color: statusColor,
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  fontSize: 10,
+                  fontWeight: 800
+                }}>
+                  {statusText}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: '#64748b' }}>Realisasi Harian</div>
+                  <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{actualVolumeHarian} Cup</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: '#64748b' }}>Kebutuhan BEP Harian</div>
+                  <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: '#cbd5e1', marginTop: 2 }}>{bepHarian} Cup</div>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div style={{ marginBottom: 6 }}>
+                <div className="progress-bar" style={{ height: 10, background: 'rgba(255,255,255,0.06)', borderRadius: 5, overflow: 'hidden' }}>
+                  <div
+                    className="progress-segment"
+                    style={{
+                      width: `${targetPct}%`,
+                      background: statusColor,
+                      borderRadius: 5
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex-between" style={{ fontSize: 10, color: '#64748b' }}>
+                <span>Pencapaian Target BEP:</span>
+                <span className="mono" style={{ fontWeight: 700, color: statusColor }}>{targetPct.toFixed(0)}%</span>
+              </div>
+            </div>
+
+            {/* Detailed BEP Results Card */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}>
+              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>DETAIL METRIK BEP OPERASIONAL TOKO</div>
+
+              {[
+                { label: 'BEP Unit Bulanan', val: `${bepUnits.toLocaleString('id-ID')} Cup / bln`, color: 'var(--color-text)' },
+                { label: 'BEP Harian', val: `${bepHarian} Cup / hari`, color: 'var(--color-text)', bold: true },
+                { label: 'BEP Nominal Bulanan', val: fmtRp(bepNominal), color: '#10b981' },
+                { label: 'BEP Nominal Harian', val: `${fmtRp(Math.round(bepNominal / operationalDays))} / hari`, color: '#059669' },
+              ].map(({ label, val, color, bold }) => (
+                <div key={label} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '5px 0',
+                  borderBottom: '1px dashed var(--border-color)'
+                }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: bold ? 800 : 600, color }}>{val}</span>
+                </div>
+              ))}
+
+              <div style={{
+                background: 'var(--bg-app)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 8,
+                padding: 10,
+                fontSize: 10,
+                color: 'var(--color-text-muted)',
+                lineHeight: 1.6,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 6
+              }}>
+                <Icon name="info" size={13} color="var(--primary)" />
+                <div>
+                  <strong>Bagaimana BEP Operasional Diturunkan?</strong><br />
+                  Titik BEP operasional dihitung murni untuk menutupi biaya operasional bulanan (OPEX) toko sebesar **{fmtRp(opexVal)}**.
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Hero Summary Banner: Target Penjualan Investasi */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #0d9488 100%)',
+              borderRadius: 16,
+              padding: '24px 20px',
+              color: '#fff',
+              boxShadow: '0 12px 30px rgba(13,148,136,0.18)',
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', right: '-15%', top: '-25%', width: 140, height: 140, borderRadius: '50%', background: 'rgba(20,184,166,0.15)', filter: 'blur(24px)' }} />
+              <div className="label-xs" style={{ color: '#2dd4bf', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 10 }}>
+                TARGET HARIAN BALIK MODAL (INVESTASI)
+              </div>
+              <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 6 }}>Target Penjualan Harian agar Modal Kembali dalam {targetPaybackMonths} Bulan:</div>
+              <div className="mono" style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', textShadow: '0 2px 10px rgba(0,0,0,0.4)' }}>
+                {goalSeek.requiredCupDay} <span style={{ fontSize: 16, fontWeight: 700, color: '#2dd4bf' }}>Cup / Hari</span>
+              </div>
+              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 10 }}>
+                Target Omset Bulanan: **{fmtRp(goalSeek.requiredRevMonth)}** ({goalSeek.requiredCupMonth.toLocaleString('id-ID')} Cup/Bulan)
+              </div>
+            </div>
+
+            {/* Payback period analysis tracker */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}>
+              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>ANALISIS PAYBACK PERIOD RIIL SAAT INI</div>
+
+              <div style={{
+                background: monthlyNetProfit > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                border: `1.5px solid ${monthlyNetProfit > 0 ? '#10b981' : '#ef4444'}`,
+                borderRadius: 10,
+                padding: '12px 14px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: monthlyNetProfit > 0 ? '#34d399' : '#f87171', marginBottom: 4 }}>
+                  ESTIMASI WAKTU BALIK MODAL RIIL
+                </div>
+                <div className="mono" style={{ fontWeight: 900, fontSize: 20, color: 'var(--color-text)' }}>
+                  {paybackText}
+                </div>
+                {monthlyNetProfit > 0 && paybackPeriodMonths > 0 && (
+                  <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                    Mulai mencetak profit bersih murni pada bulan ke-<strong>{Math.ceil(paybackPeriodMonths) + 1}</strong>
+                  </div>
+                )}
+              </div>
+
+              {[
+                { label: 'Investasi Awal (CapEx)', val: fmtRp(investmentVal), color: 'var(--color-text)' },
+                { label: 'Profit Bersih Bulanan Riil', val: monthlyNetProfit > 0 ? fmtRp(monthlyNetProfit) : `Rugi ${fmtRp(Math.abs(monthlyNetProfit))}`, color: monthlyNetProfit > 0 ? '#10b981' : '#ef4444', bold: true },
+                { label: 'Waktu Balik Modal Riil', val: paybackPeriodMonths > 0 ? `${(paybackPeriodMonths / 12).toFixed(1)} Tahun` : 'N/A', color: 'var(--color-text)' },
+              ].map(({ label, val, color, bold }) => (
+                <div key={label} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '5px 0',
+                  borderBottom: '1px dashed var(--border-color)'
+                }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: bold ? 800 : 600, color }}>{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Simulasi Target Omset & Profit Investasi */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}>
+              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>TARGET SIMULASI BALIK MODAL ({targetPaybackMonths} BULAN)</div>
+
+              {[
+                { label: 'Target Omset Harian', val: `${fmtRp(goalSeek.requiredRevDay)} / hari`, color: 'var(--color-text)', bold: true },
+                { label: 'Target Omset Bulanan', val: fmtRp(goalSeek.requiredRevMonth), color: 'var(--color-text)' },
+                { label: 'Wajib Profit Bersih / Bulan', val: fmtRp(Math.round(goalSeek.requiredMonthlyProfit)), color: '#10b981' },
+              ].map(({ label, val, color, bold }) => (
+                <div key={label} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '5px 0',
+                  borderBottom: '1px dashed var(--border-color)'
+                }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: bold ? 800 : 600, color }}>{val}</span>
+                </div>
+              ))}
+
+              <div style={{
+                background: 'var(--bg-app)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 8,
+                padding: 10,
+                fontSize: 10,
+                color: 'var(--color-text-muted)',
+                lineHeight: 1.6,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 6
+              }}>
+                <Icon name="calculator" size={13} color="var(--primary)" />
+                <div>
+                  <strong>Cara Pencapaian Target BEP Investasi:</strong><br />
+                  Target penjualan harian **{goalSeek.requiredCupDay} Cup/Hari** wajib tercapai agar modal awal **{fmtRp(investmentVal)}** dapat kembali seutuhnya dalam waktu **{targetPaybackMonths} Bulan**.
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

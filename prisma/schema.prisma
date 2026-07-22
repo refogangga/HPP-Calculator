@@ -5,6 +5,18 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+// Tabel untuk menyimpan data Outlet / Cabang
+model Outlet {
+  id           String        @id @default(uuid())
+  name         String
+  menus        Menu[]
+  opexProfiles OpexProfile[]
+  bepSettings  BepSettings?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 // Tabel untuk menyimpan data Menu HPP
@@ -17,6 +29,8 @@ model Menu {
   ingredients Json     // Menyimpan array bahan baku
   packaging   Json     // Menyimpan array kemasan
   ops         Json?    // Menyimpan opsi operasional
+  outletId    String?
+  outlet      Outlet?  @relation(fields: [outletId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -34,6 +48,24 @@ model OpexProfile {
   selectedMenuIds     Json     // Menyimpan array menu id terpilih
   assets              Json     // Menyimpan daftar aset penyusutan
   expenses            Json     // Menyimpan daftar pengeluaran overhead
+  outletId            String?
+  outlet              Outlet?  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Tabel untuk menyimpan data BEP
+model BepSettings {
+  id                  String   @id @default(uuid())
+  outletId            String   @unique
+  outlet              Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  operationalDays     Int      @default(30)
+  manualOpex          Float?
+  manualMargin        Float?
+  manualPrice         Float?
+  actualVolume        Int?
+  manualInvestment    Float?
+  targetPaybackMonths Int      @default(12)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }

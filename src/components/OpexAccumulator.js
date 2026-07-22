@@ -16,6 +16,7 @@ export default function OpexAccumulator({
   onAddProfile,
   onDeleteProfile,
   onNavigateToCalculator,
+  onNavigateToBep,
   channelPresets = [],
   onOpenChannelModal
 }) {
@@ -1462,6 +1463,29 @@ export default function OpexAccumulator({
                 </div>
                 <div style={{ fontSize: 10, marginTop: 4 }}>
                   Volume penjualan gabungan yang dibutuhkan untuk menutup total biaya operasional sebesar <strong>{fmtRp(totalOpexVal)}</strong>.
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-app)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border-color)' }}>
+                <span className="label-xs" style={{ display: 'block', marginBottom: 2 }}>TARGET BEP HARIAN (Cup/Hari)</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span className="mono" style={{ fontSize: 16, fontWeight: 800, color: 'var(--primary)' }}>
+                    {Math.ceil(financialSummary.bepUnits / 30)} unit / hari
+                  </span>
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                    BEP Unit ÷ 30 Hari
+                  </span>
+                </div>
+                <div style={{ fontSize: 10, marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Target penjualan harian anti-rugi.</span>
+                  {onNavigateToBep && (
+                    <button 
+                      onClick={onNavigateToBep}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: 10, padding: 0 }}
+                    >
+                      Buka Simulasi BEP →
+                    </button>
+                  )}
                 </div>
               </div>
 

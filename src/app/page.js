@@ -6,6 +6,7 @@ import { ToastContainer, MenuMetaModal } from '../components/HppSubComponents';
 import HppCalculator from '../components/HppCalculator';
 import MenuDatabase from '../components/MenuDatabase';
 import OpexAccumulator from '../components/OpexAccumulator';
+import BepCalculator from '../components/BepCalculator';
 import ChannelPresetsModal from '../components/ChannelPresetsModal';
 import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, loadOpexProfiles, saveOpexProfiles, mkOpexProfile, loadChannelPresets, saveChannelPresets } from '../utils/hpp';
 import * as XLSX from 'xlsx';
@@ -21,6 +22,9 @@ export default function Home() {
   const [activeProfileId, setActiveProfileId] = useState(null);
   const [channelPresets, setChannelPresets] = useState([]);
   const [showChannelModal, setShowChannelModal] = useState(false);
+  const [outlets, setOutlets] = useState([]);
+  const [activeOutletId, setActiveOutletId] = useState(null);
+  const [bepSettings, setBepSettings] = useState([]);
 
 
   /* ── Toast helpers ── */
@@ -30,8 +34,16 @@ export default function Home() {
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
   }, []);
 
-  const activeMenu = menus.find(m => m.id === activeId);
-  const activeProfile = opexProfiles.find(p => p.id === activeProfileId) || opexProfiles[0] || null;
+  const activeOutletMenus = React.useMemo(() => {
+    return menus.filter(m => m.outletId === activeOutletId);
+  }, [menus, activeOutletId]);
+
+  const activeOutletProfiles = React.useMemo(() => {
+    return opexProfiles.filter(p => p.outletId === activeOutletId);
+  }, [opexProfiles, activeOutletId]);
+
+  const activeMenu = activeOutletMenus.find(m => m.id === activeId) || activeOutletMenus[0] || null;
+  const activeProfile = activeOutletProfiles.find(p => p.id === activeProfileId) || activeOutletProfiles[0] || null;
 
   // Load data from DB or migrate from LocalStorage
   useEffect(() => {
@@ -39,80 +51,133 @@ export default function Home() {
     
     const initData = async () => {
       try {
+        // 1. Load outlets
+        const outletsRes = await fetch('/api/outlets');
+        let dbOutlets = await outletsRes.json();
+        
+        if (!dbOutlets || dbOutlets.length === 0) {
+          const createRes = await fetch('/api/outlets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'Outlet Utama' })
+          });
+          const newOutlet = await createRes.json();
+          dbOutlets = [newOutlet];
+        }
+        
+        setOutlets(dbOutlets);
+        const initialOutletId = dbOutlets[0].id;
+        setActiveOutletId(initialOutletId);
+
+        // 2. Load BEP settings
+        const bepRes = await fetch('/api/bep');
+        const dbBep = await bepRes.json();
+        setBepSettings(dbBep);
+
+        // 3. Load Menus
         const menusRes = await fetch('/api/menus');
-        const dbMenus = await menusRes.json();
+        let dbMenus = await menusRes.json();
         
+        // 4. Load Opex Profiles
         const opexRes = await fetch('/api/opex');
-        const dbProfiles = await opexRes.json();
-        
+        let dbProfiles = await opexRes.json();
+
+        // 5. Fallback migrations (LocalStorage)
         const localMenus = loadDB();
         const localProfiles = loadOpexProfiles();
-        
-        let finalMenus = dbMenus;
-        let finalProfiles = dbProfiles;
-        
         const databaseIsEmpty = (!dbMenus || dbMenus.length === 0) && (!dbProfiles || dbProfiles.length === 0);
         const localStorageHasData = (localMenus && localMenus.length > 0) || (localProfiles && localProfiles.length > 0);
-        
+
         if (databaseIsEmpty && localStorageHasData) {
-          finalMenus = localMenus.length > 0 ? localMenus : [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman' })];
-          finalProfiles = localProfiles;
+          dbMenus = localMenus.length > 0 ? localMenus.map(m => ({ ...m, outletId: initialOutletId })) : [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman', outletId: initialOutletId })];
+          dbProfiles = localProfiles.map(p => ({ ...p, outletId: initialOutletId }));
           
           await fetch('/api/menus', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(finalMenus)
+            body: JSON.stringify(dbMenus)
           });
-          
-          if (finalProfiles.length > 0) {
+          if (dbProfiles.length > 0) {
             await fetch('/api/opex', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(finalProfiles)
+              body: JSON.stringify(dbProfiles)
             });
           }
-          
-          showToast('Data berhasil dimigrasikan ke database MariaDB Laragon!', 'success');
         } else {
-          if (!finalMenus || finalMenus.length === 0) {
-            finalMenus = [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman' })];
+          // Ensure all items have outletId
+          let menusNeedUpdate = false;
+          dbMenus = dbMenus.map(m => {
+            if (!m.outletId) {
+              menusNeedUpdate = true;
+              return { ...m, outletId: initialOutletId };
+            }
+            return m;
+          });
+          
+          let opexNeedUpdate = false;
+          dbProfiles = dbProfiles.map(p => {
+            if (!p.outletId) {
+              opexNeedUpdate = true;
+              return { ...p, outletId: initialOutletId };
+            }
+            return p;
+          });
+
+          if (dbMenus.length === 0) {
+            dbMenus = [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman', outletId: initialOutletId })];
+            menusNeedUpdate = true;
+          }
+          if (dbProfiles.length === 0) {
+            dbProfiles = [mkOpexProfile({ outletId: initialOutletId })];
+            opexNeedUpdate = true;
+          }
+
+          if (menusNeedUpdate) {
             await fetch('/api/menus', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(finalMenus)
+              body: JSON.stringify(dbMenus)
             });
           }
-          if (!finalProfiles || finalProfiles.length === 0) {
-            finalProfiles = [mkOpexProfile()];
+          if (opexNeedUpdate) {
             await fetch('/api/opex', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(finalProfiles)
+              body: JSON.stringify(dbProfiles)
             });
           }
         }
-        
-        setMenus(finalMenus);
-        setActiveId(finalMenus[0]?.id || null);
-        setOpexProfiles(finalProfiles);
-        setActiveProfileId(finalProfiles[0]?.id || null);
+
+        setMenus(dbMenus);
+        const activeOutletMenu = dbMenus.find(m => m.outletId === initialOutletId);
+        setActiveId(activeOutletMenu?.id || null);
+
+        setOpexProfiles(dbProfiles);
+        const activeOutletProfile = dbProfiles.find(p => p.outletId === initialOutletId);
+        setActiveProfileId(activeOutletProfile?.id || null);
 
         const loadedPresets = loadChannelPresets();
         setChannelPresets(loadedPresets);
       } catch (error) {
-        console.error("Gagal memuat data dari database. Memakai fallback LocalStorage.", error);
-        const localMenus = loadDB();
-        const loadedMenus = localMenus.length > 0 ? localMenus : [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman' })];
+        console.error("Gagal memuat data dari database. Memakai fallback local.", error);
+        const localOutlet = { id: 'default-local-outlet', name: 'Outlet Lokal' };
+        setOutlets([localOutlet]);
+        setActiveOutletId('default-local-outlet');
+
+        const localMenus = loadDB().map(m => ({ ...m, outletId: 'default-local-outlet' }));
+        const loadedMenus = localMenus.length > 0 ? localMenus : [mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman', outletId: 'default-local-outlet' })];
         setMenus(loadedMenus);
-        setActiveId(loadedMenus[0]?.id);
-        
-        const localProfiles = loadOpexProfiles();
-        setOpexProfiles(localProfiles);
-        setActiveProfileId(localProfiles[0]?.id || null);
+        setActiveId(loadedMenus[0]?.id || null);
+
+        const localProfiles = loadOpexProfiles().map(p => ({ ...p, outletId: 'default-local-outlet' }));
+        const loadedProfiles = localProfiles.length > 0 ? localProfiles : [mkOpexProfile({ outletId: 'default-local-outlet' })];
+        setOpexProfiles(loadedProfiles);
+        setActiveProfileId(loadedProfiles[0]?.id || null);
 
         const loadedPresets = loadChannelPresets();
         setChannelPresets(loadedPresets);
-        showToast('Menghubungkan ke database gagal. Memakai data cadangan browser.', 'alert');
+        showToast('Menggunakan offline mode. Beberapa fitur tersimpan lokal.', 'alert');
       }
     };
     
@@ -171,6 +236,131 @@ export default function Home() {
     }
   }, [menus, opexProfiles, showToast]);
 
+  /* ── Outlet CRUD & BEP Settings Sync ── */
+  const handleAddOutlet = useCallback(async (name, copyFromOutletId) => {
+    try {
+      const res = await fetch('/api/outlets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, copyFromOutletId })
+      });
+      if (!res.ok) throw new Error('Gagal membuat outlet');
+      const newOutlet = await res.json();
+      setOutlets(prev => [...prev, newOutlet]);
+
+      if (copyFromOutletId) {
+        // Re-fetch everything to get the duplicated data
+        const menusRes = await fetch('/api/menus');
+        const dbMenus = await menusRes.json();
+        setMenus(dbMenus);
+
+        const opexRes = await fetch('/api/opex');
+        const dbProfiles = await opexRes.json();
+        setOpexProfiles(dbProfiles);
+
+        const bepRes = await fetch('/api/bep');
+        const dbBep = await bepRes.json();
+        setBepSettings(dbBep);
+      } else {
+        // Create initial default settings
+        const newBep = {
+          outletId: newOutlet.id,
+          operationalDays: 30,
+          manualOpex: null,
+          manualMargin: null,
+          manualPrice: null,
+          actualVolume: null,
+          manualInvestment: null,
+          targetPaybackMonths: 12
+        };
+        setBepSettings(prev => [...prev, newBep]);
+
+        const initialMenu = mkMenu({ name: 'Kopi Susu Signature', emoji: '☕', category: 'Minuman', outletId: newOutlet.id });
+        setMenus(prev => [initialMenu, ...prev]);
+
+        const initialProfile = mkOpexProfile({ name: 'Profil Utama', outletId: newOutlet.id });
+        setOpexProfiles(prev => [...prev, initialProfile]);
+
+        await fetch('/api/menus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(initialMenu)
+        });
+        await fetch('/api/opex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(initialProfile)
+        });
+      }
+
+      setActiveOutletId(newOutlet.id);
+      showToast(`Outlet "${name}" berhasil dibuat!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal membuat outlet', 'error');
+    }
+  }, [showToast]);
+
+  const handleRenameOutlet = useCallback(async (id, name) => {
+    try {
+      const res = await fetch('/api/outlets', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name })
+      });
+      if (!res.ok) throw new Error('Gagal mengubah nama outlet');
+      const updated = await res.json();
+      setOutlets(prev => prev.map(o => o.id === id ? updated : o));
+      showToast('Nama outlet berhasil diubah!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal mengubah nama outlet', 'error');
+    }
+  }, [showToast]);
+
+  const handleDeleteOutlet = useCallback(async (id) => {
+    if (outlets.length <= 1) {
+      showToast('Gagal menghapus! Minimal harus ada 1 outlet.', 'error');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/outlets?id=${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Gagal menghapus outlet');
+      setOutlets(prev => prev.filter(o => o.id !== id));
+      setMenus(prev => prev.filter(m => m.outletId !== id));
+      setOpexProfiles(prev => prev.filter(p => p.outletId !== id));
+      setBepSettings(prev => prev.filter(b => b.outletId !== id));
+
+      if (activeOutletId === id) {
+        const remaining = outlets.filter(o => o.id !== id);
+        setActiveOutletId(remaining[0].id);
+      }
+      showToast('Outlet berhasil dihapus!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal menghapus outlet', 'error');
+    }
+  }, [outlets, activeOutletId, showToast]);
+
+  const handleUpdateBepSettings = useCallback(async (updated) => {
+    try {
+      setBepSettings(prev => {
+        const next = prev.filter(b => b.outletId !== updated.outletId);
+        return [...next, updated];
+      });
+
+      await fetch('/api/bep', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+    } catch (err) {
+      console.error("Gagal menyimpan parameter BEP:", err);
+    }
+  }, []);
+
   /* ── Menu CRUD ── */
   const updateActiveMenu = useCallback((changes) => {
     setMenus(prev => prev.map(m =>
@@ -181,7 +371,7 @@ export default function Home() {
   }, [activeId]);
 
   const addMenu = () => {
-    const newMenu = mkMenu();
+    const newMenu = mkMenu({ outletId: activeOutletId });
     setMenus(prev => [newMenu, ...prev]);
     setActiveId(newMenu.id);
     setView('calculator');
@@ -193,7 +383,9 @@ export default function Home() {
     setMenus(prev => {
       const next = prev.filter(m => m.id !== id);
       if (id === activeId) {
-        setActiveId(next.length > 0 ? next[0].id : null);
+        // Fallback to active outlet's first menu
+        const outletMenus = next.filter(m => m.outletId === activeOutletId);
+        setActiveId(outletMenus.length > 0 ? outletMenus[0].id : null);
       }
       return next;
     });
@@ -203,7 +395,14 @@ export default function Home() {
   const duplicateMenu = (id) => {
     const src = menus.find(m => m.id === id);
     if (!src) return;
-    const dup = { ...JSON.parse(JSON.stringify(src)), id: uid(), name: src.name + ' (Copy)', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const dup = {
+      ...JSON.parse(JSON.stringify(src)),
+      id: uid(),
+      name: src.name + ' (Copy)',
+      outletId: activeOutletId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
     setMenus(prev => [dup, ...prev]);
     setActiveId(dup.id);
     setView('calculator');
@@ -220,12 +419,13 @@ export default function Home() {
     setMenus(prev => {
       const next = prev.filter(m => !ids.includes(m.id));
       if (ids.includes(activeId)) {
-        setActiveId(next.length > 0 ? next[0].id : null);
+        const outletMenus = next.filter(m => m.outletId === activeOutletId);
+        setActiveId(outletMenus.length > 0 ? outletMenus[0].id : null);
       }
       return next;
     });
     showToast(`${ids.length} menu dihapus`, 'info');
-  }, [activeId, showToast]);
+  }, [activeId, activeOutletId, showToast]);
 
   const handleExportSingleExcel = () => {
     if (!activeMenu) return;
@@ -448,6 +648,43 @@ ${finalPortionLines.trim()}
               <Icon name="store" size={12} /> Preset Channel
             </button>
           )}
+
+          {/* Global Outlet Selector Dropdown */}
+          {outlets.length > 0 && (
+            <div className="flex-center gap-1" style={{ marginRight: 4 }}>
+              <span style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 650 }}>Outlet:</span>
+              <select
+                className="hpp-input sm"
+                value={activeOutletId || ''}
+                onChange={e => {
+                  const targetOutletId = e.target.value;
+                  setActiveOutletId(targetOutletId);
+                  const oMenus = menus.filter(m => m.outletId === targetOutletId);
+                  setActiveId(oMenus.length > 0 ? oMenus[0].id : null);
+                  const oProfiles = opexProfiles.filter(p => p.outletId === targetOutletId);
+                  setActiveProfileId(oProfiles.length > 0 ? oProfiles[0].id : null);
+                }}
+                style={{
+                  fontWeight: 700,
+                  fontSize: 11,
+                  padding: '4px 24px 4px 8px',
+                  height: 'auto',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-app)',
+                  color: 'var(--color-text)',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  outline: 'none',
+                  minWidth: 130
+                }}
+              >
+                {outlets.map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <span style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', height: 20, margin: '0 4px' }} />
           <button
             className={`btn btn-sm ${view === 'calculator' ? 'btn-primary' : 'btn-ghost'}`}
@@ -460,9 +697,14 @@ ${finalPortionLines.trim()}
             Akumulasi OPEX
           </button>
           <button
+            className={`btn btn-sm ${view === 'bep' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setView('bep')}>
+            Kalkulator BEP
+          </button>
+          <button
             className={`btn btn-sm ${view === 'database' ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setView('database')}>
-            <Icon name="database" size={12} /> Database ({menus.length})
+            <Icon name="database" size={12} /> Data
           </button>
         </div>
       </div>
@@ -645,6 +887,7 @@ ${finalPortionLines.trim()}
             onUpdate={updateActiveMenu}
             showToast={showToast}
             channelPresets={channelPresets}
+            activeProfile={activeProfile}
             onOpenChannelModal={() => setShowChannelModal(true)}
           />
         ) : (
@@ -661,17 +904,18 @@ ${finalPortionLines.trim()}
 
       {view === 'database' && (
         <MenuDatabase
-          menus={menus} activeId={activeId}
+          menus={activeOutletMenus} activeId={activeId}
           onSelect={selectMenu} onAdd={addMenu}
           onDelete={deleteMenu} onDuplicate={duplicateMenu}
           onDeleteBatch={deleteMenusBatch}
-          opexProfiles={opexProfiles}
+          opexProfiles={activeOutletProfiles}
           activeProfileId={activeProfileId}
           onSelectProfile={(id) => {
             setActiveProfileId(id);
             setView('opex');
           }}
           onAddProfile={(newProfile) => {
+            newProfile.outletId = activeOutletId;
             setOpexProfiles(prev => [...prev, newProfile]);
             setActiveProfileId(newProfile.id);
             setView('opex');
@@ -681,28 +925,39 @@ ${finalPortionLines.trim()}
             setOpexProfiles(prev => {
               const next = prev.filter(p => p.id !== id);
               if (id === activeProfileId) {
-                setActiveProfileId(next[0]?.id || null);
+                const outletProfiles = next.filter(p => p.outletId === activeOutletId);
+                setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
               }
               return next;
             });
             showToast('Profil OPEX dihapus', 'info');
           }}
+          outlets={outlets}
+          activeOutletId={activeOutletId}
+          onSelectOutlet={setActiveOutletId}
+          onAddOutlet={handleAddOutlet}
+          onRenameOutlet={handleRenameOutlet}
+          onDeleteOutlet={handleDeleteOutlet}
+          bepSettings={bepSettings}
+          onUpdateBepSettings={handleUpdateBepSettings}
+          showToast={showToast}
         />
       )}
 
       {view === 'opex' && opexProfiles.length > 0 && (
         <OpexAccumulator
-          menus={menus}
+          menus={activeOutletMenus}
           onUpdateMenu={(id, changes) => {
             setMenus(prev => prev.map(m => m.id === id ? { ...m, ...changes, updatedAt: new Date().toISOString() } : m));
           }}
-          opexProfiles={opexProfiles}
+          opexProfiles={activeOutletProfiles}
           activeProfileId={activeProfileId}
           onSelectProfile={setActiveProfileId}
           onUpdateProfile={(changes) => {
             setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, ...changes } : p));
           }}
           onAddProfile={(newProfile) => {
+            newProfile.outletId = activeOutletId;
             setOpexProfiles(prev => [...prev, newProfile]);
             setActiveProfileId(newProfile.id);
             showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
@@ -711,7 +966,8 @@ ${finalPortionLines.trim()}
             setOpexProfiles(prev => {
               const next = prev.filter(p => p.id !== id);
               if (id === activeProfileId) {
-                setActiveProfileId(next[0]?.id || null);
+                const outletProfiles = next.filter(p => p.outletId === activeOutletId);
+                setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
               }
               return next;
             });
@@ -721,8 +977,23 @@ ${finalPortionLines.trim()}
             setActiveId(menuId);
             setView('calculator');
           }}
+          onNavigateToBep={() => {
+            setView('bep');
+          }}
           channelPresets={channelPresets}
           onOpenChannelModal={() => setShowChannelModal(true)}
+        />
+      )}
+
+      {view === 'bep' && (
+        <BepCalculator
+          menus={activeOutletMenus}
+          opexProfiles={activeOutletProfiles}
+          activeProfileId={activeProfileId}
+          onSelectProfile={setActiveProfileId}
+          bepSettings={bepSettings}
+          activeOutletId={activeOutletId}
+          onUpdateBepSettings={handleUpdateBepSettings}
         />
       )}
 
