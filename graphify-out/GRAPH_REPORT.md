@@ -1,16 +1,16 @@
 # Graph Report - HPP-Calculator  (2026-07-22)
 
 ## Corpus Check
-- 48 files · ~56,960 words
+- 51 files · ~65,933 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 219 nodes · 380 edges · 31 communities (18 shown, 13 thin omitted)
+- 262 nodes · 431 edges · 33 communities (19 shown, 14 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 4 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d18420db`
+- Built from commit: `99d4c47b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -25,6 +25,7 @@
 - Globe Icon Asset
 - Window Icon Asset
 - BEP API Write
+- button.jsx
 - App Layout Rootlayout
 - App Page Home
 - Generated Client Index D Bepsettingsdefa
@@ -45,16 +46,16 @@
 - Generated Client Index D Getbepsettingsa
 
 ## God Nodes (most connected - your core abstractions)
-1. `num()` - 22 edges
+1. `num()` - 24 edges
 2. `fmtRp()` - 20 edges
 3. `uid()` - 17 edges
 4. `Home()` - 13 edges
-5. `roundPrice()` - 11 edges
+5. `roundPrice()` - 12 edges
 6. `getPenyusutanBulanan()` - 10 edges
 7. `num()` - 9 edges
 8. `App()` - 9 edges
 9. `Icon()` - 9 edges
-10. `mkMenu()` - 9 edges
+10. `MenuDatabase()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `SF Pro Typography System` --semantically_similar_to--> `Geist Font Family`  [INFERRED] [semantically similar]
@@ -65,8 +66,8 @@
   public/vercel.svg → README.md
 - `Graphify Integration Config` --references--> `Graphify Skill Definition`  [INFERRED]
   CLAUDE.md → .claude/skills/graphify/SKILL.md
-- `Home()` --calls--> `fmtRp()`  [EXTRACTED]
-  src/app/page.js → src/utils/hpp.js
+- `CashFlowRow()` --calls--> `fmtRp()`  [EXTRACTED]
+  src/components/PlatformCalculator.js → src/utils/hpp.js
 
 ## Import Cycles
 - None detected.
@@ -75,7 +76,7 @@
 - **Graphify Skill Ecosystem** — claude_skills_graphify_skill, claude_skills_graphify_references_extraction_spec, claude_skills_graphify_references_query, claude_skills_graphify_references_update, claude_skills_graphify_references_exports [EXTRACTED 1.00]
 - **Apple Design System Core** — design_apple_design_system, design_photography_first_principle, design_action_blue_accent, design_sf_pro_typography, design_button_system [EXTRACTED 1.00]
 
-## Communities (31 total, 13 thin omitted)
+## Communities (33 total, 14 thin omitted)
 
 ### Community 0 - "Apple Design System"
 Cohesion: 0.17
@@ -90,16 +91,16 @@ Cohesion: 0.11
 Nodes (17): dotenv, eslint, eslint-config-next, devDependencies, dotenv, eslint, eslint-config-next, prisma (+9 more)
 
 ### Community 3 - "Prisma Data Clients"
-Cohesion: 0.12
-Nodes (17): next, dependencies, next, postcss, @prisma/client, react, react-dom, tailwindcss (+9 more)
+Cohesion: 0.06
+Nodes (31): @base-ui/react, class-variance-authority, clsx, lucide-react, next, dependencies, @base-ui/react, class-variance-authority (+23 more)
 
 ### Community 10 - "BEP API Write"
-Cohesion: 0.29
-Nodes (15): Home(), loadChannelPresets(), loadDB(), loadOpexProfiles(), mkChannelPreset(), mkIngredients(), mkMenu(), mkOpexProfile() (+7 more)
+Cohesion: 0.09
+Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
 ### Community 24 - "App Page Home"
-Cohesion: 0.23
-Nodes (22): BepCalculator(), ChannelPresetsModal(), FormatInput(), HppCalculator(), IngredientRow(), MenuMetaModal(), PackagingCard(), PackCalcModal() (+14 more)
+Cohesion: 0.16
+Nodes (39): Home(), BepCalculator(), ChannelPresetsModal(), FormatInput(), HppCalculator(), IngredientRow(), MenuMetaModal(), PackagingCard() (+31 more)
 
 ### Community 59 - "Generated Client Index D Bepsettingsdefa"
 Cohesion: 0.19
@@ -138,20 +139,22 @@ Cohesion: 0.50
 Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify reference: commit hook and native CLAUDE.md integration
 
 ## Knowledge Gaps
-- **78 isolated node(s):** `ICONS`, `eslintConfig`, `paths`, `nextConfig`, `name` (+73 more)
+- **104 isolated node(s):** `ICONS`, `$schema`, `style`, `rsc`, `tsx` (+99 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `dependencies` connect `Prisma Data Clients` to `Typography & Branding`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **What connects `ICONS`, `eslintConfig`, `paths` to the rest of the system?**
-  _78 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **What connects `ICONS`, `$schema`, `style` to the rest of the system?**
+  _104 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Typography & Branding` be split into smaller, more focused modules?**
   _Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected._
 - **Should `Prisma Data Clients` be split into smaller, more focused modules?**
-  _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._
 - **Should `BEP API Read` be split into smaller, more focused modules?**
   _Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected._
+- **Should `BEP API Write` be split into smaller, more focused modules?**
+  _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._

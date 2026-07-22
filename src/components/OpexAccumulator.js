@@ -422,6 +422,26 @@ export default function OpexAccumulator({
     };
   }, [activeMenus, activeProfile.menuVolumes, totalOpexVal, currentBep.manualPrice, currentBep.manualMargin]);
 
+  const calculatedInvestment = useMemo(() => {
+    if (!activeProfile) return 0;
+    return (activeProfile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0);
+  }, [activeProfile]);
+
+  const investmentVal = currentBep.manualInvestment !== null ? num(currentBep.manualInvestment) : calculatedInvestment;
+  const targetPaybackMonths = currentBep.targetPaybackMonths || 12;
+
+  const requiredCupDay = useMemo(() => {
+    const avgContributionMargin = financialSummary.avgContributionMargin;
+    if (targetPaybackMonths <= 0 || avgContributionMargin <= 0 || investmentVal <= 0) {
+      return 0;
+    }
+    const requiredMonthlyProfit = investmentVal / targetPaybackMonths;
+    const requiredMonthlyGrossProfit = requiredMonthlyProfit + totalOpexVal;
+    const requiredCupMonth = Math.ceil(requiredMonthlyGrossProfit / avgContributionMargin);
+    const operationalDays = currentBep.operationalDays || 30;
+    return operationalDays > 0 ? Math.ceil(requiredCupMonth / operationalDays) : 0;
+  }, [targetPaybackMonths, investmentVal, totalOpexVal, financialSummary.avgContributionMargin, currentBep.operationalDays]);
+
   // Categories profit breakdown
   const categorySummaryBreakdown = useMemo(() => {
     const categories = ['Minuman', 'Makanan', 'Snack', 'Lainnya'];
@@ -1757,6 +1777,29 @@ export default function OpexAccumulator({
                     >
                       Buka Simulasi BEP →
                     </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-accent-blue" style={{ borderRadius: 8, padding: '10px 12px', border: '1px solid' }}>
+                <span className="label-xs" style={{ display: 'block', marginBottom: 2 }}>TARGET BEP GABUNGAN (Cup/Hari)</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span className="mono" style={{ fontSize: 16, fontWeight: 900 }}>
+                    {investmentVal > 0 ? (
+                      `${Math.ceil(financialSummary.bepUnits / currentBep.operationalDays)} - ${requiredCupDay} unit / hari`
+                    ) : (
+                      `${Math.ceil(financialSummary.bepUnits / currentBep.operationalDays)} unit / hari`
+                    )}
+                  </span>
+                  <span style={{ fontSize: 10 }}>
+                    Rentang Operasional s.d. Balik Modal
+                  </span>
+                </div>
+                <div style={{ fontSize: 10, marginTop: 4 }}>
+                  {investmentVal > 0 ? (
+                    `Batas Bawah Operasional: ${Math.ceil(financialSummary.bepUnits / currentBep.operationalDays)} unit. Batas Balik Modal (${targetPaybackMonths} Bln): ${requiredCupDay} unit.`
+                  ) : (
+                    `Tanpa nilai modal awal terdaftar, target disamakan dengan BEP Operasional.`
                   )}
                 </div>
               </div>

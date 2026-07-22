@@ -22,6 +22,7 @@ export async function PUT(request) {
       manualPrice,
       actualVolume,
       manualInvestment,
+      manualDiscount,
       targetPaybackMonths
     } = body;
 
@@ -38,6 +39,7 @@ export async function PUT(request) {
         manualPrice: manualPrice !== null ? Number(manualPrice) : null,
         actualVolume: actualVolume !== null ? Number(actualVolume) : null,
         manualInvestment: manualInvestment !== null ? Number(manualInvestment) : null,
+        manualDiscount: manualDiscount !== null ? Number(manualDiscount) : null,
         targetPaybackMonths: Number(targetPaybackMonths) ?? 12
       },
       create: {
@@ -48,6 +50,7 @@ export async function PUT(request) {
         manualPrice: manualPrice !== null ? Number(manualPrice) : null,
         actualVolume: actualVolume !== null ? Number(actualVolume) : null,
         manualInvestment: manualInvestment !== null ? Number(manualInvestment) : null,
+        manualDiscount: manualDiscount !== null ? Number(manualDiscount) : null,
         targetPaybackMonths: Number(targetPaybackMonths) ?? 12
       }
     });

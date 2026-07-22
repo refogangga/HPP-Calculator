@@ -1369,7 +1369,16 @@ ${finalPortionLines.trim()}
                   </div>
                   <div className="flex-between" style={{ fontSize: 11 }}>
                     <span style={{ color: 'var(--color-text-muted)' }}>Target Balik Modal:</span>
-                    <span className="mono" style={{ fontWeight: 750, color: 'var(--primary)' }}>{activeOutletFeasibilityData.requiredCupDay} Cup/hari</span>
+                    <span className="mono" style={{ fontWeight: 700, color: 'var(--color-text)' }}>{activeOutletFeasibilityData.requiredCupDay} Cup/hari</span>
+                  </div>
+                  <div className="flex-between bg-accent-blue" style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, margin: '2px -4px' }}>
+                    <span style={{ fontWeight: 750 }}>BEP Gabungan Target:</span>
+                    <span className="mono" style={{ fontWeight: 800 }}>
+                      {activeOutletFeasibilityData.investmentVal > 0 
+                        ? `${activeOutletFeasibilityData.bepHarian} - ${activeOutletFeasibilityData.requiredCupDay} Cup/hari`
+                        : `${activeOutletFeasibilityData.bepHarian} Cup/hari`
+                      }
+                    </span>
                   </div>
                   <div className="flex-between" style={{ fontSize: 11 }}>
                     <span style={{ color: 'var(--color-text-muted)' }}>Estimasi Profit Bersih:</span>

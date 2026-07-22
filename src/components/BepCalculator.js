@@ -22,7 +22,7 @@ export default function BepCalculator({
   const [actualVolume, setActualVolume] = useState(null);
   const [manualInvestment, setManualInvestment] = useState(null);
   const [targetPaybackMonths, setTargetPaybackMonths] = useState(12);
-  const [activeRightTab, setActiveRightTab] = useState('operasional'); // 'operasional' | 'investasi'
+  const [activeRightTab, setActiveRightTab] = useState('operasional'); // 'operasional' | 'investasi' | 'gabungan'
 
   // Sync with database/parent settings when active outlet changes
   useEffect(() => {
@@ -604,6 +604,28 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
           >
             <Icon name="package" size={12} color={activeRightTab === 'investasi' ? 'var(--primary)' : 'var(--color-text-muted)'} /> BEP Investasi
           </button>
+          <button
+            onClick={() => setActiveRightTab('gabungan')}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              borderRadius: 'calc(var(--radius) - 2px)',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: 12,
+              background: activeRightTab === 'gabungan' ? 'var(--bg-card)' : 'transparent',
+              color: activeRightTab === 'gabungan' ? 'var(--color-text)' : 'var(--color-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              boxShadow: activeRightTab === 'gabungan' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+              transition: 'all 0.15s'
+            }}
+          >
+            <Icon name="target" size={12} color={activeRightTab === 'gabungan' ? 'var(--primary)' : 'var(--color-text-muted)'} /> BEP Gabungan
+          </button>
         </div>
 
         {activeRightTab === 'operasional' && (
@@ -853,6 +875,350 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
                 <div>
                   <strong>Cara Pencapaian Target BEP Investasi:</strong><br />
                   Target penjualan harian **{goalSeek.requiredCupDay} Cup/Hari** wajib tercapai agar modal awal **{fmtRp(investmentVal)}** dapat kembali seutuhnya dalam waktu **{targetPaybackMonths} Bulan**.
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeRightTab === 'gabungan' && (
+          <>
+            {/* Hero Summary Banner: Target Penjualan Gabungan */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+              borderRadius: 'var(--radius)',
+              padding: '24px 20px',
+              color: '#fff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', right: '-15%', top: '-25%', width: 140, height: 140, borderRadius: '50%', background: 'rgba(255, 255, 255, 0.15)', filter: 'blur(24px)' }} />
+              <div className="label-xs" style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 10 }}>
+                RENTANG TARGET BEP GABUNGAN HARIAN
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', marginBottom: 6 }}>
+                Batas Aman Operasional s.d. Balik Modal:
+              </div>
+              <div className="mono" style={{ fontSize: 32, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>
+                {investmentVal > 0 ? (
+                  <>
+                    {bepHarian} - {goalSeek.requiredCupDay} <span style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Cup / Hari</span>
+                  </>
+                ) : (
+                  <>
+                    {bepHarian} <span style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Cup / Hari</span>
+                  </>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 10 }}>
+                {investmentVal > 0 ? (
+                  `Bawah (Operasional): ${bepHarian} Cup/hari | Atas (Balik Modal ${targetPaybackMonths} Bln): ${goalSeek.requiredCupDay} Cup/hari`
+                ) : (
+                  `Tanpa nilai modal awal terdaftar, target disamakan dengan BEP Operasional.`
+                )}
+              </div>
+            </div>
+
+            {/* Custom Scale & Gauge Chart Card */}
+            <div className="result-dark-card" style={{ padding: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)' }}>ZONA TARGET PENJUALAN HARIAN</span>
+                {(() => {
+                  let badgeText = 'RUGI OPERASIONAL';
+                  let badgeColor = '#ef4444';
+                  let badgeBg = 'rgba(239, 68, 68, 0.1)';
+                  let badgeBorder = 'rgba(239, 68, 68, 0.25)';
+
+                  if (investmentVal > 0) {
+                    if (actualVolumeHarian >= goalSeek.requiredCupDay) {
+                      badgeText = 'TARGET BALIK MODAL OK';
+                      badgeColor = '#10b981';
+                      badgeBg = 'rgba(16, 185, 129, 0.1)';
+                      badgeBorder = 'rgba(16, 185, 129, 0.25)';
+                    } else if (actualVolumeHarian >= bepHarian) {
+                      badgeText = 'IMPAS OPERASIONAL';
+                      badgeColor = '#f59e0b';
+                      badgeBg = 'rgba(245, 158, 11, 0.1)';
+                      badgeBorder = 'rgba(245, 158, 11, 0.25)';
+                    }
+                  } else {
+                    if (actualVolumeHarian >= bepHarian) {
+                      badgeText = 'BEP OPERASIONAL OK';
+                      badgeColor = '#10b981';
+                      badgeBg = 'rgba(16, 185, 129, 0.1)';
+                      badgeBorder = 'rgba(16, 185, 129, 0.25)';
+                    }
+                  }
+
+                  return (
+                    <div style={{
+                      background: badgeBg,
+                      border: `1.5px solid ${badgeBorder}`,
+                      color: badgeColor,
+                      padding: '4px 10px',
+                      borderRadius: 20,
+                      fontSize: 10,
+                      fontWeight: 800
+                    }}>
+                      {badgeText}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Progress scale bar */}
+              {(() => {
+                const targetLimit = goalSeek.requiredCupDay > 0 ? goalSeek.requiredCupDay : bepHarian;
+                const maxVal = Math.max(actualVolumeHarian, targetLimit, 10) * 1.35;
+                const actualPct = Math.min(100, (actualVolumeHarian / maxVal) * 100);
+                const opexPct = Math.min(100, (bepHarian / maxVal) * 100);
+                const investPct = Math.min(100, (targetLimit / maxVal) * 100);
+
+                let fillBg = '#ef4444';
+                if (actualVolumeHarian >= targetLimit) fillBg = '#10b981';
+                else if (actualVolumeHarian >= bepHarian) fillBg = '#f59e0b';
+
+                return (
+                  <div style={{ padding: '8px 0 24px 0' }}>
+                    <div style={{ position: 'relative', height: 26, margin: '10px 0' }}>
+                      {/* Main track */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 9,
+                        left: 0,
+                        right: 0,
+                        height: 8,
+                        background: '#e4e4e7',
+                        borderRadius: 4
+                      }} />
+
+                      {/* Zone Fills (Background Colors) */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 9,
+                        left: 0,
+                        width: `${opexPct}%`,
+                        height: 8,
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        borderTopLeftRadius: 4,
+                        borderBottomLeftRadius: 4
+                      }} />
+                      {investmentVal > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 9,
+                          left: `${opexPct}%`,
+                          width: `${investPct - opexPct}%`,
+                          height: 8,
+                          background: 'rgba(245, 158, 11, 0.15)'
+                        }} />
+                      )}
+                      <div style={{
+                        position: 'absolute',
+                        top: 9,
+                        left: `${investPct}%`,
+                        right: 0,
+                        height: 8,
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        borderTopRightRadius: 4,
+                        borderBottomRightRadius: 4
+                      }} />
+
+                      {/* Actual value fill */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 9,
+                        left: 0,
+                        width: `${actualPct}%`,
+                        height: 8,
+                        background: fillBg,
+                        borderRadius: 4,
+                        transition: 'width 0.3s ease'
+                      }} />
+
+                      {/* Actual value cursor pointer pin */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 3,
+                        left: `calc(${actualPct}% - 6px)`,
+                        width: 12,
+                        height: 20,
+                        background: '#ffffff',
+                        border: `3px solid ${fillBg}`,
+                        borderRadius: '50%',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                        zIndex: 10,
+                        transition: 'left 0.3s ease'
+                      }} />
+
+                      {/* Milestone Line: BEP Operasional */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 4,
+                        left: `${opexPct}%`,
+                        width: 2,
+                        height: 18,
+                        background: '#f43f5e',
+                        zIndex: 5
+                      }} />
+
+                      {/* Milestone Line: BEP Investasi */}
+                      {investmentVal > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 4,
+                          left: `${investPct}%`,
+                          width: 2,
+                          height: 18,
+                          background: '#3b82f6',
+                          zIndex: 5
+                        }} />
+                      )}
+                    </div>
+
+                    {/* Milestone labels */}
+                    <div style={{ position: 'relative', height: 25, fontSize: 9, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      <div style={{ position: 'absolute', left: 0 }}>0</div>
+                      <div style={{
+                        position: 'absolute',
+                        left: `${opexPct}%`,
+                        transform: 'translateX(-50%)',
+                        textAlign: 'center',
+                        color: '#f43f5e',
+                        fontWeight: 700
+                      }}>
+                        BEP Opex: {bepHarian}
+                      </div>
+                      {investmentVal > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          left: `${investPct}%`,
+                          transform: 'translateX(-50%)',
+                          textAlign: 'center',
+                          color: '#3b82f6',
+                          fontWeight: 700
+                        }}>
+                          BEP Invest: {goalSeek.requiredCupDay}
+                        </div>
+                      )}
+                      <div style={{ position: 'absolute', right: 0 }}>{Math.round(maxVal)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Realisasi Harian</div>
+                  <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', marginTop: 2 }}>{actualVolumeHarian} Cup</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Status Penjualan</div>
+                  <div style={{ 
+                    fontSize: 12, 
+                    fontWeight: 700, 
+                    color: actualVolumeHarian >= (goalSeek.requiredCupDay || bepHarian) ? 'var(--color-emerald)' : (actualVolumeHarian >= bepHarian ? 'var(--color-amber)' : 'var(--color-red)'),
+                    marginTop: 4 
+                  }}>
+                    {actualVolumeHarian >= (goalSeek.requiredCupDay || bepHarian) ? (
+                      'Melampaui Target'
+                    ) : (
+                      actualVolumeHarian >= bepHarian ? 'Mencakup Operasional' : 'Defisit Operasional'
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Side-by-side Table Comparison */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}>
+              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>TABEL KOMPARASI BEP OPERASIONAL vs BEP INVESTASI</div>
+              
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1.5px solid var(--border-color)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                    <th style={{ padding: '6px 4px' }}>Metrik Target</th>
+                    <th style={{ padding: '6px 4px', textAlign: 'right' }}>Operasional</th>
+                    <th style={{ padding: '6px 4px', textAlign: 'right' }}>Investasi</th>
+                    <th style={{ padding: '6px 4px', textAlign: 'right' }}>Selisih</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { 
+                      label: 'Volume Bulanan', 
+                      opex: `${bepUnits.toLocaleString('id-ID')} Cup`, 
+                      invest: `${(goalSeek.requiredCupMonth || bepUnits).toLocaleString('id-ID')} Cup`,
+                      diff: `${(Math.max(0, goalSeek.requiredCupMonth - bepUnits)).toLocaleString('id-ID')} Cup`
+                    },
+                    { 
+                      label: 'Volume Harian', 
+                      opex: `${bepHarian} Cup`, 
+                      invest: `${goalSeek.requiredCupDay || bepHarian} Cup`,
+                      diff: `${Math.max(0, (goalSeek.requiredCupDay || bepHarian) - bepHarian)} Cup`
+                    },
+                    { 
+                      label: 'Omset Bulanan', 
+                      opex: fmtRp(bepNominal), 
+                      invest: fmtRp(goalSeek.requiredRevMonth || bepNominal),
+                      diff: fmtRp(Math.max(0, (goalSeek.requiredRevMonth || bepNominal) - bepNominal))
+                    },
+                    { 
+                      label: 'Omset Harian', 
+                      opex: fmtRp(Math.round(bepNominal / operationalDays)), 
+                      invest: fmtRp(Math.round((goalSeek.requiredRevMonth || bepNominal) / operationalDays)),
+                      diff: fmtRp(Math.max(0, Math.round((goalSeek.requiredRevMonth || bepNominal) / operationalDays) - Math.round(bepNominal / operationalDays)))
+                    }
+                  ].map((row, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '8px 4px', color: 'var(--color-text)', fontWeight: 600 }}>{row.label}</td>
+                      <td style={{ padding: '8px 4px', textAlign: 'right', className: 'mono' }}>{row.opex}</td>
+                      <td style={{ padding: '8px 4px', textAlign: 'right', className: 'mono', color: 'var(--primary)', fontWeight: 600 }}>{row.invest}</td>
+                      <td style={{ padding: '8px 4px', textAlign: 'right', className: 'mono', color: '#10b981' }}>+{row.diff}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Explanation card */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}>
+              <div style={{
+                background: 'var(--bg-app)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 8,
+                padding: 10,
+                fontSize: 10,
+                color: 'var(--color-text-muted)',
+                lineHeight: 1.6,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 6
+              }}>
+                <Icon name="info" size={13} color="var(--primary)" />
+                <div>
+                  <strong>Cara Membaca Target BEP Gabungan:</strong><br />
+                  1. **Batas Bawah (BEP Operasional)** sebesar **{bepHarian} Cup/Hari** wajib dilewati untuk sekadar menutupi biaya operasional bulanan toko (**{fmtRp(opexVal)}**).<br />
+                  2. **Batas Atas (BEP Investasi)** sebesar **{goalSeek.requiredCupDay || bepHarian} Cup/Hari** adalah target optimal agar Anda bisa melunasi modal awal (**{fmtRp(investmentVal)}**) dalam waktu **{targetPaybackMonths} Bulan**.<br />
+                  3. Jika penjualan harian Anda berada di antara **{bepHarian} s.d. {goalSeek.requiredCupDay || bepHarian} cup**, maka operasional toko Anda aman (laba operasional positif) tetapi target pengembalian investasi Anda akan mundur dari yang ditargetkan.
                 </div>
               </div>
             </div>
