@@ -43,6 +43,38 @@ export default function MenuDatabase({
   const activeTab = externalActiveTab || localActiveTab;
   const setActiveTab = externalOnChangeTab || setLocalActiveTab;
   const [selectedFeasibilityOutlet, setSelectedFeasibilityOutlet] = useState(null);
+  
+  // Pack Calculator States
+  const [packCalcIng, setPackCalcIng] = useState(null);
+  const [packPrice, setPackPrice] = useState('');
+  const [packQty, setPackQty] = useState('');
+  const [packWeight, setPackWeight] = useState('');
+  const [packUnit, setPackUnit] = useState('gr');
+
+  const openPackCalculator = (ing) => {
+    setPackCalcIng(ing);
+    setPackPrice(ing.hargaBeli || '');
+    setPackQty(1);
+    setPackWeight(ing.ukuranKemasan || 1000);
+    setPackUnit(ing.unit || 'gr');
+  };
+
+  const handleApplyPackCalc = () => {
+    if (!packCalcIng) return;
+    const qty = parseFloat(packQty) || 1;
+    const weight = parseFloat(packWeight) || 0;
+    const price = parseFloat(packPrice) || 0;
+    const totalSize = qty * weight;
+    
+    handleUpdateIngredient(packCalcIng.id, 'hargaBeli', price);
+    handleUpdateIngredient(packCalcIng.id, 'ukuranKemasan', totalSize);
+    handleUpdateIngredient(packCalcIng.id, 'unit', packUnit);
+    
+    setPackCalcIng(null);
+    if (showToast) {
+      showToast('Kalkulasi pack berhasil diterapkan!', 'success');
+    }
+  };
 
   // Active Outlet ingredients & assets
   const activeOutletIngredients = useMemo(() => {
@@ -324,8 +356,8 @@ export default function MenuDatabase({
     const sTargetPaybackMonths = oSettings.targetPaybackMonths ?? 12;
     
     const expenses = profile ? (profile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0) : 0;
-    const assetDepr = profile ? getPenyusutanBulanan(profile) : 0;
-    const calculatedOpex = expenses + assetDepr;
+    const assetDepr = profile ? getPenyusutanBulanan(profile, assets) : 0;
+    const calculatedOpex = Math.round(expenses + assetDepr);
     
     const opexVal = sManualOpex !== null ? num(sManualOpex) : calculatedOpex;
     
@@ -390,12 +422,14 @@ export default function MenuDatabase({
     }, 0) : 0;
     const investmentVal = sManualInvestment !== null ? num(sManualInvestment) : calculatedInvestment;
 
-    const bepUnits = netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
+    const roundedMargin = Math.round(netProfitPerCup);
+    const bepUnits = roundedMargin > 0 ? Math.ceil(opexVal / roundedMargin) : 0;
     const bepHarian = sOperationalDays > 0 ? Math.ceil(bepUnits / sOperationalDays) : 0;
     const bepNominal = bepUnits * avgPriceVal;
 
-    const monthlyNetProfit = (volumeVal * netProfitPerCup) - opexVal;
-    const paybackPeriodMonths = (monthlyNetProfit > 0 && investmentVal > 0) ? (investmentVal / monthlyNetProfit) : 0;
+    const monthlyNetProfit = (volumeVal * roundedMargin) - opexVal;
+    const operatingCashFlow = monthlyNetProfit + assetDepr;
+    const paybackPeriodMonths = (operatingCashFlow > 0 && investmentVal > 0) ? (investmentVal / operatingCashFlow) : 0;
     
     const opexPerCup = volumeVal > 0 ? opexVal / volumeVal : 0;
     const netProfitAfterOpex = netProfitPerCup - opexPerCup;
@@ -415,12 +449,13 @@ export default function MenuDatabase({
       paybackText = timeStr;
     }
 
-    const requiredMonthlyProfit = sTargetPaybackMonths > 0 ? investmentVal / sTargetPaybackMonths : 0;
+    const requiredMonthlyCashFlow = sTargetPaybackMonths > 0 ? investmentVal / sTargetPaybackMonths : 0;
+    const requiredMonthlyProfit = Math.max(0, requiredMonthlyCashFlow - assetDepr);
     const requiredMonthlyGrossProfit = requiredMonthlyProfit + opexVal;
-    const requiredCupMonth = netProfitPerCup > 0 ? Math.ceil(requiredMonthlyGrossProfit / netProfitPerCup) : 0;
+    const requiredCupMonth = roundedMargin > 0 ? Math.ceil(requiredMonthlyGrossProfit / roundedMargin) : 0;
     const requiredCupDay = sOperationalDays > 0 ? Math.ceil(requiredCupMonth / sOperationalDays) : 0;
     const requiredRevMonth = requiredCupMonth * avgPriceVal;
-    const requiredRevDay = sOperationalDays > 0 ? Math.round(requiredRevMonth / sOperationalDays) : 0;
+    const requiredRevDay = requiredCupDay * avgPriceVal;
 
     let recStatusText = 'SANGAT SEHAT';
     let recStatusColor = '#10b981'; // Green
@@ -565,8 +600,8 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
     const sTargetPaybackMonths = oSettings.targetPaybackMonths ?? 12;
     
     const expenses = profile ? (profile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0) : 0;
-    const assetDepr = profile ? getPenyusutanBulanan(profile) : 0;
-    const calculatedOpex = expenses + assetDepr;
+    const assetDepr = profile ? getPenyusutanBulanan(profile, assets) : 0;
+    const calculatedOpex = Math.round(expenses + assetDepr);
     
     const opexVal = sManualOpex !== null ? num(sManualOpex) : calculatedOpex;
     
@@ -631,12 +666,14 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
     }, 0) : 0;
     const investmentVal = sManualInvestment !== null ? num(sManualInvestment) : calculatedInvestment;
 
-    const bepUnits = netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
+    const roundedMargin = Math.round(netProfitPerCup);
+    const bepUnits = roundedMargin > 0 ? Math.ceil(opexVal / roundedMargin) : 0;
     const bepHarian = sOperationalDays > 0 ? Math.ceil(bepUnits / sOperationalDays) : 0;
     const bepNominal = bepUnits * avgPriceVal;
 
-    const monthlyNetProfit = (volumeVal * netProfitPerCup) - opexVal;
-    const paybackPeriodMonths = (monthlyNetProfit > 0 && investmentVal > 0) ? (investmentVal / monthlyNetProfit) : 0;
+    const monthlyNetProfit = (volumeVal * roundedMargin) - opexVal;
+    const operatingCashFlow = monthlyNetProfit + assetDepr;
+    const paybackPeriodMonths = (operatingCashFlow > 0 && investmentVal > 0) ? (investmentVal / operatingCashFlow) : 0;
     
     const opexPerCup = volumeVal > 0 ? opexVal / volumeVal : 0;
     const netProfitAfterOpex = netProfitPerCup - opexPerCup;
@@ -656,12 +693,13 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
       paybackText = timeStr;
     }
 
-    const requiredMonthlyProfit = sTargetPaybackMonths > 0 ? investmentVal / sTargetPaybackMonths : 0;
+    const requiredMonthlyCashFlow = sTargetPaybackMonths > 0 ? investmentVal / sTargetPaybackMonths : 0;
+    const requiredMonthlyProfit = Math.max(0, requiredMonthlyCashFlow - assetDepr);
     const requiredMonthlyGrossProfit = requiredMonthlyProfit + opexVal;
-    const requiredCupMonth = netProfitPerCup > 0 ? Math.ceil(requiredMonthlyGrossProfit / netProfitPerCup) : 0;
+    const requiredCupMonth = roundedMargin > 0 ? Math.ceil(requiredMonthlyGrossProfit / roundedMargin) : 0;
     const requiredCupDay = sOperationalDays > 0 ? Math.ceil(requiredCupMonth / sOperationalDays) : 0;
     const requiredRevMonth = requiredCupMonth * avgPriceVal;
-    const requiredRevDay = sOperationalDays > 0 ? Math.round(requiredRevMonth / sOperationalDays) : 0;
+    const requiredRevDay = requiredCupDay * avgPriceVal;
 
     let recStatusText = 'SANGAT SEHAT';
     let recStatusColor = '#10b981'; // Green
@@ -1498,13 +1536,23 @@ ${finalPortionLines.trim()}
                             />
                           </td>
                           <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                            <button
-                              className="btn btn-delete btn-sm"
-                              onClick={() => handleDeleteIngredient(ing.id)}
-                              style={{ padding: '4px 6px', color: '#ef4444' }}
-                            >
-                              <Icon name="trash" size={13} />
-                            </button>
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => openPackCalculator(ing)}
+                                style={{ padding: '4px 6px', color: 'var(--primary)', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center' }}
+                                title="Kalkulator Pack / Karton"
+                              >
+                                <Icon name="calculator" size={13} />
+                              </button>
+                              <button
+                                className="btn btn-delete btn-sm"
+                                onClick={() => handleDeleteIngredient(ing.id)}
+                                style={{ padding: '4px 6px', color: '#ef4444', border: 'none', background: 'transparent' }}
+                              >
+                                <Icon name="trash" size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1609,13 +1657,23 @@ ${finalPortionLines.trim()}
                             />
                           </td>
                           <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                            <button
-                              className="btn btn-delete btn-sm"
-                              onClick={() => handleDeleteIngredient(ing.id)}
-                              style={{ padding: '4px 6px', color: '#ef4444' }}
-                            >
-                              <Icon name="trash" size={13} />
-                            </button>
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => openPackCalculator(ing)}
+                                style={{ padding: '4px 6px', color: 'var(--primary)', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center' }}
+                                title="Kalkulator Pack / Karton"
+                              >
+                                <Icon name="calculator" size={13} />
+                              </button>
+                              <button
+                                className="btn btn-delete btn-sm"
+                                onClick={() => handleDeleteIngredient(ing.id)}
+                                style={{ padding: '4px 6px', color: '#ef4444', border: 'none', background: 'transparent' }}
+                              >
+                                <Icon name="trash" size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -2619,6 +2677,194 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
                 className="btn btn-primary btn-sm"
               >
                 Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ MODAL: PACK / KARTON CALCULATOR ════════════════ */}
+      {packCalcIng && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: 16,
+            width: '90%',
+            maxWidth: 440,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            overflow: 'hidden',
+            border: '1px solid #e2e8f0',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#f8fafc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ padding: 6, background: '#e0e7ff', borderRadius: 8 }}>
+                  <Icon name="calculator" size={16} color="var(--primary)" />
+                </div>
+                <span style={{ fontWeight: 850, fontSize: 14, color: '#1e293b' }}>Kalkulator Pack &amp; Karton</span>
+              </div>
+              <button
+                onClick={() => setPackCalcIng(null)}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 4, borderRadius: 6
+                }}
+              >
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, color: '#1e3a8a', marginBottom: 16, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px 12px', borderRadius: 8, lineHeight: 1.4 }}>
+                Konversi otomatis dari pembelian karton/grosir ke total berat/ukuran resep Anda di database.
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Ingredient Name */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Bahan Terpilih</label>
+                  <input
+                    className="hpp-input sm"
+                    value={packCalcIng.name}
+                    disabled
+                    style={{ background: '#f1f5f9', fontWeight: 700, width: '100%' }}
+                  />
+                </div>
+
+                {/* Harga Beli */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Harga Beli Total (Karton/Pack)</label>
+                  <div className="input-prefix-wrap sm" style={{ width: '100%' }}>
+                    <span className="prefix">Rp</span>
+                    <FormatInput
+                      className="hpp-input sm"
+                      style={{ fontWeight: 700 }}
+                      value={packPrice}
+                      onChange={val => setPackPrice(val)}
+                    />
+                  </div>
+                </div>
+
+                {/* Qty & Isi */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Jumlah Qty / Pack</label>
+                    <input
+                      type="number"
+                      className="hpp-input sm"
+                      value={packQty}
+                      onChange={e => setPackQty(parseFloat(e.target.value) || '')}
+                      placeholder="Contoh: 24"
+                      style={{ fontWeight: 700, width: '100%' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Isi per Qty</label>
+                    <input
+                      type="number"
+                      className="hpp-input sm"
+                      value={packWeight}
+                      onChange={e => setPackWeight(parseFloat(e.target.value) || '')}
+                      placeholder="Contoh: 370"
+                      style={{ fontWeight: 700, width: '100%' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Satuan & Total */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Satuan Pengukuran</label>
+                    <select
+                      className="hpp-input sm"
+                      value={packUnit}
+                      onChange={e => setPackUnit(e.target.value)}
+                      style={{ fontWeight: 700, width: '100%', height: '32px' }}
+                    >
+                      <option value="gr">gram (gr)</option>
+                      <option value="ml">mililiter (ml)</option>
+                      <option value="pcs">pieces (pcs)</option>
+                      <option value="pack">pack</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Total Ukuran Bersih</label>
+                    <div style={{
+                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8,
+                      height: 32, display: 'flex', alignItems: 'center', padding: '0 12px',
+                      fontWeight: 800, fontSize: 12, color: '#1e293b'
+                    }}>
+                      {((parseFloat(packQty) || 0) * (parseFloat(packWeight) || 0)).toLocaleString('id-ID')} {packUnit}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Hasil Calculation */}
+                {parseFloat(packQty) > 0 && parseFloat(packWeight) > 0 && (
+                  <div style={{
+                    background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
+                    padding: 12, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11.5
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Total Ukuran Akhir:</span>
+                      <span style={{ fontWeight: 700 }}>{((parseFloat(packQty) || 0) * (parseFloat(packWeight) || 0)).toLocaleString('id-ID')} {packUnit}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Harga per {packUnit}:</span>
+                      <span style={{ fontWeight: 800, color: '#10b981' }}>
+                        {fmtRp((parseFloat(packPrice) || 0) / (((parseFloat(packQty) || 1) * (parseFloat(packWeight) || 1))))} / {packUnit}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '12px 20px',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 8,
+              background: '#f8fafc'
+            }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setPackCalcIng(null)}
+                style={{ borderRadius: 6 }}
+              >
+                Batal
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleApplyPackCalc}
+                disabled={!(parseFloat(packQty) > 0 && parseFloat(packWeight) > 0)}
+                style={{ borderRadius: 6 }}
+              >
+                Terapkan Hasil
               </button>
             </div>
           </div>

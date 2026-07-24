@@ -381,11 +381,8 @@ export default function OpexAccumulator({
   }, [activeProfile, assets]);
 
   const totalOpexVal = useMemo(() => {
-    if (currentBep.manualOpex !== null) {
-      return num(currentBep.manualOpex);
-    }
-    return totalExpenses + totalAssetDepreciation;
-  }, [totalExpenses, totalAssetDepreciation, currentBep.manualOpex]);
+    return Math.round(totalExpenses + totalAssetDepreciation);
+  }, [totalExpenses, totalAssetDepreciation]);
 
   // Main KPI values — platform-aware
   const financialSummary = useMemo(() => {
@@ -1447,6 +1444,16 @@ export default function OpexAccumulator({
             <div style={{ position: 'absolute', right: '-10%', top: '-20%', width: 150, height: 150, borderRadius: '50%', background: financialSummary.netProfit >= 0 ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)', filter: 'blur(30px)', pointerEvents: 'none' }} />
             
             <div className="label-xs" style={{ color: 'var(--color-text-muted)', marginBottom: 16 }}>📊 KINERJA FINANSIAL: {activeProfile.name}</div>
+            
+            {currentBep.manualOpex !== null && (
+              <div style={{
+                background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 8, padding: '8px 12px',
+                fontSize: 10.5, color: '#d97706', marginBottom: 12, lineHeight: 1.4, display: 'flex', flexDirection: 'column', gap: 4
+              }}>
+                <div style={{ fontWeight: 800 }}>⚠️ Override BEP OPEX Aktif ({fmtRp(currentBep.manualOpex)})</div>
+                <div style={{ fontSize: 9.5 }}>Perhitungan BEP &amp; Kelayakan menggunakan target manual, tetapi kinerja finansial profil tetap dihitung riil berdasarkan pengeluaran di bawah.</div>
+              </div>
+            )}
             
             {/* Revenue Waterfall rows */}
             {[

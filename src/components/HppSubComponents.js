@@ -203,7 +203,6 @@ export function SectionHeader({ iconEmoji, iconBg, title, badgeText, badgeClass,
 
 /* ─── Ingredient Row ─────────────────────────────────────── */
 export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit = 'cup', ingredientsDb = [], onNavigate }) {
-  const [showPackModal, setShowPackModal] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const isLinked = !!ing.ingredientId;
@@ -447,62 +446,20 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
         </div>
 
         {/* Sub Info Row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, paddingLeft: 2 }}>
-          <button
-            onClick={() => setShowPackModal(true)}
-            disabled={isLinked}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '3px 8px', borderRadius: 20,
-              border: '1px solid #e2e8f0',
-              background: isLinked ? '#f1f5f9' : '#f5f3ff',
-              color: isLinked ? '#94a3b8' : '#4f46e5',
-              fontSize: 10, fontWeight: 700,
-              cursor: isLinked ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s'
-            }}
-          >
-            <Icon name="package" size={10} /> Hitung dari Pack
-          </button>
-          
-          {ing.packQty > 0 && ing.packPrice > 0 && (
-            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-              📦 {fmtRp(ing.packPrice)} / {ing.packQty} {unit}
-            </span>
-          )}
-
-          {hpp > 0 && (
+        {hpp > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, paddingLeft: 2 }}>
             <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 'auto', fontWeight: 500 }}>
               Konversi: <span style={{ color: '#6d28d9', fontWeight: 700 }}>{fmtRp(perUnit)}</span>/{unit}
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-
-      {showPackModal && (
-        <PackCalcModal
-          itemName={ing.name}
-          unitLabel={unit}
-          initialPackPrice={ing.packPrice}
-          initialPackQty={ing.packQty}
-          onClose={() => setShowPackModal(false)}
-          onApply={(pricePerUnit, packPrice, packQty) => {
-            onUpdate(ing.id, {
-              hargaBeli: Math.round(pricePerUnit * num(ukuranKemasan)),
-              packPrice: packPrice,
-              packQty: packQty
-            });
-          }}
-        />
-      )}
     </>
   );
 }
 
 /* ─── Packaging Card ─────────────────────────────────────── */
 export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup', ingredientsDb = [], onNavigate }) {
-  const [showPackModal, setShowPackModal] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const upd = (f, v) => onUpdate(pkg.id, f, v);
 
   const isLinked = !!pkg.ingredientId;
@@ -513,31 +470,6 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup', ing
     : pkg.harga;
   const name = centralIng ? centralIng.name : pkg.name;
   const unit = centralIng ? centralIng.unit : (pkg.unit || 'pcs');
-
-  const handleNameChange = (val) => {
-    const found = (ingredientsDb || []).find(ci => ci.name.toLowerCase() === val.toLowerCase() && ci.isPackaging);
-    if (found) {
-      onUpdate(pkg.id, {
-        name: found.name,
-        ingredientId: found.id,
-        harga: num(found.ukuranKemasan) ? num(found.hargaBeli) / num(found.ukuranKemasan) : 0,
-        unit: found.unit
-      });
-    } else {
-      onUpdate(pkg.id, {
-        name: val,
-        ingredientId: null
-      });
-    }
-  };
-
-  const suggestions = useMemo(() => {
-    const list = (ingredientsDb || []).filter(ci => !!ci.isPackaging);
-    if (!name) return list.slice(0, 8);
-    return list
-      .filter(ci => ci.name.toLowerCase().includes(name.toLowerCase()))
-      .slice(0, 10);
-  }, [name, ingredientsDb]);
 
   return (
     <>
@@ -550,8 +482,7 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup', ing
           opacity: pkg.enabled ? 1 : 0.65,
           boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
           transition: 'all 0.15s',
-          position: 'relative',
-          zIndex: isOpen ? 50 : 1
+          position: 'relative'
         }}
         className="animate-fade-in"
       >
@@ -568,99 +499,51 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup', ing
             <span style={{ fontSize: 13 }}>{pkg.icon || '📦'}</span>
             
             <div style={{ position: 'relative', flex: 1 }}>
-              <input
-                className="hpp-input sm"
-                value={name}
-                onChange={e => {
-                  handleNameChange(e.target.value);
-                  setIsOpen(true);
-                }}
-                onFocus={() => setIsOpen(true)}
-                onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-                placeholder="Nama kemasan…"
-                style={{
-                  border: 'none', background: 'transparent', fontWeight: 700, fontSize: 12,
-                  color: '#1e293b', outline: 'none', padding: '2px 0 2px 14px', width: '100%'
-                }}
-              />
               {isLinked && (
-                <span title="Terhubung ke Database Aset/Bahan" style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+                <span title="Terhubung ke Database Master" style={{ position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 10 }}>
                   <Icon name="lock" size={9} color="#6366f1" />
                 </span>
               )}
-
-              {/* Custom Dropdown Suggestions */}
-              {isOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  background: '#fff',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: 8,
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                  zIndex: 999,
-                  maxHeight: 180,
-                  overflowY: 'auto',
-                  marginTop: 4,
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  {suggestions.map(ci => (
-                    <div
-                      key={ci.id}
-                      onClick={() => {
-                        onUpdate(pkg.id, {
-                          name: ci.name,
-                          ingredientId: ci.id,
-                          harga: num(ci.ukuranKemasan) ? num(ci.hargaBeli) / num(ci.ukuranKemasan) : 0,
-                          unit: ci.unit
-                        });
-                        setIsOpen(false);
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: 11.5,
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #f1f5f9',
-                        fontWeight: 600,
-                        color: '#334155',
-                        textAlign: 'left'
-                      }}
-                      onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
-                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      {ci.name} ({ci.unit} — {fmtRp(num(ci.ukuranKemasan) ? num(ci.hargaBeli) / num(ci.ukuranKemasan) : 0)})
-                    </div>
-                  ))}
-                  <div
-                    onClick={() => {
-                      if (onNavigate) {
-                        onNavigate('database', 'ingredients');
-                      }
-                      setIsOpen(false);
-                    }}
-                    style={{
-                      padding: '8px 12px',
-                      fontSize: 11.5,
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      color: '#4f46e5',
-                      background: '#f5f3ff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      textAlign: 'left'
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = '#ede9fe'}
-                    onMouseOut={e => e.currentTarget.style.background = '#f5f3ff'}
-                  >
-                    <Icon name="plus" size={12} color="#4f46e5" />
-                    Tambah Kemasan...
-                  </div>
-                </div>
-              )}
+              <select
+                className="hpp-input sm"
+                value={pkg.ingredientId || ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (!val) {
+                    onUpdate(pkg.id, {
+                      name: '',
+                      ingredientId: null,
+                      harga: 0,
+                      unit: 'pcs'
+                    });
+                  } else {
+                    const ci = (ingredientsDb || []).find(x => x.id === val);
+                    if (ci) {
+                      onUpdate(pkg.id, {
+                        name: ci.name,
+                        ingredientId: ci.id,
+                        harga: num(ci.ukuranKemasan) ? num(ci.hargaBeli) / num(ci.ukuranKemasan) : 0,
+                        unit: ci.unit
+                      });
+                    }
+                  }
+                }}
+                style={{
+                  border: 'none', background: 'transparent', fontWeight: 700, fontSize: 12,
+                  color: '#1e293b', outline: 'none', width: '100%', cursor: 'pointer',
+                  paddingLeft: isLinked ? 18 : 6
+                }}
+              >
+                <option value="">-- Pilih Kemasan --</option>
+                {ingredientsDb
+                  .filter(ci => !!ci.isPackaging)
+                  .map(ci => (
+                    <option key={ci.id} value={ci.id}>
+                      {ci.name}
+                    </option>
+                  ))
+                }
+              </select>
             </div>
           </label>
 
@@ -732,51 +615,12 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup', ing
           
           {pkg.enabled && (
             <span className="mono" style={{ fontSize: 12, fontWeight: 800, color: '#4f46e5', marginLeft: 'auto' }}>
-              {fmtRp(num(pkg.harga) * num(pkg.usage !== undefined ? pkg.usage : 1))}
+              {fmtRp(num(harga) * num(pkg.usage !== undefined ? pkg.usage : 1))}
             </span>
           )}
         </div>
 
-        {/* Pack calc */}
-        {pkg.enabled && (
-          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button
-              onClick={() => setShowPackModal(true)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '3px 8px', borderRadius: 20,
-                border: '1px solid #cbd5e1', background: '#f5f3ff',
-                color: '#4f46e5', fontSize: 10, fontWeight: 700,
-                cursor: 'pointer', transition: 'all 0.15s'
-              }}
-            >
-              <Icon name="package" size={9} /> Hitung Pack
-            </button>
-            {pkg.packQty > 0 && pkg.packPrice > 0 && (
-              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
-                📦 {fmtRp(pkg.packPrice)} / {pkg.packQty} {pkg.unit || 'pcs'}
-              </span>
-            )}
-          </div>
-        )}
       </div>
-
-      {showPackModal && (
-        <PackCalcModal
-          itemName={pkg.name}
-          unitLabel={pkg.unit || 'pcs'}
-          initialPackPrice={pkg.packPrice}
-          initialPackQty={pkg.packQty}
-          onClose={() => setShowPackModal(false)}
-          onApply={(pricePerUnit, packPrice, packQty) => {
-            onUpdate(pkg.id, {
-              harga: pricePerUnit,
-              packPrice: packPrice,
-              packQty: packQty
-            });
-          }}
-        />
-      )}
     </>
   );
 }

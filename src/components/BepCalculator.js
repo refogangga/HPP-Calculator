@@ -72,13 +72,16 @@ export default function BepCalculator({
     return selectedMenus.filter(m => !activeProfile.disabledMenuIds?.includes(m.id));
   }, [selectedMenus, activeProfile]);
 
+  const assetDepr = useMemo(() => {
+    return activeProfile ? Math.round(getPenyusutanBulanan(activeProfile, assets)) : 0;
+  }, [activeProfile, assets]);
+
   // Calculate default OPEX from profile
   const calculatedOpex = useMemo(() => {
     if (!activeProfile) return 0;
     const expenses = (activeProfile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0);
-    const assetDepr = getPenyusutanBulanan(activeProfile, assets);
-    return expenses + assetDepr;
-  }, [activeProfile, assets]);
+    return Math.round(expenses) + assetDepr;
+  }, [activeProfile, assetDepr]);
 
   const getDirectHPP = useCallback((menu) => {
     const bb = menu.ingredients.reduce((s, i) => {
@@ -155,7 +158,7 @@ export default function BepCalculator({
       const pc = getPlatformCalc(m);
       totalVolume += vol;
       weightedNetProfitSum += vol * pc.netProfit;
-      weightedPriceSum += vol * pc.hargaJual;
+      weightedPriceSum += vol * pc.revenueBersih;
       weightedHppSum += vol * pc.hpp;
       weightedPlatformCutSum += vol * pc.totalKomisi;
     });
@@ -189,7 +192,8 @@ export default function BepCalculator({
 
   // Formulasi Perhitungan BEP
   const bepUnits = useMemo(() => {
-    return netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
+    const roundedMargin = Math.round(netProfitPerCup);
+    return roundedMargin > 0 ? Math.ceil(opexVal / roundedMargin) : 0;
   }, [opexVal, netProfitPerCup]);
 
   const bepHarian = useMemo(() => {
@@ -221,13 +225,15 @@ export default function BepCalculator({
   const investmentVal = manualInvestment !== null ? num(manualInvestment) : calculatedInvestment;
 
   const monthlyNetProfit = useMemo(() => {
-    return (volumeVal * netProfitPerCup) - opexVal;
+    const roundedMargin = Math.round(netProfitPerCup);
+    return (volumeVal * roundedMargin) - opexVal;
   }, [volumeVal, netProfitPerCup, opexVal]);
 
   const paybackPeriodMonths = useMemo(() => {
-    if (monthlyNetProfit <= 0 || investmentVal <= 0) return 0;
-    return investmentVal / monthlyNetProfit;
-  }, [investmentVal, monthlyNetProfit]);
+    const operatingCashFlow = monthlyNetProfit + assetDepr;
+    if (operatingCashFlow <= 0 || investmentVal <= 0) return 0;
+    return investmentVal / operatingCashFlow;
+  }, [investmentVal, monthlyNetProfit, assetDepr]);
 
   const paybackText = useMemo(() => {
     if (monthlyNetProfit <= 0) {
@@ -255,12 +261,13 @@ export default function BepCalculator({
     if (targetPaybackMonths <= 0 || netProfitPerCup <= 0 || investmentVal <= 0) {
       return { requiredMonthlyProfit: 0, requiredCupMonth: 0, requiredCupDay: 0, requiredRevMonth: 0, requiredRevDay: 0 };
     }
-    const requiredMonthlyProfit = investmentVal / targetPaybackMonths;
+    const requiredMonthlyCashFlow = investmentVal / targetPaybackMonths;
+    const requiredMonthlyProfit = Math.max(0, requiredMonthlyCashFlow - assetDepr);
     const requiredMonthlyGrossProfit = requiredMonthlyProfit + opexVal;
-    const requiredCupMonth = Math.ceil(requiredMonthlyGrossProfit / netProfitPerCup);
+    const requiredCupMonth = Math.ceil(requiredMonthlyGrossProfit / Math.round(netProfitPerCup));
     const requiredCupDay = operationalDays > 0 ? Math.ceil(requiredCupMonth / operationalDays) : 0;
     const requiredRevMonth = requiredCupMonth * avgPriceVal;
-    const requiredRevDay = operationalDays > 0 ? Math.round(requiredRevMonth / operationalDays) : 0;
+    const requiredRevDay = requiredCupDay * avgPriceVal;
 
     return {
       requiredMonthlyProfit,
@@ -269,7 +276,7 @@ export default function BepCalculator({
       requiredRevMonth,
       requiredRevDay
     };
-  }, [targetPaybackMonths, investmentVal, opexVal, netProfitPerCup, avgPriceVal, operationalDays]);
+  }, [targetPaybackMonths, investmentVal, opexVal, netProfitPerCup, avgPriceVal, operationalDays, assetDepr]);
 
   // Status & Danger Level
   const marginGap = actualVolumeHarian - bepHarian;
@@ -820,7 +827,7 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
               flexDirection: 'column',
               gap: 12
             }}>
-              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>ANALISIS PAYBACK PERIOD RIIL SAAT INI</div>
+              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>PROYEKSI BALIK MODAL (DARI SIMULASI VOLUME)</div>
 
               <div style={{
                 background: monthlyNetProfit > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
@@ -837,15 +844,16 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
                 </div>
                 {monthlyNetProfit > 0 && paybackPeriodMonths > 0 && (
                   <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                    Mulai mencetak profit bersih murni pada bulan ke-<strong>{Math.ceil(paybackPeriodMonths) + 1}</strong>
+                    Semua modal investasi awal diproyeksikan kembali dalam <strong>{paybackText}</strong>.
                   </div>
                 )}
               </div>
 
               {[
                 { label: 'Investasi Awal (CapEx)', val: fmtRp(investmentVal), color: 'var(--color-text)' },
+                { label: 'Volume Simulasi Aktif', val: `${volumeVal.toLocaleString('id-ID')} Cup/Bln (${Math.ceil(volumeVal / operationalDays)} Cup/Hari)`, color: 'var(--color-text-muted)' },
                 { label: 'Profit Bersih Bulanan Riil', val: monthlyNetProfit > 0 ? fmtRp(monthlyNetProfit) : `Rugi ${fmtRp(Math.abs(monthlyNetProfit))}`, color: monthlyNetProfit > 0 ? '#10b981' : '#ef4444', bold: true },
-                { label: 'Waktu Balik Modal Riil', val: paybackPeriodMonths > 0 ? `${(paybackPeriodMonths / 12).toFixed(1)} Tahun` : 'N/A', color: 'var(--color-text)' },
+                { label: 'Waktu Balik Modal Riil', val: paybackPeriodMonths > 0 ? paybackText : 'N/A', color: 'var(--color-text)', bold: true },
               ].map(({ label, val, color, bold }) => (
                 <div key={label} style={{
                   display: 'flex',
@@ -870,12 +878,12 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
               flexDirection: 'column',
               gap: 12
             }}>
-              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>TARGET SIMULASI BALIK MODAL ({targetPaybackMonths} BULAN)</div>
+              <div className="label-xs" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>TARGET MINIMUM BALIK MODAL ({targetPaybackMonths} BULAN)</div>
 
               {[
-                { label: 'Target Omset Harian', val: `${fmtRp(goalSeek.requiredRevDay)} / hari`, color: 'var(--color-text)', bold: true },
-                { label: 'Target Omset Bulanan', val: fmtRp(goalSeek.requiredRevMonth), color: 'var(--color-text)' },
-                { label: 'Wajib Profit Bersih / Bulan', val: fmtRp(Math.round(goalSeek.requiredMonthlyProfit)), color: '#10b981' },
+                { label: 'Target Omset Harian Minimum', val: `${fmtRp(goalSeek.requiredRevDay)} / hari`, color: 'var(--color-text)', bold: true },
+                { label: 'Target Omset Bulanan Minimum', val: fmtRp(goalSeek.requiredRevMonth), color: 'var(--color-text)' },
+                { label: 'Wajib Profit Bersih / Bulan (Angsuran)', val: fmtRp(Math.round(goalSeek.requiredMonthlyProfit)), color: '#10b981' },
               ].map(({ label, val, color, bold }) => (
                 <div key={label} style={{
                   display: 'flex',
@@ -903,8 +911,13 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
               }}>
                 <Icon name="calculator" size={13} color="var(--primary)" />
                 <div>
-                  <strong>Cara Pencapaian Target BEP Investasi:</strong><br />
-                  Target penjualan harian **{goalSeek.requiredCupDay} Cup/Hari** wajib tercapai agar modal awal **{fmtRp(investmentVal)}** dapat kembali seutuhnya dalam waktu **{targetPaybackMonths} Bulan**.
+                  <strong>Cara Pencapaian Target Balik Modal:</strong><br />
+                  Untuk mengembalikan modal awal sebesar <strong>{fmtRp(investmentVal)}</strong> dalam target waktu <strong>{targetPaybackMonths} Bulan</strong>, Anda wajib menjual minimal <strong>{goalSeek.requiredCupDay} Cup/Hari</strong> (setara omset <strong>{fmtRp(goalSeek.requiredRevDay)}/hari</strong>).
+                  {volumeVal > goalSeek.requiredCupMonth && (
+                    <div style={{ marginTop: 6, color: '#10b981', fontWeight: 600 }}>
+                      ✓ Simulasi volume aktif Anda ({Math.ceil(volumeVal / operationalDays)} Cup/Hari) berada di atas target minimum, sehingga modal kembali lebih cepat ({paybackText}).
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
