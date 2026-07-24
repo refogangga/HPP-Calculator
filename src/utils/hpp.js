@@ -12,44 +12,13 @@ export const roundPrice = (v) => {
 export const uid = () => 'id_' + Math.random().toString(36).substring(2, 11);
 
 /* ─── Default data factories ─────────────────────────────── */
-export const mkIngredients = () => [
-  {
-    id: uid(), name: 'Susu Segar', hargaBeli: 20000, ukuranKemasan: 1000, unit: 'ml', takaranPerCup: 100,
-    usePackCalc: false, packQty: 0, packPrice: 0
-  },
-  {
-    id: uid(), name: 'Espresso Shot', hargaBeli: 150000, ukuranKemasan: 250, unit: 'gr', takaranPerCup: 18,
-    usePackCalc: false, packQty: 0, packPrice: 0
-  },
-  {
-    id: uid(), name: 'Sirup Vanila', hargaBeli: 45000, ukuranKemasan: 750, unit: 'ml', takaranPerCup: 20,
-    usePackCalc: false, packQty: 0, packPrice: 0
-  },
-  {
-    id: uid(), name: 'Es Batu Kristal', hargaBeli: 9000, ukuranKemasan: 10000, unit: 'gr', takaranPerCup: 50,
-    usePackCalc: false, packQty: 0, packPrice: 0
-  },
-];
-
-export const mkPackaging = () => [
-  { id: uid(), name: 'Cup Plastik', icon: '🥤', enabled: true, harga: 800, usePackCalc: false, packQty: 50, packPrice: 35000 },
-  { id: uid(), name: 'Tutup / Lid', icon: '🔵', enabled: true, harga: 300, usePackCalc: false, packQty: 50, packPrice: 15000 },
-  { id: uid(), name: 'Sedotan', icon: '🥢', enabled: true, harga: 150, usePackCalc: false, packQty: 100, packPrice: 12000 },
-  { id: uid(), name: 'Kantong / Paperbag', icon: '🛍️', enabled: false, harga: 500, usePackCalc: false, packQty: 50, packPrice: 22000 },
-  { id: uid(), name: 'Stiker / Segel', icon: '🏷️', enabled: true, harga: 200, usePackCalc: false, packQty: 100, packPrice: 18000 },
-];
-
+export const mkIngredients = () => [];
+export const mkPackaging = () => [];
 export const mkOps = () => ({
-  estimasiCup: 600,
+  estimasiCup: 0,
   usePenyusutan: true,
-  assets: [
-    { id: uid(), name: 'Mesin Espresso', harga: 12000000, tahun: 5, enabled: true }
-  ],
-  expenses: [
-    { id: uid(), name: '⚡ Listrik & Air', value: 800000 },
-    { id: uid(), name: '👤 Gaji Karyawan', value: 2500000 },
-    { id: uid(), name: '🌐 Lain-lain (sewa, dll)', value: 0 }
-  ]
+  assets: [],
+  expenses: []
 });
 
 /* ─── Master Channel Presets DB & Factory ────────────────── */
@@ -301,16 +270,13 @@ export const getPenyusutanBulanan = (ops, assetsDb = []) => {
   return assets.filter(a => a.enabled).reduce((sum, a) => {
     let harga = a.harga;
     let tahun = a.tahun;
-    let isLarge = a.isLargeExpense;
     if (a.assetId && Array.isArray(assetsDb)) {
       const central = assetsDb.find(ca => ca.id === a.assetId);
       if (central) {
         harga = central.harga;
         tahun = central.tahun;
-        isLarge = central.isLargeExpense;
       }
     }
-    if (isLarge) return sum;
     return sum + (num(tahun) > 0 ? num(harga) / (num(tahun) * 12) : 0);
   }, 0);
 };

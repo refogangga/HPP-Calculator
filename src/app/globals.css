@@ -1,3 +1,4 @@
+@import "@clerk/ui/themes/shadcn.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -27,20 +28,20 @@
 }
 
 :root {
-  --primary: #0066cc;
-  --primary-focus: #0071e3;
-  --primary-on-dark: #2997ff;
-  --bg-app: #f5f5f7;
+  --primary: #4f46e5;
+  --primary-focus: #4338ca;
+  --primary-on-dark: #818cf8;
+  --bg-app: #f8fafc;
   --bg-card: #ffffff;
   --bg-input: #ffffff;
-  --color-text: #1d1d1f;
-  --color-text-muted: #7a7a7a;
-  --border-color: #e0e0e0;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --border-color: #e2e8f0;
   --border-color-input: #cbd5e1;
-  --font-family: "SF Pro Text", "Inter", system-ui, -apple-system, sans-serif;
-  --border-radius-card: 18px;
-  --border-radius-btn: 9999px;
-  --border-radius-sm: 8px;
+  --font-family: "Inter", "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --border-radius-card: 12px;
+  --border-radius-btn: 8px;
+  --border-radius-sm: 6px;
   --color-emerald: #10b981;
   --color-danger: #ef4444;
   --color-amber: #f59e0b;
@@ -48,34 +49,29 @@
   --background: var(--bg-app);
   --foreground: var(--color-text);
   --card: var(--bg-card);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #6366f1;
+  --radius: 8px;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #4f46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #4f46e5;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #6366f1;
 }
 
 body {
@@ -223,8 +219,8 @@ select.hpp-input {
 }
 
 .hpp-input:focus {
-  border-color: #71717a;
-  box-shadow: 0 0 0 2px rgba(113, 113, 122, 0.1);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
 .hpp-input::placeholder {

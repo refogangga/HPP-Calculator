@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Icon } from '../components/Icon';
 import { ToastContainer, MenuMetaModal } from '../components/HppSubComponents';
 import HppCalculator from '../components/HppCalculator';
@@ -9,15 +9,46 @@ import OpexAccumulator from '../components/OpexAccumulator';
 import BepCalculator from '../components/BepCalculator';
 import ShopeeReverseEstimator from '../components/ShopeeReverseEstimator';
 import ChannelPresetsModal from '../components/ChannelPresetsModal';
-import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, loadOpexProfiles, saveOpexProfiles, mkOpexProfile, loadChannelPresets, saveChannelPresets, loadIngredients, saveIngredients, loadAssets, saveAssets } from '../utils/hpp';
+import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, getDirectHPP, loadOpexProfiles, saveOpexProfiles, mkOpexProfile, loadChannelPresets, saveChannelPresets, loadIngredients, saveIngredients, loadAssets, saveAssets } from '../utils/hpp';
 import * as XLSX from 'xlsx';
+import { Show, SignInButton, UserButton, useUser, useAuth } from '@clerk/nextjs';
+
+function CurrentUserDetails() {
+  const { user } = useUser();
+  if (!user) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {user.fullName || user.username || 'User'}
+      </span>
+      <span style={{ fontSize: 9, color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {user.primaryEmailAddress?.emailAddress}
+      </span>
+    </div>
+  );
+}
 
 export default function Home() {
+  const { orgRole } = useAuth();
+  const { user } = useUser();
+
+  const userRole = orgRole || user?.publicMetadata?.role;
+  // Bypassed: Set to true always while Clerk is temporarily disabled
+  const isAdmin = true;
+  // const isAdmin = userRole === 'org:admin' || userRole === 'admin' || !userRole;
+
   const [isMounted, setIsMounted] = useState(false);
   const [menus, setMenus] = useState([]);
   const [activeId, setActiveId] = useState(null);
-  const [view, setView] = useState('calculator'); // 'calculator' | 'database' | 'opex'
+  const [view, setView] = useState('dashboard'); // default to dashboard
+
+  useEffect(() => {
+    if (!isAdmin && (view === 'database_simulasi' || view === 'database_master')) {
+      setView('dashboard');
+    }
+  }, [isAdmin, view]);
   const [toasts, setToasts] = useState([]);
+  const [dbActiveTab, setDbActiveTab] = useState('menu');
   const [showMeta, setShowMeta] = useState(false);
   const [opexProfiles, setOpexProfiles] = useState([]);
   const [activeProfileId, setActiveProfileId] = useState(null);
@@ -747,545 +778,428 @@ ${finalPortionLines.trim()}
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'transparent', paddingBottom: 48 }}>
-
-      {/* ── Top Bar ── */}
-      <div className="topbar">
-        <div className="flex-center gap-3">
-          <div className="topbar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="coffee" size={18} color="#fff" />
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-app)', fontFamily: 'Inter, sans-serif' }}>
+      
+      {/* ── LEFT SIDEBAR ── */}
+      <div style={{
+        width: 260,
+        background: '#fff',
+        borderRight: '1px solid var(--border-color)',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        zIndex: 50
+      }}>
+        {/* Brand logo & title */}
+        <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <Icon name="coffee" size={16} />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>Kalkulator HPP F&B</div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Harga Pokok Penjualan — Real-Time</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--color-text)', letterSpacing: '-0.02em', lineHeight: '1.2' }}>HPP Calculator</div>
+            <div style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 500 }}>F&B Professional</div>
           </div>
         </div>
-        <div className="flex-center gap-2 header-btns">
 
-          {view === 'calculator' && activeMenu && (
-            <>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Master Channel Penjualan (ShopeeFood, GoFood, Grab, dll)">
-                <Icon name="store" size={12} /> Preset Channel
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
-                <Icon name="print" size={12} /> Cetak
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={handleSaveAll}>
-                <Icon name="save" size={12} /> Simpan
-              </button>
-            </>
-          )}
-          {view === 'opex' && opexProfiles.length > 0 && (
-            <>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Master Channel Penjualan">
-                <Icon name="store" size={12} /> Preset Channel
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={handleSaveAll}>
-                <Icon name="save" size={12} /> Simpan Semua
-              </button>
-            </>
-          )}
-          {view === 'database' && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Master Channel Penjualan">
-              <Icon name="store" size={12} /> Preset Channel
-            </button>
-          )}
+        {/* Outlet Selector inside sidebar */}
+        {outlets.length > 0 && (
+          <div style={{ padding: '14px 20px 10px', borderBottom: '1px solid var(--border-color)' }}>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: 6 }}>
+              Outlet Aktif
+            </label>
+            <select
+              className="hpp-input sm"
+              value={activeOutletId || ''}
+              onChange={e => {
+                const targetOutletId = e.target.value;
+                setActiveOutletId(targetOutletId);
+                const oMenus = menus.filter(m => m.outletId === targetOutletId);
+                setActiveId(oMenus.length > 0 ? oMenus[0].id : null);
+                const oProfiles = opexProfiles.filter(p => p.outletId === targetOutletId);
+                setActiveProfileId(oProfiles.length > 0 ? oProfiles[0].id : null);
+              }}
+              style={{ fontWeight: 600, width: '100%' }}
+            >
+              {outlets.map(o => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
-          {/* Global Outlet Selector Dropdown */}
-          {outlets.length > 0 && (
-            <div className="flex-center gap-1" style={{ marginRight: 4 }}>
-              <span style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 650 }}>Outlet:</span>
-              <select
-                className="hpp-input sm"
-                value={activeOutletId || ''}
-                onChange={e => {
-                  const targetOutletId = e.target.value;
-                  setActiveOutletId(targetOutletId);
-                  const oMenus = menus.filter(m => m.outletId === targetOutletId);
-                  setActiveId(oMenus.length > 0 ? oMenus[0].id : null);
-                  const oProfiles = opexProfiles.filter(p => p.outletId === targetOutletId);
-                  setActiveProfileId(oProfiles.length > 0 ? oProfiles[0].id : null);
-                }}
+        {/* Sidebar Nav Links */}
+        <div style={{ flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
+          {[
+            { id: 'dashboard', label: 'Overview Dashboard', icon: 'pieChart' },
+            { id: 'calculator', label: 'Kalkulator HPP', icon: 'coffee' },
+            { id: 'opex', label: 'Akumulasi OPEX', icon: 'zap' },
+            { id: 'bep', label: 'Kalkulator BEP', icon: 'calculator' },
+            { id: 'shopee_estimator', label: 'Dana Aktual Shopee', icon: 'bag' }
+          ].map(item => {
+            const isAct = view === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setView(item.id)}
                 style={{
-                  fontWeight: 700,
-                  fontSize: 11,
-                  padding: '4px 24px 4px 8px',
-                  height: 'auto',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-app)',
-                  color: 'var(--color-text)',
-                  borderRadius: 6,
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '9px 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: isAct ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                  color: isAct ? '#4f46e5' : 'var(--color-text-muted)',
                   cursor: 'pointer',
-                  outline: 'none',
-                  minWidth: 130
+                  fontWeight: 700,
+                  fontSize: 12,
+                  textAlign: 'left',
+                  transition: 'all 0.15s'
                 }}
               >
-                {outlets.map(o => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
-                ))}
-              </select>
+                <Icon name={item.icon} size={15} color={isAct ? '#4f46e5' : 'var(--color-text-muted)'} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+
+          {/* DATABASE & KONFIGURASI GROUP (ADMIN ONLY) */}
+          {isAdmin && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--color-text-muted)', padding: '0 12px', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Database &amp; Konfigurasi
+              </div>
+              {[
+                { id: 'database_simulasi', label: 'Profil & Parameter', subLabel: 'Penyusutan, BEP, Kelayakan', icon: 'tool', tab: 'opex' },
+                { id: 'database_master', label: 'Database Master', subLabel: 'Bahan Baku, Kemasan, Resep, Aset', icon: 'database', tab: 'ingredients' }
+              ].map(item => {
+                const isAct = view === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setView(item.id);
+                      setDbActiveTab(item.tab);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 10,
+                      padding: '9px 12px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: isAct ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                      color: isAct ? '#4f46e5' : 'var(--color-text-muted)',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: 12,
+                      textAlign: 'left',
+                      transition: 'all 0.15s',
+                      marginBottom: 2
+                    }}
+                  >
+                    <Icon name={item.icon} size={14} color={isAct ? '#4f46e5' : 'var(--color-text-muted)'} style={{ marginTop: 2 }} />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>{item.label}</span>
+                      <span style={{ fontSize: 9, fontWeight: 500, color: isAct ? '#6366f1' : 'var(--color-text-muted)', marginTop: 1 }}>{item.subLabel}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
+        </div>
 
-          {/* Main Top View Switcher Tabs */}
-          <div style={{ display: 'flex', gap: 2, background: '#f4f4f5', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--border-color)' }}>
-            <button
-              className="btn btn-sm"
-              style={{
-                borderRadius: 'calc(var(--radius) - 2px)',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 12,
-                height: 28,
-                background: view === 'calculator' ? 'var(--bg-card)' : 'transparent',
-                color: view === 'calculator' ? 'var(--color-text)' : 'var(--color-text-muted)',
-                boxShadow: view === 'calculator' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.15s',
-                padding: '0 12px'
-              }}
-              onClick={() => setView('calculator')}
-            >
-              Kalkulator HPP
+        {/* Sidebar Footer: Save Sync & Auth */}
+        <div style={{ padding: 16, borderTop: '1px solid var(--border-color)', background: '#fafafa', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {isAdmin && (
+            <button className="btn btn-primary" onClick={handleSaveAll} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px', fontSize: 12, fontWeight: 700 }}>
+              <Icon name="save" size={13} /> Simpan Data
             </button>
-            <button
-              className="btn btn-sm"
-              style={{
-                borderRadius: 'calc(var(--radius) - 2px)',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 12,
-                height: 28,
-                background: view === 'opex' ? 'var(--bg-card)' : 'transparent',
-                color: view === 'opex' ? 'var(--color-text)' : 'var(--color-text-muted)',
-                boxShadow: view === 'opex' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.15s',
-                padding: '0 12px'
-              }}
-              onClick={() => setView('opex')}
-            >
-              Akumulasi OPEX
-            </button>
-            <button
-              className="btn btn-sm"
-              style={{
-                borderRadius: 'calc(var(--radius) - 2px)',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 12,
-                height: 28,
-                background: view === 'bep' ? 'var(--bg-card)' : 'transparent',
-                color: view === 'bep' ? 'var(--color-text)' : 'var(--color-text-muted)',
-                boxShadow: view === 'bep' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.15s',
-                padding: '0 12px'
-              }}
-              onClick={() => setView('bep')}
-            >
-              Kalkulator BEP
-            </button>
-            <button
-              className="btn btn-sm"
-              style={{
-                borderRadius: 'calc(var(--radius) - 2px)',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 12,
-                height: 28,
-                background: view === 'shopee_estimator' ? 'var(--bg-card)' : 'transparent',
-                color: view === 'shopee_estimator' ? 'var(--color-text)' : 'var(--color-text-muted)',
-                boxShadow: view === 'shopee_estimator' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.15s',
-                padding: '0 12px'
-              }}
-              onClick={() => setView('shopee_estimator')}
-            >
-              Dana Aktual Shopee
-            </button>
-            <button
-              className="btn btn-sm"
-              style={{
-                borderRadius: 'calc(var(--radius) - 2px)',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 12,
-                height: 28,
-                background: view === 'database' ? 'var(--bg-card)' : 'transparent',
-                color: view === 'database' ? 'var(--color-text)' : 'var(--color-text-muted)',
-                boxShadow: view === 'database' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.15s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '0 12px'
-              }}
-              onClick={() => setView('database')}
-            >
-              <Icon name="database" size={11} color={view === 'database' ? 'var(--primary)' : 'var(--color-text-muted)'} /> Data
-            </button>
+          )}
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px', borderTop: '1px solid var(--border-color)', marginTop: 4 }}>
+            <Show when="signed-in">
+              <UserButton afterSignOutUrl="/" />
+              <CurrentUserDetails />
+            </Show>
+            <Show when="signed-out">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>
+                  A
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Admin (Offline)
+                  </span>
+                  <span style={{ fontSize: 9, color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Mode Akses Penuh
+                  </span>
+                </div>
+              </div>
+            </Show>
+          </div>
+          
+          <div style={{ fontSize: 9, color: 'var(--color-text-muted)', textAlign: 'center', marginTop: 2 }}>
+            Sinkronisasi Awan &amp; Lokal Aktif
           </div>
         </div>
       </div>
 
-      {/* ── Menu Name Bar (only in calculator view) ── */}
-      {view === 'calculator' && activeMenu && (
-        <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', padding: '10px 28px' }}>
-          <div className="flex-center gap-3" style={{ flexWrap: 'wrap' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center' }}><Icon name={activeMenu.emoji} size={20} color="var(--primary)" /></span>
-            <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--color-text)' }}>{activeMenu.name}</span>
-            <button
-              onClick={() => setShowMeta(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 6px',
-                color: 'var(--primary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '6px',
-                transition: 'all 0.15s',
-                marginLeft: -6
-              }}
-              onMouseOver={e => e.currentTarget.style.background = 'var(--bg-app)'}
-              onMouseOut={e => e.currentTarget.style.background = 'none'}
-              title="Edit Info Menu"
-            >
-              <Icon name="edit" size={13} />
+      {/* ── RIGHT MAIN PANEL ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: '100vh' }}>
+        
+        {/* Main Panel Header */}
+        <div style={{
+          height: 60,
+          background: '#fff',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 28px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 40
+        }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--color-text)' }}>
+              {view === 'dashboard' && 'Overview Dashboard'}
+              {view === 'calculator' && (activeMenu ? `Kalkulator HPP: ${activeMenu.name}` : 'Kalkulator HPP')}
+              {view === 'opex' && 'Pengeluaran Operasional (OPEX)'}
+              {view === 'bep' && 'Analisis Break-Even Point (BEP)'}
+              {view === 'shopee_estimator' && 'Dana Aktual Shopee'}
+              {view === 'database_simulasi' && 'Profil & Parameter Simulasi (Penyusutan, BEP, Kelayakan)'}
+              {view === 'database_master' && 'Database Master (Bahan Baku, Resep & Aset)'}
+            </h1>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Preset Channel Penjualan">
+              <Icon name="store" size={12} /> Preset Channel
             </button>
-            <span className={`badge badge-slate`}>{activeMenu.category}</span>
-            {menus.length > 1 && (
-              <div className="flex-center gap-1" style={{ marginLeft: 'auto' }}>
-                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginRight: 4 }}>Pindah Menu:</span>
-                <select
-                  className="hpp-input sm"
-                  value={activeId || ''}
-                  onChange={e => selectMenu(e.target.value)}
-                  style={{
-                    maxWidth: 220,
-                    fontWeight: 600,
-                    fontSize: 11,
-                    padding: '4px 24px 4px 8px',
-                    height: 'auto',
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-app)',
-                    color: 'var(--color-text)',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  {menus.map(m => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {view === 'calculator' && activeMenu && (
+              <>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowMeta(true)}>
+                  <Icon name="edit" size={12} /> Ubah Nama
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
+                  <Icon name="print" size={12} /> Cetak
+                </button>
+              </>
             )}
-            <div className="flex-center gap-2" style={{ marginLeft: menus.length <= 1 ? 'auto' : 0 }}>
-              <button className="btn btn-add btn-sm" onClick={addMenu}>
-                <Icon name="plus" size={12} /> Menu Baru
-              </button>
-            </div>
           </div>
         </div>
-      )}
 
-      {/* ── OPEX Profile Bar (only in opex view) ── */}
-      {view === 'opex' && opexProfiles.length > 0 && (
-        <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', padding: '10px 28px' }}>
-          <div className="flex-center gap-3" style={{ flexWrap: 'wrap' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center' }}><Icon name="store" size={20} color="var(--primary)" /></span>
-            <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--color-text)' }}>{activeProfile?.name || 'Profil Toko'}</span>
-            <button
-              onClick={() => {
-                const currentName = activeProfile?.name || '';
-                const newName = prompt("Ubah Nama Profil:", currentName);
-                if (newName !== null && newName.trim() !== '') {
-                  setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, name: newName.trim() } : p));
-                  showToast("Nama profil berhasil diubah!", "success");
-                }
+        {/* Main Panel Body */}
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
+          {view === 'dashboard' && (
+            <DashboardOverview
+              menus={activeOutletMenus}
+              activeProfile={activeProfile}
+              ingredients={ingredients}
+              assets={assets}
+              onNavigate={(v, menuId) => {
+                if (menuId) setActiveId(menuId);
+                setView(v);
               }}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 6px',
-                color: 'var(--primary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '6px',
-                transition: 'all 0.15s',
-                marginLeft: -6
-              }}
-              onMouseOver={e => e.currentTarget.style.background = 'var(--bg-app)'}
-              onMouseOut={e => e.currentTarget.style.background = 'none'}
-              title="Edit Nama Profil"
-            >
-              <Icon name="edit" size={13} />
-            </button>
-            <span style={{ borderLeft: '1px solid var(--border-color)', height: 16, margin: '0 4px' }} />
-            
-            {opexProfiles.length > 1 && (
-              <div className="flex-center gap-1">
-                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginRight: 4 }}>Pindah Profil:</span>
-                <select
-                  className="hpp-input sm"
-                  value={activeProfileId || ''}
-                  onChange={e => setActiveProfileId(e.target.value)}
-                  style={{
-                    maxWidth: 220,
-                    fontWeight: 600,
-                    fontSize: 11,
-                    padding: '4px 24px 4px 8px',
-                    height: 'auto',
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-app)',
-                    color: 'var(--color-text)',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  {opexProfiles.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            />
+          )}
 
-            <div className="flex-center gap-2" style={{ marginLeft: 'auto' }}>
-              <button
-                className="btn btn-add btn-sm"
-                onClick={() => {
-                  const newProfile = mkOpexProfile();
-                  newProfile.name = `Profil ${opexProfiles.length + 1}`;
-                  setOpexProfiles(prev => [...prev, newProfile]);
-                  setActiveProfileId(newProfile.id);
-                  showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
+          {view === 'calculator' && (
+            activeMenu ? (
+              <HppCalculator
+                menu={activeMenu}
+                onUpdate={updateActiveMenu}
+                showToast={showToast}
+                channelPresets={channelPresets}
+                activeProfile={activeProfile}
+                onOpenChannelModal={() => setShowChannelModal(true)}
+                ingredients={ingredients}
+                onNavigate={(v, tab) => {
+                  setView(v);
+                  if (tab) setDbActiveTab(tab);
                 }}
-              >
-                <Icon name="plus" size={12} /> Profil Baru
-              </button>
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+                  <Icon name="coffee" size={48} color="var(--primary)" />
+                </div>
+                <button className="btn btn-primary" onClick={addMenu}>
+                  <Icon name="plus" size={14} /> Buat Menu Pertama
+                </button>
+              </div>
+            )
+          )}
 
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={() => {
-                  if (opexProfiles.length <= 1) {
-                    showToast('Gagal menghapus! Minimal harus menyisakan 1 profil.', 'error');
-                    return;
+          {(view === 'database_simulasi' || view === 'database_master') && (
+            <MenuDatabase
+              menus={activeOutletMenus} activeId={activeId}
+              onSelect={selectMenu} onAdd={addMenu}
+              onDelete={deleteMenu} onDuplicate={duplicateMenu}
+              onDeleteBatch={deleteMenusBatch}
+              activeTab={dbActiveTab}
+              onChangeTab={setDbActiveTab}
+              opexProfiles={activeOutletProfiles}
+              activeProfileId={activeProfileId}
+              onSelectProfile={(id) => {
+                setActiveProfileId(id);
+                setView('opex');
+              }}
+              onAddProfile={(newProfile) => {
+                newProfile.outletId = activeOutletId;
+                setOpexProfiles(prev => [...prev, newProfile]);
+                setActiveProfileId(newProfile.id);
+                setView('opex');
+                showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
+              }}
+              onDeleteProfile={async (id) => {
+                if (!window.confirm('Hapus profil OPEX ini dari database?')) return;
+                try {
+                  await fetch('/api/opex', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(opexProfiles)
+                  });
+                  const res = await fetch(`/api/opex?id=${id}`, {
+                    method: 'DELETE'
+                  });
+                  if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Gagal menghapus profil dari server');
                   }
-                  const idToDelete = activeProfileId;
                   setOpexProfiles(prev => {
-                    const next = prev.filter(p => p.id !== idToDelete);
-                    if (idToDelete === activeProfileId) {
-                      setActiveProfileId(next[0]?.id || null);
+                    const next = prev.filter(p => p.id !== id);
+                    if (id === activeProfileId) {
+                      const outletProfiles = next.filter(p => p.outletId === activeOutletId);
+                      setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
                     }
                     return next;
                   });
-                  showToast('Profil berhasil dihapus!', 'success');
-                }}
-                style={{ width: 'auto', height: 'auto', padding: '6px 12px', fontSize: 11, borderRadius: 8 }}
-              >
-                <Icon name="trash" size={12} /> Hapus
-              </button>
-            </div>
-          </div>
+                  showToast('Profil OPEX dihapus dari database', 'info');
+                } catch (err) {
+                  console.error("Delete opex profile error:", err);
+                  showToast('Gagal menghapus profil OPEX: ' + err.message, 'error');
+                }
+              }}
+              outlets={outlets}
+              activeOutletId={activeOutletId}
+              onSelectOutlet={setActiveOutletId}
+              onAddOutlet={handleAddOutlet}
+              onRenameOutlet={handleRenameOutlet}
+              onDeleteOutlet={handleDeleteOutlet}
+              bepSettings={bepSettings}
+              onUpdateBepSettings={handleUpdateBepSettings}
+              showToast={showToast}
+              allMenus={menus}
+              allOpexProfiles={opexProfiles}
+              ingredients={ingredients}
+              setIngredients={setIngredients}
+              assets={assets}
+              setAssets={setAssets}
+              group={view === 'database_simulasi' ? 'simulasi' : 'master'}
+            />
+          )}
+
+          {view === 'opex' && opexProfiles.length > 0 && (
+            <OpexAccumulator
+              menus={activeOutletMenus}
+              onUpdateMenu={(id, changes) => {
+                setMenus(prev => prev.map(m => m.id === id ? { ...m, ...changes, updatedAt: new Date().toISOString() } : m));
+              }}
+              opexProfiles={activeOutletProfiles}
+              activeProfileId={activeProfileId}
+              onSelectProfile={setActiveProfileId}
+              onUpdateProfile={(changes) => {
+                setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, ...changes } : p));
+              }}
+              onAddProfile={(newProfile) => {
+                newProfile.outletId = activeOutletId;
+                setOpexProfiles(prev => [...prev, newProfile]);
+                setActiveProfileId(newProfile.id);
+                showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
+              }}
+              onDeleteProfile={async (id) => {
+                if (!window.confirm('Hapus profil OPEX ini dari database?')) return;
+                try {
+                  await fetch('/api/opex', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(opexProfiles)
+                  });
+                  const res = await fetch(`/api/opex?id=${id}`, {
+                    method: 'DELETE'
+                  });
+                  if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Gagal menghapus profil dari server');
+                  }
+                  setOpexProfiles(prev => {
+                    const next = prev.filter(p => p.id !== id);
+                    if (id === activeProfileId) {
+                      const outletProfiles = next.filter(p => p.outletId === activeOutletId);
+                      setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
+                    }
+                    return next;
+                  });
+                  showToast('Profil OPEX dihapus dari database', 'info');
+                } catch (err) {
+                  console.error("Delete opex profile error:", err);
+                  showToast('Gagal menghapus profil OPEX: ' + err.message, 'error');
+                }
+              }}
+              onNavigateToCalculator={(menuId) => {
+                setActiveId(menuId);
+                setView('calculator');
+              }}
+              onNavigateToBep={() => {
+                setView('bep');
+              }}
+              channelPresets={channelPresets}
+              onOpenChannelModal={() => setShowChannelModal(true)}
+              bepSettings={bepSettings}
+              activeOutletId={activeOutletId}
+              assets={assets}
+              setAssets={setAssets}
+              ingredients={ingredients}
+            />
+          )}
+
+          {view === 'bep' && (
+            <BepCalculator
+              menus={activeOutletMenus}
+              opexProfiles={activeOutletProfiles}
+              activeProfileId={activeProfileId}
+              onSelectProfile={setActiveProfileId}
+              bepSettings={bepSettings}
+              activeOutletId={activeOutletId}
+              onUpdateBepSettings={handleUpdateBepSettings}
+              showToast={showToast}
+              assets={assets}
+              ingredients={ingredients}
+            />
+          )}
+
+          {view === 'shopee_estimator' && (
+            <ShopeeReverseEstimator
+              menus={menus}
+              opexProfiles={opexProfiles}
+              activeOutletId={activeOutletId}
+              activeProfileId={activeProfileId}
+              onUpdateProfile={(changes) => {
+                setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, ...changes } : p));
+              }}
+              assets={assets}
+              setAssets={setAssets}
+              ingredients={ingredients}
+            />
+          )}
         </div>
-      )}
-
-      {/* ── Main Content ── */}
-      {view === 'calculator' && (
-        activeMenu ? (
-          <HppCalculator
-            menu={activeMenu}
-            onUpdate={updateActiveMenu}
-            showToast={showToast}
-            channelPresets={channelPresets}
-            activeProfile={activeProfile}
-            onOpenChannelModal={() => setShowChannelModal(true)}
-            ingredients={ingredients}
-          />
-        ) : (
-          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
-              <Icon name="coffee" size={48} color="var(--primary)" />
-            </div>
-            <button className="btn btn-primary" onClick={addMenu}>
-              <Icon name="plus" size={14} /> Buat Menu Pertama
-            </button>
-          </div>
-        )
-      )}
-
-      {view === 'database' && (
-        <MenuDatabase
-          menus={activeOutletMenus} activeId={activeId}
-          onSelect={selectMenu} onAdd={addMenu}
-          onDelete={deleteMenu} onDuplicate={duplicateMenu}
-          onDeleteBatch={deleteMenusBatch}
-          opexProfiles={activeOutletProfiles}
-          activeProfileId={activeProfileId}
-          onSelectProfile={(id) => {
-            setActiveProfileId(id);
-            setView('opex');
-          }}
-          onAddProfile={(newProfile) => {
-            newProfile.outletId = activeOutletId;
-            setOpexProfiles(prev => [...prev, newProfile]);
-            setActiveProfileId(newProfile.id);
-            setView('opex');
-            showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
-          }}
-          onDeleteProfile={async (id) => {
-            if (!window.confirm('Hapus profil OPEX ini dari database?')) return;
-            try {
-              // Sync profiles to server first
-              await fetch('/api/opex', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(opexProfiles)
-              });
-              const res = await fetch(`/api/opex?id=${id}`, {
-                method: 'DELETE'
-              });
-              if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || 'Gagal menghapus profil dari server');
-              }
-              setOpexProfiles(prev => {
-                const next = prev.filter(p => p.id !== id);
-                if (id === activeProfileId) {
-                  const outletProfiles = next.filter(p => p.outletId === activeOutletId);
-                  setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
-                }
-                return next;
-              });
-              showToast('Profil OPEX dihapus dari database', 'info');
-            } catch (err) {
-              console.error("Delete opex profile error:", err);
-              showToast('Gagal menghapus profil OPEX: ' + err.message, 'error');
-            }
-          }}
-          outlets={outlets}
-          activeOutletId={activeOutletId}
-          onSelectOutlet={setActiveOutletId}
-          onAddOutlet={handleAddOutlet}
-          onRenameOutlet={handleRenameOutlet}
-          onDeleteOutlet={handleDeleteOutlet}
-          bepSettings={bepSettings}
-          onUpdateBepSettings={handleUpdateBepSettings}
-          showToast={showToast}
-          allMenus={menus}
-          allOpexProfiles={opexProfiles}
-          ingredients={ingredients}
-          setIngredients={setIngredients}
-          assets={assets}
-          setAssets={setAssets}
-        />
-      )}
-
-      {view === 'opex' && opexProfiles.length > 0 && (
-        <OpexAccumulator
-          menus={activeOutletMenus}
-          onUpdateMenu={(id, changes) => {
-            setMenus(prev => prev.map(m => m.id === id ? { ...m, ...changes, updatedAt: new Date().toISOString() } : m));
-          }}
-          opexProfiles={activeOutletProfiles}
-          activeProfileId={activeProfileId}
-          onSelectProfile={setActiveProfileId}
-          onUpdateProfile={(changes) => {
-            setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, ...changes } : p));
-          }}
-          onAddProfile={(newProfile) => {
-            newProfile.outletId = activeOutletId;
-            setOpexProfiles(prev => [...prev, newProfile]);
-            setActiveProfileId(newProfile.id);
-            showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
-          }}
-          onDeleteProfile={async (id) => {
-            if (!window.confirm('Hapus profil OPEX ini dari database?')) return;
-            try {
-              // Sync profiles to server first
-              await fetch('/api/opex', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(opexProfiles)
-              });
-              const res = await fetch(`/api/opex?id=${id}`, {
-                method: 'DELETE'
-              });
-              if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || 'Gagal menghapus profil dari server');
-              }
-              setOpexProfiles(prev => {
-                const next = prev.filter(p => p.id !== id);
-                if (id === activeProfileId) {
-                  const outletProfiles = next.filter(p => p.outletId === activeOutletId);
-                  setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
-                }
-                return next;
-              });
-              showToast('Profil OPEX dihapus dari database', 'info');
-            } catch (err) {
-              console.error("Delete opex profile error:", err);
-              showToast('Gagal menghapus profil OPEX: ' + err.message, 'error');
-            }
-          }}
-          onNavigateToCalculator={(menuId) => {
-            setActiveId(menuId);
-            setView('calculator');
-          }}
-          onNavigateToBep={() => {
-            setView('bep');
-          }}
-          channelPresets={channelPresets}
-          onOpenChannelModal={() => setShowChannelModal(true)}
-          bepSettings={bepSettings}
-          activeOutletId={activeOutletId}
-          assets={assets}
-          setAssets={setAssets}
-          ingredients={ingredients}
-        />
-      )}
-
-      {view === 'bep' && (
-        <BepCalculator
-          menus={activeOutletMenus}
-          opexProfiles={activeOutletProfiles}
-          activeProfileId={activeProfileId}
-          onSelectProfile={setActiveProfileId}
-          bepSettings={bepSettings}
-          activeOutletId={activeOutletId}
-          onUpdateBepSettings={handleUpdateBepSettings}
-          showToast={showToast}
-          assets={assets}
-          ingredients={ingredients}
-        />
-      )}
-
-      {view === 'shopee_estimator' && (
-        <ShopeeReverseEstimator
-          menus={menus}
-          opexProfiles={opexProfiles}
-          activeOutletId={activeOutletId}
-          activeProfileId={activeProfileId}
-          onUpdateProfile={(changes) => {
-            setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, ...changes } : p));
-          }}
-          assets={assets}
-          setAssets={setAssets}
-          ingredients={ingredients}
-        />
-      )}
+      </div>
 
       {/* Modals */}
       {showMeta && activeMenu && (
@@ -1307,16 +1221,181 @@ ${finalPortionLines.trim()}
         showToast={showToast}
       />
 
-      {/* Footer */}
-      <div style={{
-        textAlign: 'center', padding: '12px 28px', fontSize: 11, color: 'var(--color-text-muted)',
-        borderTop: '1px solid var(--border-color)', background: 'var(--bg-card)', marginTop: 12
-      }}>
-        HPP F&B Calculator &bull; {menus.length} menu tersimpan &bull; Data disimpan otomatis di browser
-      </div>
-
       {/* Toast */}
       <ToastContainer toasts={toasts} />
+    </div>
+  );
+}
+
+// ─── DASHBOARD OVERVIEW SUBCOMPONENT ───
+function DashboardOverview({ menus = [], activeProfile, ingredients = [], assets = [], onNavigate }) {
+  const stats = useMemo(() => {
+    let volume = 0;
+    let omset = 0;
+    let cogs = 0;
+    
+    menus.forEach(m => {
+      const vol = num(m.ops?.estimasiCup) || 0;
+      const hpp = getDirectHPP(m, ingredients);
+      const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin/100);
+      const hjRound = roundPrice(hj);
+
+      volume += vol;
+      omset += vol * hjRound;
+      cogs += vol * hpp;
+    });
+
+    const overhead = activeProfile ? (activeProfile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0) : 0;
+    const penyusutan = activeProfile ? getPenyusutanBulanan(activeProfile, assets) : 0;
+    const opex = overhead + penyusutan;
+    
+    const profitKotor = omset - cogs;
+    const profitBersih = profitKotor - opex;
+
+    return { volume, omset, cogs, opex, profitKotor, profitBersih };
+  }, [menus, activeProfile, ingredients, assets]);
+
+  return (
+    <div style={{ padding: '24px 28px' }} className="animate-fade-in">
+      {/* Welcome Banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+        padding: '24px 28px',
+        borderRadius: 16,
+        color: '#fff',
+        marginBottom: 24,
+        boxShadow: '0 4px 20px rgba(49, 46, 129, 0.15)'
+      }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#fff' }}>Ringkasan Operasional Outlet</h2>
+        <p style={{ margin: '6px 0 0', opacity: 0.8, fontSize: 12, lineHeight: 1.6 }}>
+          Berikut adalah rangkuman performa dan proyeksi keuangan berdasarkan data produk serta simulasi volume aktif bulan ini.
+        </p>
+      </div>
+
+      {/* Grid Cards (4 Metrics) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 24 }}>
+        {/* Card 1: Volume Penjualan */}
+        <div style={{ background: '#fff', border: '1px solid var(--border-color)', padding: 18, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>Simulasi Volume</span>
+            <div style={{ padding: 6, background: '#e0f2fe', borderRadius: 8 }}><Icon name="pieChart" size={14} color="#0284c7" /></div>
+          </div>
+          <div className="mono" style={{ fontSize: 20, fontWeight: 800 }}>{stats.volume.toLocaleString('id-ID')}</div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>Cup / Porsi terjual</div>
+        </div>
+
+        {/* Card 2: Proyeksi Omset */}
+        <div style={{ background: '#fff', border: '1px solid var(--border-color)', padding: 18, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>Proyeksi Omset</span>
+            <div style={{ padding: 6, background: '#fef3c7', borderRadius: 8 }}><Icon name="dollar" size={14} color="#d97706" /></div>
+          </div>
+          <div className="mono" style={{ fontSize: 20, fontWeight: 800 }}>{fmtRp(stats.omset)}</div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>Dari simulasi aktif</div>
+        </div>
+
+        {/* Card 3: Total OPEX */}
+        <div style={{ background: '#fff', border: '1px solid var(--border-color)', padding: 18, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>Beban OPEX</span>
+            <div style={{ padding: 6, background: '#fee2e2', borderRadius: 8 }}><Icon name="zap" size={14} color="#ef4444" /></div>
+          </div>
+          <div className="mono" style={{ fontSize: 20, fontWeight: 800 }}>{fmtRp(stats.opex)}</div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>Overhead + Depresiasi</div>
+        </div>
+
+        {/* Card 4: Keuntungan Bersih */}
+        <div style={{
+          background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+          border: '1px solid #bbf7d0',
+          padding: 18,
+          borderRadius: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#166534' }}>Proyeksi Profit Bersih</span>
+            <div style={{ padding: 6, background: '#bbf7d0', borderRadius: 8 }}><Icon name="checkCircle" size={14} color="#166534" /></div>
+          </div>
+          <div className="mono" style={{ fontSize: 20, fontWeight: 800, color: '#166534' }}>{fmtRp(stats.profitBersih)}</div>
+          <div style={{ fontSize: 11, color: '#166534', opacity: 0.8, marginTop: 4 }}>
+            Margin: {stats.omset > 0 ? ((stats.profitBersih / stats.omset) * 100).toFixed(1) : 0}%
+          </div>
+        </div>
+      </div>
+
+      {/* Main Section */}
+      <div style={{ background: '#fff', border: '1px solid var(--border-color)', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>Daftar Produk &amp; Kelayakan Margin</h3>
+            <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--color-text-muted)' }}>Analisis HPP, profit per cup, dan status margin produk.</p>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('calculator')} style={{ fontSize: 11, fontWeight: 700 }}>
+            Detail Resep &raquo;
+          </button>
+        </div>
+
+        {menus.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-muted)', fontSize: 13 }}>
+            Belum ada menu produk terdaftar. Silakan tambah menu baru di tab Kalkulator HPP.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="pkg-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)', color: 'var(--color-text-muted)', fontSize: 11 }}>
+                  <th style={{ padding: '12px 20px' }}>Menu</th>
+                  <th style={{ padding: '12px 20px' }}>Kategori</th>
+                  <th style={{ padding: '12px 20px' }}>Volume Simulasi</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'right' }}>HPP per Cup</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'right' }}>Harga Jual</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'right' }}>Profit/Cup</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'right' }}>Margin Bersih</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'center' }}>Status Kelayakan</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'center' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {menus.map(m => {
+                  const hpp = getDirectHPP(m, ingredients);
+                  const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin/100);
+                  const hjRound = roundPrice(hj);
+                  const profitCup = hjRound - hpp;
+                  const marginCup = hjRound > 0 ? (profitCup / hjRound) * 100 : 0;
+                  
+                  let statusBadge = <span style={{ background: '#fee2e2', color: '#ef4444', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>KURANG</span>;
+                  if (marginCup >= 50) {
+                    statusBadge = <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>LAYAK</span>;
+                  } else if (marginCup >= 35) {
+                    statusBadge = <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>HATI-HATI</span>;
+                  }
+
+                  return (
+                    <tr key={m.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: 13 }}>
+                      <td style={{ padding: '12px 20px', fontWeight: 700 }}>
+                        <span style={{ marginRight: 6 }}>{m.emoji || '☕'}</span>
+                        {m.name}
+                      </td>
+                      <td style={{ padding: '12px 20px', color: 'var(--color-text-muted)', fontSize: 12 }}>{m.category}</td>
+                      <td style={{ padding: '12px 20px' }}>{(num(m.ops?.estimasiCup) || 0).toLocaleString('id-ID')} cup</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'right' }} className="mono">{fmtRp(hpp)}</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 700 }} className="mono">{fmtRp(hjRound)}</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'right', color: '#166534' }} className="mono">{fmtRp(profitCup)}</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 600 }}>{marginCup.toFixed(1)}%</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'center' }}>{statusBadge}</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('calculator', m.id)} style={{ padding: '4px 8px', fontSize: 11, fontWeight: 700 }}>
+                          Edit Resep
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

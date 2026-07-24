@@ -34,9 +34,14 @@ export default function MenuDatabase({
   ingredients = [],
   setIngredients,
   assets = [],
-  setAssets
+  setAssets,
+  activeTab: externalActiveTab,
+  onChangeTab: externalOnChangeTab,
+  group
 }) {
-  const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'opex' | 'bep'
+  const [localActiveTab, setLocalActiveTab] = useState('menu');
+  const activeTab = externalActiveTab || localActiveTab;
+  const setActiveTab = externalOnChangeTab || setLocalActiveTab;
   const [selectedFeasibilityOutlet, setSelectedFeasibilityOutlet] = useState(null);
 
   // Active Outlet ingredients & assets
@@ -49,15 +54,15 @@ export default function MenuDatabase({
   }, [assets, activeOutletId]);
 
   // Ingredients CRUD
-  const handleAddIngredient = () => {
+  const handleAddIngredient = (forcePackaging = false) => {
     if (!setIngredients) return;
     const newIng = {
       id: uid(),
-      name: 'Bahan Baru',
+      name: forcePackaging ? 'Kemasan Baru' : 'Bahan Baru',
       hargaBeli: 0,
       ukuranKemasan: 1000,
-      unit: 'gr',
-      isPackaging: false,
+      unit: forcePackaging ? 'pcs' : 'gr',
+      isPackaging: forcePackaging,
       outletId: activeOutletId
     };
     setIngredients(prev => [...prev, newIng]);
@@ -379,7 +384,10 @@ export default function MenuDatabase({
     const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgEffectivePrice;
     const volumeVal = sActualVolume !== null ? num(sActualVolume) : (totalVolume || 600);
     
-    const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0) : 0;
+    const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, a) => {
+      const central = (assets || []).find(ca => ca.id === a.assetId);
+      return sum + (central ? num(central.harga) : 0);
+    }, 0) : 0;
     const investmentVal = sManualInvestment !== null ? num(sManualInvestment) : calculatedInvestment;
 
     const bepUnits = netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
@@ -492,7 +500,7 @@ export default function MenuDatabase({
       opexPerCup,
       netProfitAfterOpex
     };
-  }, [selectedFeasibilityOutlet, allMenus, allOpexProfiles, bepSettings]);
+  }, [selectedFeasibilityOutlet, allMenus, allOpexProfiles, bepSettings, assets]);
 
   const handleCopyReport = () => {
     if (!feasibilityData || !selectedFeasibilityOutlet) return;
@@ -617,7 +625,10 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
     const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgEffectivePrice;
     const volumeVal = sActualVolume !== null ? num(sActualVolume) : (totalVolume || 600);
     
-    const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0) : 0;
+    const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, a) => {
+      const central = (assets || []).find(ca => ca.id === a.assetId);
+      return sum + (central ? num(central.harga) : 0);
+    }, 0) : 0;
     const investmentVal = sManualInvestment !== null ? num(sManualInvestment) : calculatedInvestment;
 
     const bepUnits = netProfitPerCup > 0 ? Math.ceil(opexVal / netProfitPerCup) : 0;
@@ -733,7 +744,7 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
       calculatedMarginPerCup: avgNetProfit,
       calculatedPricePerCup: avgEffectivePrice
     };
-  }, [activeOutlet, allMenus, allOpexProfiles, bepSettings]);
+  }, [activeOutlet, allMenus, allOpexProfiles, bepSettings, assets]);
 
   // Retrieve current outlet's BEP settings
   const currentBep = useMemo(() => {
@@ -1141,98 +1152,103 @@ ${finalPortionLines.trim()}
       {/* ═══ TWO-GROUPED DATABASE TABS (VERTICAL STACK) ════════════════ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
         {/* GROUP 2: PROFIL & PARAMETER SIMULASI (TOP) */}
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius)', padding: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 4 }}>
-            <Icon name="tool" size={12} color="#64748b" /> Profil & Parameter Simulasi (Penyusutan, BEP, Kelayakan)
+        {(!group || group === 'simulasi') && (
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius)', padding: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 4 }}>
+              <Icon name="tool" size={12} color="#64748b" /> Profil & Parameter Simulasi (Penyusutan, BEP, Kelayakan)
+            </div>
+            <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 'calc(var(--radius) - 2px)' }}>
+              {[
+                { id: 'opex', label: 'Profil OPEX', icon: 'zap', count: opexProfiles.length },
+                { id: 'bep', label: 'Parameter BEP', icon: 'calculator', count: null },
+                { id: 'rekomendasi', label: 'Kelayakan', icon: 'trending', count: null }
+              ].map(t => {
+                const isAct = activeTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 10px',
+                      borderRadius: 'calc(var(--radius) - 4px)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: 11,
+                      background: isAct ? '#fff' : 'transparent',
+                      color: isAct ? 'var(--primary)' : '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 5,
+                      boxShadow: isAct ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : '#64748b'} />
+                    <span>{t.label}</span>
+                    {t.count !== null && (
+                      <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 10, background: isAct ? '#dbeafe' : '#e2e8f0', color: isAct ? 'var(--primary)' : '#64748b' }}>
+                        {t.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 'calc(var(--radius) - 2px)' }}>
-            {[
-              { id: 'opex', label: 'Profil OPEX', icon: 'zap', count: opexProfiles.length },
-              { id: 'bep', label: 'Parameter BEP', icon: 'calculator', count: null },
-              { id: 'rekomendasi', label: 'Kelayakan', icon: 'trending', count: null }
-            ].map(t => {
-              const isAct = activeTab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 10px',
-                    borderRadius: 'calc(var(--radius) - 4px)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: 11,
-                    background: isAct ? '#fff' : 'transparent',
-                    color: isAct ? 'var(--primary)' : '#64748b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 5,
-                    boxShadow: isAct ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : '#64748b'} />
-                  <span>{t.label}</span>
-                  {t.count !== null && (
-                    <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 10, background: isAct ? '#dbeafe' : '#e2e8f0', color: isAct ? 'var(--primary)' : '#64748b' }}>
-                      {t.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        )}
 
         {/* GROUP 1: DATABASE MASTER (BOTTOM) */}
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius)', padding: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 4 }}>
-            <Icon name="database" size={12} color="#64748b" /> Database Master (Bahan Baku, Resep & Aset)
+        {(!group || group === 'master') && (
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius)', padding: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 4 }}>
+              <Icon name="database" size={12} color="#64748b" /> Database Master (Bahan Baku, Kemasan, Resep & Aset)
+            </div>
+            <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 'calc(var(--radius) - 2px)' }}>
+              {[
+                { id: 'ingredients', label: 'Bahan Baku', icon: 'tag', count: activeOutletIngredients.filter(i => !i.isPackaging).length },
+                { id: 'packaging', label: 'Kemasan', icon: 'package', count: activeOutletIngredients.filter(i => i.isPackaging).length },
+                { id: 'menu', label: 'Resep Menu', icon: 'coffee', count: menus.length },
+                { id: 'assets', label: 'Aset & Belanja', icon: 'database', count: activeOutletAssets.length }
+              ].map(t => {
+                const isAct = activeTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 10px',
+                      borderRadius: 'calc(var(--radius) - 4px)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: 11,
+                      background: isAct ? '#fff' : 'transparent',
+                      color: isAct ? 'var(--primary)' : '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 5,
+                      boxShadow: isAct ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : '#64748b'} />
+                    <span>{t.label}</span>
+                    {t.count !== null && (
+                      <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 10, background: isAct ? '#fee2e2' : '#e2e8f0', color: isAct ? '#ef4444' : '#64748b' }}>
+                        {t.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 'calc(var(--radius) - 2px)' }}>
-            {[
-              { id: 'ingredients', label: 'Bahan Baku & Kemasan', icon: 'tag', count: activeOutletIngredients.length },
-              { id: 'menu', label: 'Resep Menu', icon: 'coffee', count: menus.length },
-              { id: 'assets', label: 'Aset & Belanja', icon: 'database', count: activeOutletAssets.length }
-            ].map(t => {
-              const isAct = activeTab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 10px',
-                    borderRadius: 'calc(var(--radius) - 4px)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: 11,
-                    background: isAct ? '#fff' : 'transparent',
-                    color: isAct ? 'var(--primary)' : '#64748b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 5,
-                    boxShadow: isAct ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : '#64748b'} />
-                  <span>{t.label}</span>
-                  {t.count !== null && (
-                    <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 10, background: isAct ? '#fee2e2' : '#e2e8f0', color: isAct ? '#ef4444' : '#64748b' }}>
-                      {t.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* ═══ TAB CONTENT ══════════════════════════════════════ */}
@@ -1254,14 +1270,23 @@ ${finalPortionLines.trim()}
                   </button>
                 ))}
               </div>
-              <input
-                type="text"
-                className="hpp-input sm"
-                placeholder="Cari nama menu..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{ maxWidth: 240, height: 'auto', padding: '6px 12px' }}
-              />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  className="hpp-input sm"
+                  placeholder="Cari nama menu..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{ maxWidth: 240, height: '32px', padding: '6px 12px' }}
+                />
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={onAdd}
+                  style={{ borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4, height: '32px' }}
+                >
+                  <Icon name="plus" size={12} /> Tambah Menu
+                </button>
+              </div>
             </div>
 
             {/* Bulk actions */}
@@ -1380,15 +1405,15 @@ ${finalPortionLines.trim()}
         </div>
       )}
 
-      {/* ──────────────── TAB: INGREDIENTS & PACKAGING ──────────────── */}
+      {/* ──────────────── TAB: INGREDIENTS ──────────────── */}
       {activeTab === 'ingredients' && (
         <div className="section-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ padding: 6, background: '#fee2e2', borderRadius: 8 }}><Icon name="tag" size={16} color="#ef4444" /></div>
               <div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Database Bahan Baku & Kemasan</h3>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>Edit global di sini. Semua menu resep yang terhubung akan ter-update otomatis.</div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Database Bahan Baku</h3>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>Edit global bahan baku di sini. Semua menu resep yang terhubung akan ter-update otomatis.</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -1399,8 +1424,8 @@ ${finalPortionLines.trim()}
                 <Icon name="edit" size={12} /> Impor Excel
                 <input type="file" accept=".xlsx, .xls" onChange={handleImportIngredientsExcel} style={{ display: 'none' }} />
               </label>
-              <button className="btn btn-primary btn-sm" onClick={handleAddIngredient} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Icon name="plus" size={12} /> Tambah Item
+              <button className="btn btn-primary btn-sm" onClick={() => handleAddIngredient(false)} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="plus" size={12} /> Tambah Bahan
               </button>
             </div>
           </div>
@@ -1416,9 +1441,9 @@ ${finalPortionLines.trim()}
               />
             </div>
 
-            {activeOutletIngredients.length === 0 ? (
+            {activeOutletIngredients.filter(i => !i.isPackaging).length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-muted)', fontSize: 13 }}>
-                Belum ada data bahan baku atau kemasan terpusat. Tambah item baru atau impor template Excel.
+                Belum ada data bahan baku terpusat. Tambah item baru atau impor template Excel.
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -1426,15 +1451,15 @@ ${finalPortionLines.trim()}
                   <thead>
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)', color: 'var(--color-text-muted)', fontSize: 11 }}>
                       <th style={{ padding: '8px 12px' }}>Nama Item</th>
-                      <th style={{ padding: '8px 12px', width: 140 }}>Tipe</th>
-                      <th style={{ padding: '8px 12px', width: 160 }}>Harga Beli (Rp)</th>
-                      <th style={{ padding: '8px 12px', width: 120 }}>Ukuran Kemasan</th>
-                      <th style={{ padding: '8px 12px', width: 100 }}>Satuan</th>
+                      <th style={{ padding: '8px 12px', width: 180 }}>Harga Beli (Rp)</th>
+                      <th style={{ padding: '8px 12px', width: 140 }}>Ukuran Kemasan</th>
+                      <th style={{ padding: '8px 12px', width: 120 }}>Satuan</th>
                       <th style={{ padding: '8px 12px', width: 60, textAlign: 'center' }}>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {activeOutletIngredients
+                      .filter(i => !i.isPackaging)
                       .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
                       .map((ing) => (
                         <tr key={ing.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: 13 }}>
@@ -1445,17 +1470,6 @@ ${finalPortionLines.trim()}
                               onChange={e => handleUpdateIngredient(ing.id, 'name', e.target.value)}
                               style={{ fontWeight: 600 }}
                             />
-                          </td>
-                          <td style={{ padding: '8px 12px' }}>
-                            <select
-                              className="hpp-input sm"
-                              value={ing.isPackaging ? 'kemasan' : 'bahan'}
-                              onChange={e => handleUpdateIngredient(ing.id, 'isPackaging', e.target.value === 'kemasan')}
-                              style={{ fontWeight: 500 }}
-                            >
-                              <option value="bahan">Bahan Baku</option>
-                              <option value="kemasan">Kemasan</option>
-                            </select>
                           </td>
                           <td style={{ padding: '8px 12px' }}>
                             <FormatInput
@@ -1479,7 +1493,118 @@ ${finalPortionLines.trim()}
                               className="hpp-input sm"
                               value={ing.unit}
                               onChange={e => handleUpdateIngredient(ing.id, 'unit', e.target.value)}
-                              placeholder="gr, ml, pcs"
+                              placeholder="gr, ml"
+                              style={{ fontWeight: 500 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                            <button
+                              className="btn btn-delete btn-sm"
+                              onClick={() => handleDeleteIngredient(ing.id)}
+                              style={{ padding: '4px 6px', color: '#ef4444' }}
+                            >
+                              <Icon name="trash" size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── TAB: PACKAGING ──────────────── */}
+      {activeTab === 'packaging' && (
+        <div className="section-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: 6, background: '#fef3c7', borderRadius: 8 }}><Icon name="package" size={16} color="#d97706" /></div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Database Kemasan</h3>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>Edit global kemasan di sini. Semua menu resep yang terhubung akan ter-update otomatis.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button className="btn btn-ghost btn-sm" onClick={downloadIngredientsTemplate} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="print" size={12} /> Unduh Template
+              </button>
+              <label className="btn btn-ghost btn-sm" style={{ fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="edit" size={12} /> Impor Excel
+                <input type="file" accept=".xlsx, .xls" onChange={handleImportIngredientsExcel} style={{ display: 'none' }} />
+              </label>
+              <button className="btn btn-primary btn-sm" onClick={() => handleAddIngredient(true)} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="plus" size={12} /> Tambah Kemasan
+              </button>
+            </div>
+          </div>
+
+          <div className="section-body" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <input
+                className="hpp-input sm"
+                placeholder="Cari kemasan..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ maxWidth: 300 }}
+              />
+            </div>
+
+            {activeOutletIngredients.filter(i => i.isPackaging).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-muted)', fontSize: 13 }}>
+                Belum ada data kemasan terpusat. Tambah item baru atau impor template Excel.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="pkg-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)', color: 'var(--color-text-muted)', fontSize: 11 }}>
+                      <th style={{ padding: '8px 12px' }}>Nama Kemasan</th>
+                      <th style={{ padding: '8px 12px', width: 180 }}>Harga Beli (Rp)</th>
+                      <th style={{ padding: '8px 12px', width: 140 }}>Isi Kemasan</th>
+                      <th style={{ padding: '8px 12px', width: 120 }}>Satuan</th>
+                      <th style={{ padding: '8px 12px', width: 60, textAlign: 'center' }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeOutletIngredients
+                      .filter(i => i.isPackaging)
+                      .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+                      .map((ing) => (
+                        <tr key={ing.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: 13 }}>
+                          <td style={{ padding: '8px 12px' }}>
+                            <input
+                              className="hpp-input sm"
+                              value={ing.name}
+                              onChange={e => handleUpdateIngredient(ing.id, 'name', e.target.value)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <FormatInput
+                              className="hpp-input sm"
+                              value={ing.hargaBeli}
+                              onChange={val => handleUpdateIngredient(ing.id, 'hargaBeli', val)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <input
+                              className="hpp-input sm"
+                              type="number"
+                              value={ing.ukuranKemasan}
+                              onChange={e => handleUpdateIngredient(ing.id, 'ukuranKemasan', parseFloat(e.target.value) || 1)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <input
+                              className="hpp-input sm"
+                              value={ing.unit}
+                              onChange={e => handleUpdateIngredient(ing.id, 'unit', e.target.value)}
+                              placeholder="pcs, pack"
                               style={{ fontWeight: 500 }}
                             />
                           </td>
@@ -1550,7 +1675,6 @@ ${finalPortionLines.trim()}
                       <th style={{ padding: '8px 12px' }}>Nama Aset / Belanja</th>
                       <th style={{ padding: '8px 12px', width: 180 }}>Harga Beli (Rp)</th>
                       <th style={{ padding: '8px 12px', width: 140 }}>Umur Ekonomis</th>
-                      <th style={{ padding: '8px 12px', width: 180 }}>Jenis Belanja</th>
                       <th style={{ padding: '8px 12px', width: 60, textAlign: 'center' }}>Aksi</th>
                     </tr>
                   </thead>
@@ -1586,17 +1710,6 @@ ${finalPortionLines.trim()}
                               />
                               <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Tahun</span>
                             </div>
-                          </td>
-                          <td style={{ padding: '8px 12px' }}>
-                            <select
-                              className="hpp-input sm"
-                              value={aset.isLargeExpense ? 'besar' : 'rutin'}
-                              onChange={e => handleUpdateAsset(aset.id, 'isLargeExpense', e.target.value === 'besar')}
-                              style={{ fontWeight: 500 }}
-                            >
-                              <option value="rutin">Rutin (Penyusutan OPEX)</option>
-                              <option value="besar">Besar / Non-Rutin (Kalkulator Shopee)</option>
-                            </select>
                           </td>
                           <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                             <button
@@ -1644,10 +1757,7 @@ ${finalPortionLines.trim()}
               </div>
             ) : (
               opexProfiles.map(p => {
-                const monthlyDepreciation = p.usePenyusutan ? p.assets.filter(a => a.enabled).reduce((sum, a) => {
-                  if (!a.tahun) return sum;
-                  return sum + (num(a.harga) / (num(a.tahun) * 12));
-                }, 0) : 0;
+                const monthlyDepreciation = getPenyusutanBulanan(p, assets);
                 const totalExpenses = p.expenses.reduce((sum, e) => sum + num(e.value), 0);
                 const totalOpex = totalExpenses + monthlyDepreciation;
                 const opexPerUnit = p.totalVolume > 0 ? totalOpex / p.totalVolume : 0;

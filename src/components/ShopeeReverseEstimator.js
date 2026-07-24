@@ -76,7 +76,7 @@ export default function ShopeeReverseEstimator({
 
   // Central Assets filter & toggle
   const largeCentralAssets = useMemo(() => {
-    return (assets || []).filter(ca => ca.outletId === activeOutletId && ca.isLargeExpense);
+    return (assets || []).filter(ca => ca.outletId === activeOutletId);
   }, [assets, activeOutletId]);
 
   const handleToggleLargeAsset = (caId) => {
@@ -288,41 +288,76 @@ export default function ShopeeReverseEstimator({
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {largeCentralAssets.map((ca) => {
-                  const isSelected = (activeProfile.assets || []).some(a => a.assetId === ca.id);
-                  return (
-                    <div
-                      key={ca.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        background: isSelected ? 'var(--bg-card)' : 'var(--bg-app)',
-                        opacity: isSelected ? 1 : 0.7,
-                        padding: '10px 14px',
-                        borderRadius: 8,
-                        border: `1px solid ${isSelected ? '#ef4444' : 'var(--border-color)'}`,
-                        transition: 'all 0.15s'
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleToggleLargeAsset(ca.id)}
-                        style={{ width: 16, height: 16, cursor: 'pointer' }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>{ca.name}</div>
-                        <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                          Umur ekonomis: {ca.tahun} Tahun
-                        </div>
-                      </div>
-                      <div style={{ fontWeight: 800, fontSize: 13, color: '#dc2626' }}>
-                        {fmtRp(ca.harga)}
-                      </div>
-                    </div>
-                  );
-                })}
+                {/* Asset Selector Dropdown */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                  <select
+                    className="hpp-input sm"
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleToggleLargeAsset(e.target.value);
+                      }
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    <option value="">-- Hubungkan Belanja Besar / Investasi --</option>
+                    {largeCentralAssets
+                      .filter(ca => !(activeProfile.assets || []).some(a => a.assetId === ca.id))
+                      .map(ca => (
+                        <option key={ca.id} value={ca.id}>{ca.name} ({fmtRp(ca.harga)})</option>
+                      ))
+                    }
+                  </select>
+                </div>
+
+                {/* List of Connected Assets */}
+                {(!activeProfile.assets || !activeProfile.assets.some(a => largeCentralAssets.some(ca => ca.id === a.assetId))) ? (
+                  <div style={{ textAlign: 'center', padding: '16px 12px', color: 'var(--color-text-muted)', fontSize: 11, border: '1px dashed var(--border-color)', borderRadius: 8 }}>
+                    Belum ada belanja besar yang terhubung ke simulasi ini. Pilih dari dropdown di atas untuk menghubungkan.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {activeProfile.assets
+                      .map(a => {
+                        const ca = largeCentralAssets.find(x => x.id === a.assetId);
+                        if (!ca) return null;
+                        return (
+                          <div
+                            key={ca.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              background: 'var(--bg-card)',
+                              padding: '8px 12px',
+                              borderRadius: 8,
+                              border: '1px solid var(--border-color)',
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700, fontSize: 12 }}>{ca.name}</div>
+                              <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                                Umur ekonomis: {ca.tahun} Tahun
+                              </div>
+                            </div>
+                            <div style={{ fontWeight: 800, fontSize: 12, color: '#dc2626', marginRight: 8 }}>
+                              {fmtRp(ca.harga)}
+                            </div>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => handleToggleLargeAsset(ca.id)}
+                              style={{ padding: '4px 6px', color: '#ef4444', height: 'auto', width: 'auto', border: 'none', background: 'transparent' }}
+                              title="Hapus kaitan"
+                            >
+                              <Icon name="trash" size={12} />
+                            </button>
+                          </div>
+                        );
+                      })
+                      .filter(Boolean)
+                    }
+                  </div>
+                )}
               </div>
             )}
           </div>

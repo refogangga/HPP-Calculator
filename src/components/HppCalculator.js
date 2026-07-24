@@ -7,7 +7,7 @@ import { SectionHeader, IngredientRow, PackagingCard } from './HppSubComponents'
 import PlatformCalculator from './PlatformCalculator';
 import { num, fmtRp, roundPrice, uid, getPenyusutanBulanan, mkPlatform } from '../utils/hpp';
 
-export default function HppCalculator({ menu, onUpdate, showToast, channelPresets, activeProfile, onOpenChannelModal, ingredients: ingredientsDb = [] }) {
+export default function HppCalculator({ menu, onUpdate, showToast, channelPresets, activeProfile, onOpenChannelModal, ingredients: ingredientsDb = [], onNavigate }) {
   const { ingredients, packaging, ops, margin, targetUnit = 'cup', pcsPerPortion = 1, subUnitLabel = 'pcs', platform } = menu;
   const activePlatform = platform || mkPlatform();
 
@@ -65,109 +65,118 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
   const profitPerCup = useMemo(() => hargaJualBulat - totalHPP, [hargaJualBulat, totalHPP]);
   const marginAktual = useMemo(() => hargaJualBulat > 0 ? (profitPerCup / hargaJualBulat) * 100 : 0, [profitPerCup, hargaJualBulat]);
 
-  const pct = useMemo(() => totalHPP > 0 ? {
-    bb: (hppBahanBaku / totalHPP * 100),
-    km: (hppKemasan / totalHPP * 100),
-  } : { bb: 0, km: 0 }, [totalHPP, hppBahanBaku, hppKemasan]);
-
-  /* ── Platform Calculations (full advanced formula) ── */
-  const platformCalc = useMemo(() => {
-    if (!activePlatform.enabled || hargaJualBulat <= 0) {
-      return { diskonNominal: 0, hargaEfektif: hargaJualBulat, totalKomisi: 0, revenueBersih: hargaJualBulat, grossMargin: hargaJualBulat - totalHPP, netProfit: hargaJualBulat - totalHPP, marginPct: 0 };
-    }
-    const hj = hargaJualBulat;
-    const diskonNominal = activePlatform.discountType === 'pct'
-      ? hj * num(activePlatform.discountValue) / 100
-      : num(activePlatform.discountValue);
-    const hargaEfektif = Math.max(hj - diskonNominal, 0);
-    const basisKomisi = activePlatform.commissionBasis === 'effective' ? hargaEfektif : hj;
-    const komisiNominal = basisKomisi * num(activePlatform.commissionPct) / 100;
-    const totalKomisi = komisiNominal + num(activePlatform.flatFee);
-    const revenueBersih = hargaEfektif - totalKomisi;
-    const grossMargin = revenueBersih - totalHPP;
-    const netProfit = revenueBersih - totalHPP;
-    const marginPct = hj > 0 ? (netProfit / hj) * 100 : 0;
-    return { diskonNominal, hargaEfektif, totalKomisi, revenueBersih, grossMargin, netProfit, marginPct };
-  }, [activePlatform, hargaJualBulat, totalHPP]);
-
-  const { diskonNominal, hargaEfektif, totalKomisi, revenueBersih, grossMargin, netProfit, marginPct } = platformCalc;
-
-  // 4-segment bar (based on hargaJualBulat = 100%)
-  const pctBreakdown = useMemo(() => {
-    if (hargaJualBulat <= 0) return { hpp: 0, diskon: 0, platform: 0, profit: 0 };
-    const hj = hargaJualBulat;
-    const hpp = Math.min(totalHPP / hj * 100, 100);
-    const diskon = activePlatform.enabled ? Math.min(diskonNominal / hj * 100, Math.max(0, 100 - hpp)) : 0;
-    const platform = activePlatform.enabled ? Math.min(totalKomisi / hj * 100, Math.max(0, 100 - hpp - diskon)) : 0;
-    const profit = Math.max(100 - hpp - diskon - platform, 0);
-    return { hpp, diskon, platform, profit };
-  }, [hargaJualBulat, totalHPP, activePlatform, diskonNominal, totalKomisi]);
-
   const sliderBg = { '--slider-pct': `${margin}%` };
 
   return (
-    <div className="main-grid" style={{
-      display: 'grid', gridTemplateColumns: '1fr 390px', gap: 20,
-      padding: '20px 28px', alignItems: 'start'
-    }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 390px', gap: 20, padding: '24px 28px', alignItems: 'start' }} className="animate-fade-in">
 
       {/* ══ LEFT PANEL ════════════════════════════════════════ */}
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* ── 1. Bahan Baku ── */}
-        <div className="section-card">
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'visible', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <SectionHeader
-            iconEmoji="coffee" iconBg="#eef2ff"
+            iconEmoji="coffee" iconBg="#f5f3ff"
             title="Biaya Bahan Baku (per Cup)"
             badgeText="KOMPONEN 1" badgeClass="badge-indigo"
           />
-          <div className="section-body">
-            <div className="ing-grid-header">
-              <span>Nama Bahan</span><span>Harga Beli</span>
-              <span>Ukuran Kemasan</span><span>Satuan</span>
-              <span>Takaran/{targetUnit}</span><span>HPP/{targetUnit}</span><span></span>
+          <div style={{ padding: 20 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1.5fr 1.5fr 1.2fr 1.5fr 1.5fr 36px',
+              gap: 10,
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              color: '#64748b',
+              paddingBottom: 8,
+              borderBottom: '1px solid #e2e8f0',
+              marginBottom: 12
+            }}>
+              <span>Nama Bahan</span>
+              <span>Harga Beli</span>
+              <span>Kemasan</span>
+              <span>Satuan</span>
+              <span>Takaran/{targetUnit}</span>
+              <span style={{ textAlign: 'right' }}>HPP/{targetUnit}</span>
+              <span></span>
             </div>
 
-            {ingredients.map((ing, idx) => (
-              <IngredientRow key={ing.id} ing={ing} idx={idx} total={ingredients.length}
-                onUpdate={updateIng} onRemove={removeIng} targetUnit={targetUnit} ingredientsDb={ingredientsDb} />
-            ))}
+            {ingredients.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 12.5 }}>
+                Belum ada bahan baku. Klik tombol di bawah untuk menambah bahan.
+              </div>
+            ) : (
+              ingredients.map((ing, idx) => (
+                <IngredientRow key={ing.id} ing={ing} idx={idx} total={ingredients.length}
+                  onUpdate={updateIng} onRemove={removeIng} targetUnit={targetUnit} ingredientsDb={ingredientsDb}
+                  onNavigate={onNavigate} />
+              ))
+            )}
 
-            <button className="btn btn-add" onClick={addIng} style={{ marginTop: 8 }}>
-              <Icon name="plus" size={13} /> Tambah Bahan
+            <button
+              onClick={addIng}
+              style={{
+                marginTop: 8, padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1',
+                background: '#fff', color: '#475569', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseOut={e => { e.currentTarget.style.background = '#fff'; }}
+            >
+              <Icon name="plus" size={13} /> Tambah Bahan Baku
             </button>
           </div>
-          <div className="section-footer bg-accent-blue">
-            <span style={{ fontSize: 12, fontWeight: 600 }}>Sub-total Bahan Baku</span>
-            <span className="mono" style={{ fontWeight: 800, fontSize: 15 }}>{fmtRp(hppBahanBaku)}</span>
+          
+          <div style={{ padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Sub-total Bahan Baku</span>
+            <span className="mono" style={{ fontWeight: 850, fontSize: 15, color: '#0f172a' }}>{fmtRp(hppBahanBaku)}</span>
           </div>
         </div>
 
         {/* ── 2. Kemasan ── */}
-        <div className="section-card">
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'visible', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <SectionHeader
             iconEmoji="package" iconBg="#fff7ed"
             title="Biaya Kemasan (per Cup)"
             badgeText="KOMPONEN 2" badgeClass="badge-orange"
           />
-          <div className="section-body">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: 10 }}>
-              {packaging.map(pkg => (
-                <PackagingCard key={pkg.id} pkg={pkg} onUpdate={updatePkg} onRemove={removePkg} targetUnit={targetUnit} ingredientsDb={ingredientsDb} />
-              ))}
-            </div>
-            <button className="btn btn-add" onClick={addPkg} style={{ marginTop: 10 }}>
+          <div style={{ padding: 20 }}>
+            {packaging.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 12.5 }}>
+                Belum ada item kemasan terdaftar.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12, marginBottom: 14 }}>
+                {packaging.map(pkg => (
+                  <PackagingCard key={pkg.id} pkg={pkg} onUpdate={updatePkg} onRemove={removePkg} targetUnit={targetUnit} ingredientsDb={ingredientsDb}
+                    onNavigate={onNavigate} />
+                ))}
+              </div>
+            )}
+            
+            <button
+              onClick={addPkg}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1',
+                background: '#fff', color: '#475569', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseOut={e => { e.currentTarget.style.background = '#fff'; }}
+            >
               <Icon name="plus" size={13} /> Tambah Item Kemasan
             </button>
           </div>
-          <div className="section-footer bg-accent-orange">
-            <span style={{ fontSize: 12, fontWeight: 600 }}>Sub-total Kemasan</span>
-            <span className="mono" style={{ fontWeight: 800, fontSize: 15 }}>{fmtRp(hppKemasan)}</span>
+          
+          <div style={{ padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Sub-total Kemasan</span>
+            <span className="mono" style={{ fontWeight: 850, fontSize: 15, color: '#0f172a' }}>{fmtRp(hppKemasan)}</span>
           </div>
         </div>
 
         {/* ── 3. Platform/Marketplace ── */}
-        <div className="section-card">
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <PlatformCalculator
             platform={activePlatform}
             onUpdate={setPlatform}
@@ -179,268 +188,192 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
         </div>
 
         {/* ── 4. Estimasi Penjualan ── */}
-        <div className="section-card">
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <SectionHeader
             iconEmoji="store" iconBg="#f0fdf4"
-            title="Estimasi Penjualan Bulanan"
+            title="Estimasi Volume Penjualan"
             badgeText="VOLUME" badgeClass="badge-emerald"
           />
-          <div className="section-body">
-            <div className="bg-accent-green" style={{ border: '1px solid', borderRadius: 10, padding: '12px 14px' }}>
-              <div className="label-xs" style={{ marginBottom: 6 }}>Target Penjualan Bulanan ({targetUnit})</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <input className="hpp-input large" type="number" placeholder="600"
+          <div style={{ padding: 20 }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 6 }}>
+                Target Penjualan Bulanan ({targetUnit})
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input
+                  type="number"
+                  placeholder="600"
                   value={ops.estimasiCup || ''}
                   onChange={e => setOps('estimasiCup', e.target.value)}
-                  style={{ maxWidth: 160 }} />
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{targetUnit} / bulan</span>
-                <span style={{ fontSize: 11, color: '#6ee7b7', marginLeft: 'auto' }}>
-                  ≈ {Math.round(num(ops.estimasiCup) / 26)} {targetUnit}/hari kerja
-                </span>
+                  style={{ maxWidth: 140, height: 36, fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6, padding: '0 10px', fontWeight: 650 }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{targetUnit} / bulan</span>
+                {num(ops.estimasiCup) > 0 && (
+                  <span style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginLeft: 'auto' }}>
+                    ≈ {Math.round(num(ops.estimasiCup) / 26)} {targetUnit}/hari kerja (26 hari)
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* ── 5. Catatan ── */}
-        <div className="section-card">
-          <SectionHeader iconEmoji="fileText" iconBg="#fafafa" title="Catatan Menu" />
-          <div className="section-body">
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <SectionHeader iconEmoji="fileText" iconBg="#f1f5f9" title="Catatan &amp; Langkah Pembuatan" />
+          <div style={{ padding: 20 }}>
             <textarea
-              className="hpp-input"
               rows={3}
-              placeholder="Tambahkan catatan, tips penyajian, atau informasi tambahan tentang menu ini…"
+              placeholder="Tambahkan catatan resep, takaran presisi, atau panduan operasional pembuatan menu ini…"
               value={menu.notes || ''}
               onChange={e => onUpdate({ notes: e.target.value })}
-              style={{ resize: 'vertical', lineHeight: 1.6 }}
+              style={{
+                width: '100%', resize: 'vertical', lineHeight: 1.6, fontSize: 12.5,
+                border: '1px solid #cbd5e1', borderRadius: 8, padding: 12, outline: 'none'
+              }}
             />
           </div>
         </div>
       </div>
-      <div className="result-sticky" style={{ position: 'sticky', top: 90 }}>
 
-        {/* Pricing */}
-        <div className="section-card" style={{ marginBottom: 14 }}>
-          <SectionHeader iconEmoji="tag" iconBg="#f4f4f5" title="Penetapan Harga Jual" badgeText="PRICING" badgeClass="badge-slate" />
-          <div className="section-body">
-            <div style={{ marginBottom: 14 }}>
-              <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span className="label-sm">Target Profit Margin</span>
-                <div className="mono" style={{ background: 'var(--primary)', color: '#fff', borderRadius: 'var(--radius)', padding: '2px 12px', fontWeight: 800, fontSize: 16 }}>
+      {/* ══ RIGHT STICKY PANEL ════════════════════════════════ */}
+      <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Pricing Card */}
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <SectionHeader iconEmoji="tag" iconBg="#f1f5f9" title="Penetapan Harga Jual" badgeText="PRICING" badgeClass="badge-slate" />
+          <div style={{ padding: 20 }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: '#475569' }}>Target Profit Margin</span>
+                <div className="mono" style={{ background: '#4f46e5', color: '#fff', borderRadius: 6, padding: '2px 10px', fontWeight: 800, fontSize: 15 }}>
                   {margin}%
                 </div>
               </div>
               <input className="hpp-slider" type="range" min="5" max="90"
                 value={margin} onChange={e => setMargin(Number(e.target.value))} style={sliderBg} />
-              <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                <span>5% minimal</span><span>45–55% standar F&B</span><span>90% premium</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', marginTop: 4, fontWeight: 500 }}>
+                <span>5% min</span><span>45–55% standard</span><span>90% premium</span>
               </div>
             </div>
 
             {/* Presets */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-              {[30, 40, 45, 50, 55, 60, 70].map(m => (
-                <button 
-                  key={m} 
-                  onClick={() => setMargin(m)} 
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: margin === m ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                    background: margin === m ? 'var(--primary)' : 'var(--bg-card)',
-                    color: margin === m ? '#fff' : 'var(--color-text)',
-                    cursor: 'pointer',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  {m}%
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: 5, marginBottom: 16, flexWrap: 'wrap' }}>
+              {[30, 40, 45, 50, 55, 60, 70].map(m => {
+                const isAct = margin === m;
+                return (
+                  <button 
+                    key={m} 
+                    onClick={() => setMargin(m)} 
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 6,
+                      border: isAct ? '1px solid #4f46e5' : '1px solid #e2e8f0',
+                      background: isAct ? '#4f46e5' : '#fff',
+                      color: isAct ? '#fff' : '#475569',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      transition: 'all 0.12s'
+                    }}
+                  >
+                    {m}%
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="price-card" style={{ border: '1px solid var(--border-color)', background: 'var(--bg-app)', padding: 14, borderRadius: 'var(--radius)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span className="label-xs" style={{ fontSize: 9 }}>HPP / {targetUnit.toUpperCase()}</span>
-                  <span className="mono" style={{ fontWeight: 800, fontSize: 13 }}>{fmtRp(totalHPP)}</span>
+            {/* Price Calculations */}
+            <div style={{ border: '1px solid #e2e8f0', background: '#f8fafc', padding: 14, borderRadius: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>HPP / {targetUnit}</span>
+                  <span className="mono" style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>{fmtRp(totalHPP)}</span>
                 </div>
-                <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span className="label-xs" style={{ fontSize: 9 }}>Profit / {targetUnit.toUpperCase()}</span>
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Profit / {targetUnit}</span>
                   <span className="mono" style={{ fontWeight: 800, fontSize: 13, color: profitPerCup > 0 ? '#10b981' : '#ef4444' }}>{fmtRp(profitPerCup)}</span>
                 </div>
                 {pcsPerPortion > 1 && (
                   <>
-                    <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span className="label-xs" style={{ fontSize: 9 }}>HPP / {subUnitLabel.toUpperCase()}</span>
-                      <span className="mono" style={{ fontWeight: 800, fontSize: 12 }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
+                    <div style={{ background: '#fff', border: '1px dashed #cbd5e1', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>HPP / {subUnitLabel}</span>
+                      <span className="mono" style={{ fontWeight: 800, fontSize: 12, color: '#475569' }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
                     </div>
-                    <div className="metric-card" style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span className="label-xs" style={{ fontSize: 9 }}>Profit / {subUnitLabel.toUpperCase()}</span>
-                      <span className="mono" style={{ fontWeight: 800, fontSize: 12, color: (roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion)) > 0 ? '#10b981' : '#ef4444' }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion))}</span>
+                    <div style={{ background: '#fff', border: '1px dashed #cbd5e1', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Profit / {subUnitLabel}</span>
+                      <span className="mono" style={{ fontWeight: 800, fontSize: 12, color: (roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion)) > 0 ? '#10b981' : '#ef4444' }}>
+                        {fmtRp(roundPrice(hargaJual / pcsPerPortion) - (totalHPP / pcsPerPortion))}
+                      </span>
                     </div>
                   </>
                 )}
               </div>
 
-              {/* Main price */}
-              <div style={{ borderRadius: 'var(--radius)', background: 'rgba(0, 102, 204, 0.04)', border: '2px solid var(--primary)', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <Icon name="info" size={13} color="var(--primary)" /> Rekomendasi Harga Jual ({targetUnit})
+              {/* Main Price Box */}
+              <div style={{ borderRadius: 8, background: '#f5f3ff', border: '2px solid #6366f1', padding: 14, textAlign: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: '#4f46e5' }}>
+                  <Icon name="info" size={12} color="#4f46e5" /> Rekomendasi Harga Jual ({targetUnit})
                 </div>
-                <div className="mono" style={{ fontWeight: 900, fontSize: 22, color: 'var(--primary)' }}>{fmtRp(hargaJualBulat)}</div>
+                <div className="mono" style={{ fontWeight: 900, fontSize: 22, color: '#4f46e5' }}>{fmtRp(hargaJualBulat)}</div>
                 
                 {pcsPerPortion > 1 && (
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border-color)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, marginBottom: 2 }}>Harga Jual per {subUnitLabel}</div>
-                    <div className="mono" style={{ fontWeight: 800, fontSize: 16 }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion))}</div>
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #ddd6fe' }}>
+                    <div style={{ fontSize: 10, fontWeight: 750, color: '#475569', marginBottom: 2 }}>Harga Jual per {subUnitLabel}</div>
+                    <div className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>{fmtRp(roundPrice(hargaJual / pcsPerPortion))}</div>
                   </div>
                 )}
 
-                <div style={{ fontSize: 10, marginTop: 4, color: 'var(--color-text-muted)' }}>
-                  {fmtRp(totalHPP)} ÷ (1−{margin}%) → dibulatkan
+                <div style={{ fontSize: 9.5, marginTop: 6, color: '#64748b', fontWeight: 500 }}>
+                  Rumus: HPP ÷ (1−{margin}%) &rarr; dibulatkan
                 </div>
                 {hargaJual !== hargaJualBulat && (
-                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 1 }}>
-                    Harga asli: {fmtRp(hargaJual)} | Margin aktual: {marginAktual.toFixed(1)}%
+                  <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 2, fontWeight: 500 }}>
+                    Asli: {fmtRp(hargaJual)} | Margin Aktual: {marginAktual.toFixed(1)}%
                   </div>
                 )}
               </div>
 
-              {/* Margin zone */}
+              {/* Threshold Status */}
               <div style={{
-                marginTop: 10, padding: '8px 10px', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)',
+                marginTop: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid',
                 background: margin < 30 ? '#fffbeb' : '#f0fdf4',
-                color: margin < 30 ? '#d97706' : '#16a34a'
+                borderColor: margin < 30 ? '#fde68a' : '#bbf7d0',
+                color: margin < 30 ? '#b45309' : '#15803d'
               }}>
-                <div style={{ fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name={margin < 30 ? "alert" : "checkCircle"} size={13} color={margin < 30 ? '#d97706' : '#16a34a'} />
-                  {margin < 30 ? 'Margin rendah — risiko bisnis tinggi' :
-                    margin < 50 ? 'Margin sehat — standar industri F&B' :
-                      margin < 70 ? 'Margin bagus — produk premium' :
-                        'Margin sangat tinggi — pastikan value sesuai'}
+                <div style={{ fontSize: 10.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name={margin < 30 ? "alert" : "checkCircle"} size={12} color={margin < 30 ? '#b45309' : '#15803d'} />
+                  {margin < 30 ? 'Margin rendah — risiko operasional tinggi' :
+                    margin < 50 ? 'Margin sehat — standar profit F&B' :
+                      margin < 70 ? 'Margin sangat sehat — produk premium' :
+                        'Margin super tinggi — pastikan harga bersaing'}
                 </div>
               </div>
             </div>
 
-            {/* Monthly estimate */}
+            {/* Monthly Profit Projections */}
             {num(ops.estimasiCup) > 0 && (
-              <div style={{ marginTop: 10, background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
-                <div className="label-xs" style={{ color: 'var(--color-text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name="chart" size={12} color="var(--color-text-muted)" /> Estimasi Profit Bulanan
+              <div style={{ marginTop: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="chart" size={11} color="#64748b" /> Proyeksi Profit Bulanan
                 </div>
-                <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
                     {num(ops.estimasiCup).toLocaleString('id-ID')} {targetUnit} × {fmtRp(profitPerCup)}
                   </span>
-                  <span className="mono" style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>
+                  <span className="mono" style={{ fontWeight: 800, fontSize: 15, color: '#16a34a' }}>
                     {fmtRp(profitPerCup * num(ops.estimasiCup))}
                   </span>
                 </div>
-                <div style={{ height: 1, background: 'var(--border-color)', margin: '8px 0' }} />
-                <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Omset Bruto Bulanan</span>
-                  <span className="mono" style={{ fontSize: 12, color: 'var(--color-text)' }}>
+                <div style={{ height: 1, background: '#e2e8f0', margin: '8px 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>Omset Kotor Bulanan</span>
+                  <span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: '#334155' }}>
                     {fmtRp(hargaJualBulat * num(ops.estimasiCup))}
                   </span>
                 </div>
               </div>
             )}
-
-          </div>
-        </div>
-
-
-
-        {/* ── Platform Breakdown Card (right panel) ── */}
-        {activePlatform.enabled && hargaJualBulat > 0 && (
-          <div className="platform-breakdown-card animate-fade-in">
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Icon name="chart" size={13} color="var(--color-text-muted)" /> Ringkasan Profitabilitas Realistis
-            </div>
-
-            {/* 4-segment bar */}
-            <div style={{ marginBottom: 12 }}>
-              <div className="progress-bar" style={{ height: 10, borderRadius: 9999, background: '#f4f4f5', overflow: 'hidden', display: 'flex' }}>
-                <div className="progress-segment" style={{ width: `${pctBreakdown.hpp}%`, background: '#6366f1' }} />
-                <div className="progress-segment" style={{ width: `${pctBreakdown.diskon}%`, background: '#f59e0b' }} />
-                <div className="progress-segment" style={{ width: `${pctBreakdown.platform}%`, background: '#ef4444' }} />
-                <div className="progress-segment" style={{
-                  width: `${pctBreakdown.profit}%`,
-                  background: netProfit >= 0 ? '#10b981' : '#6b7280'
-                }} />
-              </div>
-              <div style={{ display: 'flex', gap: 6, marginTop: 5, fontSize: 9, flexWrap: 'wrap', color: 'var(--color-text-muted)' }}>
-                <span style={{ color: '#6366f1', fontWeight: 600 }}>• {pctBreakdown.hpp.toFixed(0)}% HPP</span>
-                {diskonNominal > 0 && <span style={{ color: '#f59e0b', fontWeight: 600 }}>• {pctBreakdown.diskon.toFixed(0)}% Diskon</span>}
-                <span style={{ color: '#ef4444', fontWeight: 600 }}>• {pctBreakdown.platform.toFixed(0)}% Platform</span>
-                <span style={{ color: netProfit >= 0 ? '#10b981' : '#6b7280', fontWeight: 600 }}>
-                  • {pctBreakdown.profit.toFixed(0)}% Profit
-                </span>
-              </div>
-            </div>
-
-            {/* Summary rows */}
-            {[
-              { label: 'Harga Jual', val: hargaJualBulat, color: 'var(--color-text)' },
-              ...(diskonNominal > 0 ? [{ label: `− Diskon Merchant`, val: diskonNominal, color: '#d97706' }] : []),
-              { label: `− Komisi ${activePlatform.name}`, val: totalKomisi, color: '#dc2626' },
-              { label: '= Nett Revenue', val: revenueBersih, color: 'var(--color-text)', bold: true },
-              { label: `− HPP (Bahan + Kemasan)`, val: totalHPP, color: 'var(--color-text-muted)' },
-            ].map(({ label, val, color, bold }) => (
-              <div key={label} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '5px 0', borderBottom: '1px dashed var(--border-color)'
-              }}>
-                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
-                <span className="mono" style={{ fontSize: 12, fontWeight: bold ? 800 : 600, color }}>{fmtRp(val)}</span>
-              </div>
-            ))}
-
-            {/* Net Profit Final */}
-            <div style={{
-              marginTop: 10, padding: '10px 12px', borderRadius: 'var(--radius)',
-              background: netProfit >= 0 ? '#f0fdf4' : '#fef2f2',
-              border: `1px solid ${netProfit >= 0 ? '#bbf7d0' : '#fecaca'}`,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: netProfit >= 0 ? '#16a34a' : '#dc2626', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name={netProfit >= 0 ? "checkCircle" : "alert"} size={12} color={netProfit >= 0 ? "#16a34a" : "#dc2626"} />
-                    {netProfit >= 0 ? 'PROFIT BERSIH FINAL' : 'MERUGI'}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
-                    Margin bersih: {marginPct.toFixed(1)}%
-                    {marginPct > 20 ? ' — Sehat' : marginPct > 0 ? ' — Tipis' : ' — Rugi'}
-                  </div>
-                </div>
-                <div className="mono" style={{
-                  fontSize: 20, fontWeight: 900,
-                  color: netProfit >= 0 ? '#16a34a' : '#dc2626',
-                  letterSpacing: '-0.02em'
-                }}>
-                  {fmtRp(netProfit)}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-
-
-        {/* Info */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '12px 14px' }}>
-          <div className="flex-center gap-2" style={{ display: 'flex', alignItems: 'flex-start' }}>
-            <span style={{ marginTop: 2, display: 'inline-block' }}><Icon name="info" size={13} color="var(--primary)" /></span>
-            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
-              <strong style={{ color: 'var(--color-text)' }}>Rumus Harga Jual:</strong>
-              <code style={{ background: 'var(--bg-app)', padding: '1px 5px', borderRadius: 4, fontSize: 11, marginLeft: 4, color: 'var(--color-text)' }}>
-                HPP ÷ (1 − Margin%)
-              </code><br />
-              Standar F&B: margin bersih <strong>40–55%</strong>.
-              Harga sudah mencakup buffer tak terduga &amp; fee platform.
-            </div>
           </div>
         </div>
       </div>
