@@ -22,7 +22,7 @@ export default function FormatInput({ value, onChange, className, style, placeho
         setVal(parseInt(str, 10).toLocaleString('id-ID'));
       }
     }
-  }, [value]);
+  }, [value, val]);
 
   const handleChange = (e) => {
     let raw = e.target.value.replace(/[^0-9.,]/g, '');

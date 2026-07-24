@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Icon } from './Icon';
 import FormatInput from './FormatInput';
-import { num, fmtRp, roundPrice, getPenyusutanBulanan, mkOpexProfile, getDirectHPP, calculatePlatformMetrics } from '../utils/hpp';
+import { num, fmtRp, roundPrice, getPenyusutanBulanan, mkOpexProfile, getDirectHPP, calculatePlatformMetrics, uid } from '../utils/hpp';
 import * as XLSX from 'xlsx';
 
 export default function MenuDatabase({
@@ -30,10 +30,258 @@ export default function MenuDatabase({
   onUpdateBepSettings,
   showToast,
   allMenus = [],
-  allOpexProfiles = []
+  allOpexProfiles = [],
+  ingredients = [],
+  setIngredients,
+  assets = [],
+  setAssets
 }) {
   const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'opex' | 'bep'
   const [selectedFeasibilityOutlet, setSelectedFeasibilityOutlet] = useState(null);
+
+  // Active Outlet ingredients & assets
+  const activeOutletIngredients = useMemo(() => {
+    return (ingredients || []).filter(i => i.outletId === activeOutletId);
+  }, [ingredients, activeOutletId]);
+
+  const activeOutletAssets = useMemo(() => {
+    return (assets || []).filter(a => a.outletId === activeOutletId);
+  }, [assets, activeOutletId]);
+
+  // Ingredients CRUD
+  const handleAddIngredient = () => {
+    if (!setIngredients) return;
+    const newIng = {
+      id: uid(),
+      name: 'Bahan Baru',
+      hargaBeli: 0,
+      ukuranKemasan: 1000,
+      unit: 'gr',
+      isPackaging: false,
+      outletId: activeOutletId
+    };
+    setIngredients(prev => [...prev, newIng]);
+  };
+
+  const handleUpdateIngredient = (id, field, value) => {
+    if (!setIngredients) return;
+    setIngredients(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
+  };
+
+  const handleDeleteIngredient = async (id) => {
+    if (!window.confirm('Hapus bahan baku/kemasan ini?')) return;
+    try {
+      await fetch(`/api/ingredients?id=${id}`, { method: 'DELETE' });
+      if (setIngredients) {
+        setIngredients(prev => prev.filter(i => i.id !== id));
+      }
+      showToast('Bahan baku/kemasan berhasil dihapus', 'info');
+    } catch (err) {
+      console.error("Gagal menghapus bahan:", err);
+      showToast('Gagal menghapus bahan: ' + err.message, 'error');
+    }
+  };
+
+  // Ingredients Excel Template & Import
+  const downloadIngredientsTemplate = () => {
+    const headers = [
+      ['Nama Item', 'Tipe (Bahan / Kemasan)', 'Harga Beli (Rp)', 'Ukuran Kemasan', 'Satuan (gr, ml, pcs, dll)'],
+      ['Kopi Arabika (Contoh)', 'Bahan', 250000, 1000, 'gr'],
+      ['Susu UHT Full Cream (Contoh)', 'Bahan', 18000, 1000, 'ml'],
+      ['Gelas Cup 16oz (Contoh)', 'Kemasan', 450, 1, 'pcs'],
+      ['Sedotan Hitam (Contoh)', 'Kemasan', 80, 1, 'pcs']
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(headers);
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Bahan');
+    XLSX.writeFile(wb, 'Template_Database_Bahan.xlsx');
+  };
+
+  const handleImportIngredientsExcel = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const wsName = workbook.SheetNames[0];
+        const ws = workbook.Sheets[wsName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        if (rows.length <= 1) {
+          showToast('File Excel kosong atau format tidak valid!', 'alert');
+          return;
+        }
+
+        const imported = [];
+        for (let idx = 1; idx < rows.length; idx++) {
+          const row = rows[idx];
+          if (!row || row.length === 0 || !row[0]) continue;
+          
+          const name = String(row[0]).trim();
+          const type = String(row[1] || 'Bahan').trim().toLowerCase();
+          const hargaBeli = parseFloat(row[2]) || 0;
+          const ukuranKemasan = parseFloat(row[3]) || 1;
+          const unit = String(row[4] || 'gr').trim();
+          
+          imported.push({
+            id: uid(),
+            name,
+            hargaBeli,
+            ukuranKemasan,
+            unit,
+            isPackaging: type === 'kemasan' || type === 'packaging',
+            outletId: activeOutletId
+          });
+        }
+
+        if (imported.length === 0) {
+          showToast('Tidak ada data bahan valid yang diimpor.', 'alert');
+          return;
+        }
+
+        if (setIngredients) {
+          setIngredients(prev => {
+            const merged = [...prev];
+            imported.forEach(imp => {
+              const dupIdx = merged.findIndex(x => x.name.toLowerCase() === imp.name.toLowerCase() && x.outletId === activeOutletId);
+              if (dupIdx !== -1) {
+                merged[dupIdx] = { ...merged[dupIdx], hargaBeli: imp.hargaBeli, ukuranKemasan: imp.ukuranKemasan, unit: imp.unit, isPackaging: imp.isPackaging };
+              } else {
+                merged.push(imp);
+              }
+            });
+            return merged;
+          });
+          showToast(`Berhasil mengimpor ${imported.length} data bahan!`, 'success');
+        }
+      } catch (err) {
+        console.error("Gagal mengimpor Excel:", err);
+        showToast('Gagal memproses file Excel: ' + err.message, 'error');
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
+
+  // Assets CRUD
+  const handleAddAsset = () => {
+    if (!setAssets) return;
+    const newAsset = {
+      id: uid(),
+      name: 'Aset Baru',
+      harga: 0,
+      tahun: 5,
+      enabled: true,
+      category: 'Semua',
+      isLargeExpense: false,
+      outletId: activeOutletId
+    };
+    setAssets(prev => [...prev, newAsset]);
+  };
+
+  const handleUpdateAsset = (id, field, value) => {
+    if (!setAssets) return;
+    setAssets(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
+  };
+
+  const handleDeleteAsset = async (id) => {
+    if (!window.confirm('Hapus aset ini dari database?')) return;
+    try {
+      await fetch(`/api/assets?id=${id}`, { method: 'DELETE' });
+      if (setAssets) {
+        setAssets(prev => prev.filter(a => a.id !== id));
+      }
+      showToast('Aset berhasil dihapus', 'info');
+    } catch (err) {
+      console.error("Gagal menghapus aset:", err);
+      showToast('Gagal menghapus aset: ' + err.message, 'error');
+    }
+  };
+
+  // Assets Excel Template & Import
+  const downloadAssetsTemplate = () => {
+    const headers = [
+      ['Nama Aset / Belanja', 'Harga Beli (Rp)', 'Umur Ekonomis (Tahun)', 'Jenis Belanja (Rutin / Besar)'],
+      ['Mesin Espresso (Contoh)', 15000000, 5, 'Rutin'],
+      ['Kulkas Showcases (Contoh)', 3500000, 4, 'Rutin'],
+      ['Tablet Kasir Android (Contoh)', 4000000, 3, 'Besar'],
+      ['Biaya Renovasi Outlet (Contoh)', 10000000, 2, 'Besar']
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(headers);
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Aset');
+    XLSX.writeFile(wb, 'Template_Database_Aset.xlsx');
+  };
+
+  const handleImportAssetsExcel = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const wsName = workbook.SheetNames[0];
+        const ws = workbook.Sheets[wsName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        if (rows.length <= 1) {
+          showToast('File Excel kosong atau format tidak valid!', 'alert');
+          return;
+        }
+
+        const imported = [];
+        for (let idx = 1; idx < rows.length; idx++) {
+          const row = rows[idx];
+          if (!row || row.length === 0 || !row[0]) continue;
+          
+          const name = String(row[0]).trim();
+          const harga = parseFloat(row[1]) || 0;
+          const tahun = parseFloat(row[2]) || 5;
+          const type = String(row[3] || 'Rutin').trim().toLowerCase();
+          
+          imported.push({
+            id: uid(),
+            name,
+            harga,
+            tahun,
+            enabled: true,
+            category: 'Semua',
+            isLargeExpense: type === 'besar' || type === 'non-rutin' || type === 'investasi',
+            outletId: activeOutletId
+          });
+        }
+
+        if (imported.length === 0) {
+          showToast('Tidak ada data aset valid yang diimpor.', 'alert');
+          return;
+        }
+
+        if (setAssets) {
+          setAssets(prev => {
+            const merged = [...prev];
+            imported.forEach(imp => {
+              const dupIdx = merged.findIndex(x => x.name.toLowerCase() === imp.name.toLowerCase() && x.outletId === activeOutletId);
+              if (dupIdx !== -1) {
+                merged[dupIdx] = { ...merged[dupIdx], harga: imp.harga, tahun: imp.tahun, isLargeExpense: imp.isLargeExpense };
+              } else {
+                merged.push(imp);
+              }
+            });
+            return merged;
+          });
+          showToast(`Berhasil mengimpor ${imported.length} data aset!`, 'success');
+        }
+      } catch (err) {
+        console.error("Gagal mengimpor Excel:", err);
+        showToast('Gagal memproses file Excel: ' + err.message, 'error');
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
   
   // Outlet form states
   const [showAddOutlet, setShowAddOutlet] = useState(false);
@@ -76,8 +324,9 @@ export default function MenuDatabase({
     
     const opexVal = sManualOpex !== null ? num(sManualOpex) : calculatedOpex;
     
-    const selMenus = profile ? oMenus.filter(m => profile.selectedMenuIds?.includes(m.id)) : [];
-    const actMenus = profile ? selMenus.filter(m => !profile.disabledMenuIds?.includes(m.id)) : [];
+    const hasSelected = profile && Array.isArray(profile.selectedMenuIds) && profile.selectedMenuIds.length > 0;
+    const selMenus = hasSelected ? oMenus.filter(m => profile.selectedMenuIds.includes(m.id)) : oMenus;
+    const actMenus = profile ? selMenus.filter(m => !profile.disabledMenuIds?.includes(m.id)) : selMenus;
     
     const getPlatformCalcLocal = (menu) => {
       let hj = 0;
@@ -85,16 +334,19 @@ export default function MenuDatabase({
         hj = profile.menuPrices[menu.id];
       } else {
         const hpp = getDirectHPP(menu);
-        hj = roundPrice(menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100));
+        hj = roundPrice(num(menu.margin) >= 100 ? 0 : hpp / (1 - num(menu.margin) / 100));
       }
       return calculatePlatformMetrics(menu, hj);
     };
 
     let totalVolume = 0;
     let weightedNetProfitSum = 0;
-    let weightedPriceSum = 0;
+    let weightedNormalPriceSum = 0;
+    let weightedEffectivePriceSum = 0;
+    let weightedDiskonSum = 0;
     let weightedHppSum = 0;
     let weightedPlatformCutSum = 0;
+    let weightedNetRevenueSum = 0;
 
     actMenus.forEach(m => {
       let vol = 0;
@@ -107,18 +359,24 @@ export default function MenuDatabase({
       const pc = getPlatformCalcLocal(m);
       totalVolume += vol;
       weightedNetProfitSum += vol * pc.netProfit;
-      weightedPriceSum += vol * pc.hargaJual;
+      weightedNormalPriceSum += vol * pc.hargaJual;
+      weightedEffectivePriceSum += vol * pc.hargaEfektif;
+      weightedDiskonSum += vol * pc.diskonNominal;
       weightedHppSum += vol * pc.hpp;
       weightedPlatformCutSum += vol * pc.totalKomisi;
+      weightedNetRevenueSum += vol * pc.revenueBersih;
     });
 
-    const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : 0;
-    const avgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
-    const avgHpp = totalVolume > 0 ? weightedHppSum / totalVolume : 0;
-    const avgPlatformCut = totalVolume > 0 ? weightedPlatformCutSum / totalVolume : 0;
+    const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).netProfit, 0) / actMenus.length : 0);
+    const avgNormalPrice = totalVolume > 0 ? weightedNormalPriceSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).hargaJual, 0) / actMenus.length : 0);
+    const avgEffectivePrice = totalVolume > 0 ? weightedEffectivePriceSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).hargaEfektif, 0) / actMenus.length : 0);
+    const avgDiskon = totalVolume > 0 ? weightedDiskonSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).diskonNominal, 0) / actMenus.length : 0);
+    const avgHpp = totalVolume > 0 ? weightedHppSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).hpp, 0) / actMenus.length : 0);
+    const avgPlatformCut = totalVolume > 0 ? weightedPlatformCutSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).totalKomisi, 0) / actMenus.length : 0);
+    const avgNetRevenue = totalVolume > 0 ? weightedNetRevenueSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).revenueBersih, 0) / actMenus.length : 0);
 
     const netProfitPerCup = sManualMargin !== null ? num(sManualMargin) : avgNetProfit;
-    const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgPrice;
+    const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgEffectivePrice;
     const volumeVal = sActualVolume !== null ? num(sActualVolume) : (totalVolume || 600);
     
     const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0) : 0;
@@ -130,6 +388,9 @@ export default function MenuDatabase({
 
     const monthlyNetProfit = (volumeVal * netProfitPerCup) - opexVal;
     const paybackPeriodMonths = (monthlyNetProfit > 0 && investmentVal > 0) ? (investmentVal / monthlyNetProfit) : 0;
+    
+    const opexPerCup = volumeVal > 0 ? opexVal / volumeVal : 0;
+    const netProfitAfterOpex = netProfitPerCup - opexPerCup;
 
     let paybackText = "N/A";
     if (monthlyNetProfit <= 0) {
@@ -188,9 +449,9 @@ export default function MenuDatabase({
         name: m.name,
         emoji: m.emoji || '☕',
         hpp: pc.hpp,
-        price: pc.hargaJual,
+        price: pc.hargaEfektif,
         margin: pc.netProfit,
-        marginPct: pc.hargaJual > 0 ? (pc.netProfit / pc.hargaJual) * 100 : 0,
+        marginPct: pc.hargaEfektif > 0 ? (pc.netProfit / pc.hargaEfektif) * 100 : 0,
         volume: vol
       };
     });
@@ -222,13 +483,20 @@ export default function MenuDatabase({
       totalExpenses: expenses,
       totalAssetDepreciation: assetDepr,
       totalAssetsValue: calculatedInvestment,
-      activeMenusInfo
+      activeMenusInfo,
+      avgNormalPrice,
+      avgDiskon,
+      avgEffectivePrice,
+      avgNetRevenue,
+      avgNetProfit,
+      opexPerCup,
+      netProfitAfterOpex
     };
   }, [selectedFeasibilityOutlet, allMenus, allOpexProfiles, bepSettings]);
 
   const handleCopyReport = () => {
     if (!feasibilityData || !selectedFeasibilityOutlet) return;
-    const { avgHpp, avgPriceVal, netProfitPerCup, avgPlatformCut, recStatusText, recStatusDesc, monthlyNetProfit, investmentVal, paybackText, targetPaybackMonths } = feasibilityData;
+    const { avgHpp, avgPriceVal, netProfitPerCup, avgPlatformCut, recStatusText, recStatusDesc, monthlyNetProfit, investmentVal, paybackText, targetPaybackMonths, avgNormalPrice, avgDiskon, opexPerCup, netProfitAfterOpex } = feasibilityData;
     
     const rec40 = avgHpp / (1 - 0.4);
     const rec50 = avgHpp / (1 - 0.5);
@@ -245,10 +513,14 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
    - Waktu Balik Modal Riil: ${paybackText}
 
 2. UNIT ECONOMICS (RATA-RATA PER CUP):
-   - Rata-rata Harga Jual: ${fmtRp(avgPriceVal)}
+   - Rata-rata Harga Jual (Normal): ${fmtRp(avgNormalPrice)}
+   - Rata-rata Diskon Merchant: ${fmtRp(avgDiskon)}
+   - Rata-rata Harga Jual Efektif: ${fmtRp(avgPriceVal)}
    - Rata-rata Direct HPP (Bahan + Kemasan): ${fmtRp(avgHpp)}
    - Komisi Platform Online: ${fmtRp(avgPlatformCut)} (${avgPriceVal > 0 ? ((avgPlatformCut / avgPriceVal) * 100).toFixed(1) : 0}%)
-   - Margin Bersih per Cup: ${fmtRp(netProfitPerCup)} (${avgPriceVal > 0 ? ((netProfitPerCup / avgPriceVal) * 100).toFixed(1) : 0}%)
+   - Margin Kontribusi per Cup (Sebelum OPEX): ${fmtRp(netProfitPerCup)} (${avgPriceVal > 0 ? ((netProfitPerCup / avgPriceVal) * 100).toFixed(1) : 0}%)
+   - Alokasi Beban OPEX per Cup: ${fmtRp(opexPerCup)}
+   - Laba Bersih per Cup (Setelah OPEX): ${fmtRp(netProfitAfterOpex)} (${avgPriceVal > 0 ? ((netProfitAfterOpex / avgPriceVal) * 100).toFixed(1) : 0}%)
 
 3. REKOMENDASI HARGA JUAL SEHAT (BERDASARKAN TARGET MARGIN):
    - Target Margin 40% (Batas Bawah): ${fmtRp(Math.round(rec40))}
@@ -290,8 +562,9 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
     
     const opexVal = sManualOpex !== null ? num(sManualOpex) : calculatedOpex;
     
-    const selMenus = profile ? oMenus.filter(m => profile.selectedMenuIds?.includes(m.id)) : [];
-    const actMenus = profile ? selMenus.filter(m => !profile.disabledMenuIds?.includes(m.id)) : [];
+    const hasSelected = profile && Array.isArray(profile.selectedMenuIds) && profile.selectedMenuIds.length > 0;
+    const selMenus = hasSelected ? oMenus.filter(m => profile.selectedMenuIds.includes(m.id)) : oMenus;
+    const actMenus = profile ? selMenus.filter(m => !profile.disabledMenuIds?.includes(m.id)) : selMenus;
     
     const getPlatformCalcLocal = (menu) => {
       let hj = 0;
@@ -299,16 +572,19 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
         hj = profile.menuPrices[menu.id];
       } else {
         const hpp = getDirectHPP(menu);
-        hj = roundPrice(menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100));
+        hj = roundPrice(num(menu.margin) >= 100 ? 0 : hpp / (1 - num(menu.margin) / 100));
       }
       return calculatePlatformMetrics(menu, hj);
     };
 
     let totalVolume = 0;
     let weightedNetProfitSum = 0;
-    let weightedPriceSum = 0;
+    let weightedNormalPriceSum = 0;
+    let weightedEffectivePriceSum = 0;
+    let weightedDiskonSum = 0;
     let weightedHppSum = 0;
     let weightedPlatformCutSum = 0;
+    let weightedNetRevenueSum = 0;
 
     actMenus.forEach(m => {
       let vol = 0;
@@ -321,18 +597,24 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
       const pc = getPlatformCalcLocal(m);
       totalVolume += vol;
       weightedNetProfitSum += vol * pc.netProfit;
-      weightedPriceSum += vol * pc.hargaJual;
+      weightedNormalPriceSum += vol * pc.hargaJual;
+      weightedEffectivePriceSum += vol * pc.hargaEfektif;
+      weightedDiskonSum += vol * pc.diskonNominal;
       weightedHppSum += vol * pc.hpp;
       weightedPlatformCutSum += vol * pc.totalKomisi;
+      weightedNetRevenueSum += vol * pc.revenueBersih;
     });
 
-    const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : 0;
-    const avgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
-    const avgHpp = totalVolume > 0 ? weightedHppSum / totalVolume : 0;
-    const avgPlatformCut = totalVolume > 0 ? weightedPlatformCutSum / totalVolume : 0;
+    const avgNetProfit = totalVolume > 0 ? weightedNetProfitSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).netProfit, 0) / actMenus.length : 0);
+    const avgNormalPrice = totalVolume > 0 ? weightedNormalPriceSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).hargaJual, 0) / actMenus.length : 0);
+    const avgEffectivePrice = totalVolume > 0 ? weightedEffectivePriceSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).hargaEfektif, 0) / actMenus.length : 0);
+    const avgDiskon = totalVolume > 0 ? weightedDiskonSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).diskonNominal, 0) / actMenus.length : 0);
+    const avgHpp = totalVolume > 0 ? weightedHppSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).hpp, 0) / actMenus.length : 0);
+    const avgPlatformCut = totalVolume > 0 ? weightedPlatformCutSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).totalKomisi, 0) / actMenus.length : 0);
+    const avgNetRevenue = totalVolume > 0 ? weightedNetRevenueSum / totalVolume : (actMenus.length > 0 ? actMenus.reduce((sum, m) => sum + getPlatformCalcLocal(m).revenueBersih, 0) / actMenus.length : 0);
 
     const netProfitPerCup = sManualMargin !== null ? num(sManualMargin) : avgNetProfit;
-    const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgPrice;
+    const avgPriceVal = sManualPrice !== null ? num(sManualPrice) : avgEffectivePrice;
     const volumeVal = sActualVolume !== null ? num(sActualVolume) : (totalVolume || 600);
     
     const calculatedInvestment = profile ? (profile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0) : 0;
@@ -344,6 +626,9 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
 
     const monthlyNetProfit = (volumeVal * netProfitPerCup) - opexVal;
     const paybackPeriodMonths = (monthlyNetProfit > 0 && investmentVal > 0) ? (investmentVal / monthlyNetProfit) : 0;
+    
+    const opexPerCup = volumeVal > 0 ? opexVal / volumeVal : 0;
+    const netProfitAfterOpex = netProfitPerCup - opexPerCup;
 
     let paybackText = "N/A";
     if (monthlyNetProfit <= 0) {
@@ -402,9 +687,9 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
         name: m.name,
         emoji: m.emoji || '☕',
         hpp: pc.hpp,
-        price: pc.hargaJual,
+        price: pc.hargaEfektif,
         margin: pc.netProfit,
-        marginPct: pc.hargaJual > 0 ? (pc.netProfit / pc.hargaJual) * 100 : 0,
+        marginPct: pc.hargaEfektif > 0 ? (pc.netProfit / pc.hargaEfektif) * 100 : 0,
         volume: vol
       };
     });
@@ -421,8 +706,15 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
       monthlyNetProfit,
       paybackPeriodMonths,
       paybackText,
-      avgHpp,
+      avgNormalPrice,
+      avgDiskon,
+      avgEffectivePrice,
       avgPlatformCut,
+      avgNetRevenue,
+      avgNetProfit,
+      avgHpp,
+      opexPerCup,
+      netProfitAfterOpex,
       requiredCupDay,
       requiredRevMonth,
       requiredRevDay,
@@ -439,7 +731,7 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
       activeMenusInfo,
       calculatedOpex,
       calculatedMarginPerCup: avgNetProfit,
-      calculatedPricePerCup: avgPrice
+      calculatedPricePerCup: avgEffectivePrice
     };
   }, [activeOutlet, allMenus, allOpexProfiles, bepSettings]);
 
@@ -473,7 +765,7 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
     }, 0);
     const km = menu.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
     const hpp = bb + km;
-    const hargaJual = menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100);
+    const hargaJual = num(menu.margin) >= 100 ? 0 : hpp / (1 - num(menu.margin) / 100);
     return { hpp, hargaJual: roundPrice(hargaJual) };
   };
 
@@ -846,47 +1138,101 @@ ${finalPortionLines.trim()}
         </div>
       </div>
 
-      {/* ═══ THREE-TAB SECTION BAR ════════════════════════════ */}
-      <div style={{ display: 'flex', gap: 2, background: '#f4f4f5', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', marginBottom: 8 }}>
-        {[
-          { id: 'menu', label: 'Database Resep Menu', icon: 'coffee', count: menus.length },
-          { id: 'opex', label: 'Database Profil OPEX', icon: 'zap', count: opexProfiles.length },
-          { id: 'bep', label: 'Database & Parameter BEP', icon: 'calendar', count: null },
-          { id: 'rekomendasi', label: 'Rekomendasi & Kelayakan', icon: 'activity', count: null }
-        ].map(t => {
-          const isAct = activeTab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: 'calc(var(--radius) - 2px)',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 12,
-                background: isAct ? 'var(--bg-card)' : 'transparent',
-                color: isAct ? 'var(--color-text)' : 'var(--color-text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                boxShadow: isAct ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.15s'
-              }}
-            >
-              <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : 'var(--color-text-muted)'} />
-              <span>{t.label}</span>
-              {t.count !== null && (
-                <span className="badge badge-slate" style={{ fontSize: 9, padding: '2px 6px', borderRadius: 10, background: isAct ? '#f4f4f5' : 'rgba(0,0,0,0.05)', color: 'var(--color-text-muted)' }}>
-                  {t.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* ═══ TWO-GROUPED DATABASE TABS (VERTICAL STACK) ════════════════ */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+        {/* GROUP 2: PROFIL & PARAMETER SIMULASI (TOP) */}
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius)', padding: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 4 }}>
+            <Icon name="tool" size={12} color="#64748b" /> Profil & Parameter Simulasi (Penyusutan, BEP, Kelayakan)
+          </div>
+          <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 'calc(var(--radius) - 2px)' }}>
+            {[
+              { id: 'opex', label: 'Profil OPEX', icon: 'zap', count: opexProfiles.length },
+              { id: 'bep', label: 'Parameter BEP', icon: 'calculator', count: null },
+              { id: 'rekomendasi', label: 'Kelayakan', icon: 'trending', count: null }
+            ].map(t => {
+              const isAct = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 10px',
+                    borderRadius: 'calc(var(--radius) - 4px)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    background: isAct ? '#fff' : 'transparent',
+                    color: isAct ? 'var(--primary)' : '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 5,
+                    boxShadow: isAct ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : '#64748b'} />
+                  <span>{t.label}</span>
+                  {t.count !== null && (
+                    <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 10, background: isAct ? '#dbeafe' : '#e2e8f0', color: isAct ? 'var(--primary)' : '#64748b' }}>
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* GROUP 1: DATABASE MASTER (BOTTOM) */}
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius)', padding: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 4 }}>
+            <Icon name="database" size={12} color="#64748b" /> Database Master (Bahan Baku, Resep & Aset)
+          </div>
+          <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 'calc(var(--radius) - 2px)' }}>
+            {[
+              { id: 'ingredients', label: 'Bahan Baku & Kemasan', icon: 'tag', count: activeOutletIngredients.length },
+              { id: 'menu', label: 'Resep Menu', icon: 'coffee', count: menus.length },
+              { id: 'assets', label: 'Aset & Belanja', icon: 'database', count: activeOutletAssets.length }
+            ].map(t => {
+              const isAct = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 10px',
+                    borderRadius: 'calc(var(--radius) - 4px)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    background: isAct ? '#fff' : 'transparent',
+                    color: isAct ? 'var(--primary)' : '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 5,
+                    boxShadow: isAct ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <Icon name={t.icon} size={12} color={isAct ? 'var(--primary)' : '#64748b'} />
+                  <span>{t.label}</span>
+                  {t.count !== null && (
+                    <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 10, background: isAct ? '#fee2e2' : '#e2e8f0', color: isAct ? '#ef4444' : '#64748b' }}>
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* ═══ TAB CONTENT ══════════════════════════════════════ */}
@@ -1030,6 +1376,243 @@ ${finalPortionLines.trim()}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── TAB: INGREDIENTS & PACKAGING ──────────────── */}
+      {activeTab === 'ingredients' && (
+        <div className="section-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: 6, background: '#fee2e2', borderRadius: 8 }}><Icon name="tag" size={16} color="#ef4444" /></div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Database Bahan Baku & Kemasan</h3>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>Edit global di sini. Semua menu resep yang terhubung akan ter-update otomatis.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button className="btn btn-ghost btn-sm" onClick={downloadIngredientsTemplate} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="print" size={12} /> Unduh Template
+              </button>
+              <label className="btn btn-ghost btn-sm" style={{ fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="edit" size={12} /> Impor Excel
+                <input type="file" accept=".xlsx, .xls" onChange={handleImportIngredientsExcel} style={{ display: 'none' }} />
+              </label>
+              <button className="btn btn-primary btn-sm" onClick={handleAddIngredient} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="plus" size={12} /> Tambah Item
+              </button>
+            </div>
+          </div>
+
+          <div className="section-body" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <input
+                className="hpp-input sm"
+                placeholder="Cari bahan..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ maxWidth: 300 }}
+              />
+            </div>
+
+            {activeOutletIngredients.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-muted)', fontSize: 13 }}>
+                Belum ada data bahan baku atau kemasan terpusat. Tambah item baru atau impor template Excel.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="pkg-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)', color: 'var(--color-text-muted)', fontSize: 11 }}>
+                      <th style={{ padding: '8px 12px' }}>Nama Item</th>
+                      <th style={{ padding: '8px 12px', width: 140 }}>Tipe</th>
+                      <th style={{ padding: '8px 12px', width: 160 }}>Harga Beli (Rp)</th>
+                      <th style={{ padding: '8px 12px', width: 120 }}>Ukuran Kemasan</th>
+                      <th style={{ padding: '8px 12px', width: 100 }}>Satuan</th>
+                      <th style={{ padding: '8px 12px', width: 60, textAlign: 'center' }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeOutletIngredients
+                      .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+                      .map((ing) => (
+                        <tr key={ing.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: 13 }}>
+                          <td style={{ padding: '8px 12px' }}>
+                            <input
+                              className="hpp-input sm"
+                              value={ing.name}
+                              onChange={e => handleUpdateIngredient(ing.id, 'name', e.target.value)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <select
+                              className="hpp-input sm"
+                              value={ing.isPackaging ? 'kemasan' : 'bahan'}
+                              onChange={e => handleUpdateIngredient(ing.id, 'isPackaging', e.target.value === 'kemasan')}
+                              style={{ fontWeight: 500 }}
+                            >
+                              <option value="bahan">Bahan Baku</option>
+                              <option value="kemasan">Kemasan</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <FormatInput
+                              className="hpp-input sm"
+                              value={ing.hargaBeli}
+                              onChange={val => handleUpdateIngredient(ing.id, 'hargaBeli', val)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <input
+                              className="hpp-input sm"
+                              type="number"
+                              value={ing.ukuranKemasan}
+                              onChange={e => handleUpdateIngredient(ing.id, 'ukuranKemasan', parseFloat(e.target.value) || 1)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <input
+                              className="hpp-input sm"
+                              value={ing.unit}
+                              onChange={e => handleUpdateIngredient(ing.id, 'unit', e.target.value)}
+                              placeholder="gr, ml, pcs"
+                              style={{ fontWeight: 500 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                            <button
+                              className="btn btn-delete btn-sm"
+                              onClick={() => handleDeleteIngredient(ing.id)}
+                              style={{ padding: '4px 6px', color: '#ef4444' }}
+                            >
+                              <Icon name="trash" size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── TAB: ASSETS & LARGE EXPENSES ──────────────── */}
+      {activeTab === 'assets' && (
+        <div className="section-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: 6, background: '#dbeafe', borderRadius: 8 }}><Icon name="database" size={16} color="var(--primary)" /></div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Database Aset & Belanja</h3>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>Edit global aset dan belanja besar di sini. Tarik data ini ke tab OPEX atau tab Dana Aktual Shopee.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button className="btn btn-ghost btn-sm" onClick={downloadAssetsTemplate} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="print" size={12} /> Unduh Template
+              </button>
+              <label className="btn btn-ghost btn-sm" style={{ fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="edit" size={12} /> Impor Excel
+                <input type="file" accept=".xlsx, .xls" onChange={handleImportAssetsExcel} style={{ display: 'none' }} />
+              </label>
+              <button className="btn btn-primary btn-sm" onClick={handleAddAsset} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="plus" size={12} /> Tambah Aset
+              </button>
+            </div>
+          </div>
+
+          <div className="section-body" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <input
+                className="hpp-input sm"
+                placeholder="Cari aset..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ maxWidth: 300 }}
+              />
+            </div>
+
+            {activeOutletAssets.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-muted)', fontSize: 13 }}>
+                Belum ada data aset terpusat. Tambah item baru atau impor template Excel.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="pkg-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)', color: 'var(--color-text-muted)', fontSize: 11 }}>
+                      <th style={{ padding: '8px 12px' }}>Nama Aset / Belanja</th>
+                      <th style={{ padding: '8px 12px', width: 180 }}>Harga Beli (Rp)</th>
+                      <th style={{ padding: '8px 12px', width: 140 }}>Umur Ekonomis</th>
+                      <th style={{ padding: '8px 12px', width: 180 }}>Jenis Belanja</th>
+                      <th style={{ padding: '8px 12px', width: 60, textAlign: 'center' }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeOutletAssets
+                      .filter(a => a.name.toLowerCase().includes(search.toLowerCase()))
+                      .map((aset) => (
+                        <tr key={aset.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: 13 }}>
+                          <td style={{ padding: '8px 12px' }}>
+                            <input
+                              className="hpp-input sm"
+                              value={aset.name}
+                              onChange={e => handleUpdateAsset(aset.id, 'name', e.target.value)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <FormatInput
+                              className="hpp-input sm"
+                              value={aset.harga}
+                              onChange={val => handleUpdateAsset(aset.id, 'harga', val)}
+                              style={{ fontWeight: 600 }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <input
+                                className="hpp-input sm"
+                                type="number"
+                                value={aset.tahun}
+                                onChange={e => handleUpdateAsset(aset.id, 'tahun', parseFloat(e.target.value) || 1)}
+                                style={{ fontWeight: 600, width: 80 }}
+                              />
+                              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Tahun</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <select
+                              className="hpp-input sm"
+                              value={aset.isLargeExpense ? 'besar' : 'rutin'}
+                              onChange={e => handleUpdateAsset(aset.id, 'isLargeExpense', e.target.value === 'besar')}
+                              style={{ fontWeight: 500 }}
+                            >
+                              <option value="rutin">Rutin (Penyusutan OPEX)</option>
+                              <option value="besar">Besar / Non-Rutin (Kalkulator Shopee)</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                            <button
+                              className="btn btn-delete btn-sm"
+                              onClick={() => handleDeleteAsset(aset.id)}
+                              style={{ padding: '4px 6px', color: '#ef4444' }}
+                            >
+                              <Icon name="trash" size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1441,17 +2024,45 @@ ${finalPortionLines.trim()}
                   <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>1. UNIT ECONOMICS (RATA-RATA GABUNGAN)</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg-app)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)' }}>
                     {[
-                      { label: 'Harga Jual Rata-rata', val: fmtRp(activeOutletFeasibilityData.avgPriceVal), color: 'var(--color-text)' },
-                      { label: 'Direct HPP Rata-rata', val: fmtRp(activeOutletFeasibilityData.avgHpp), color: 'var(--color-text-muted)' },
+                      { label: 'Harga Jual Rata-rata (Normal)', val: fmtRp(activeOutletFeasibilityData.avgNormalPrice), color: 'var(--color-text)' },
+                      ...(activeOutletFeasibilityData.avgDiskon > 0 ? [{
+                        label: '↳ Diskon Merchant Rata-rata',
+                        val: `− ${fmtRp(activeOutletFeasibilityData.avgDiskon)}`,
+                        color: '#ef4444'
+                      }] : []),
+                      ...(activeOutletFeasibilityData.avgDiskon > 0 ? [{
+                        label: '= Harga Jual Efektif Rata-rata',
+                        val: fmtRp(activeOutletFeasibilityData.avgEffectivePrice),
+                        color: '#3b82f6',
+                        bold: true
+                      }] : []),
                       ...(activeOutletFeasibilityData.avgPlatformCut > 0 ? [{
-                        label: 'Platform Cut Rata-rata',
-                        val: `${fmtRp(activeOutletFeasibilityData.avgPlatformCut)} (${((activeOutletFeasibilityData.avgPlatformCut / Math.max(1, activeOutletFeasibilityData.avgPriceVal)) * 100).toFixed(1)}%)`,
+                        label: '↳ Komisi Platform Rata-rata',
+                        val: `− ${fmtRp(activeOutletFeasibilityData.avgPlatformCut)}`,
                         color: '#ef4444'
                       }] : []),
                       {
-                        label: 'Margin Bersih per Cup',
+                        label: '= Uang Masuk Rata-rata (Nett)',
+                        val: fmtRp(activeOutletFeasibilityData.avgNetRevenue),
+                        color: '#10b981',
+                        bold: true
+                      },
+                      { label: 'Direct HPP Rata-rata (Bahan+Kms)', val: fmtRp(activeOutletFeasibilityData.avgHpp), color: '#ea580c' },
+                      {
+                        label: 'Margin Kontribusi per Cup (Sebelum OPEX)',
                         val: `${fmtRp(activeOutletFeasibilityData.netProfitPerCup)} (${(activeOutletFeasibilityData.avgPriceVal > 0 ? (activeOutletFeasibilityData.netProfitPerCup / activeOutletFeasibilityData.avgPriceVal) * 100 : 0).toFixed(1)}%)`,
                         color: activeOutletFeasibilityData.netProfitPerCup > 0 ? '#10b981' : '#ef4444',
+                        bold: true
+                      },
+                      {
+                        label: '↳ Alokasi Beban OPEX per Cup',
+                        val: `− ${fmtRp(activeOutletFeasibilityData.opexPerCup)}`,
+                        color: '#ea580c'
+                      },
+                      {
+                        label: '= Laba Bersih per Cup (Setelah OPEX)',
+                        val: `${fmtRp(activeOutletFeasibilityData.netProfitAfterOpex)} (${(activeOutletFeasibilityData.avgPriceVal > 0 ? (activeOutletFeasibilityData.netProfitAfterOpex / activeOutletFeasibilityData.avgPriceVal) * 100 : 0).toFixed(1)}%)`,
+                        color: activeOutletFeasibilityData.netProfitAfterOpex > 0 ? '#10b981' : '#ef4444',
                         bold: true
                       },
                     ].map(({ label, val, color, bold }) => (
@@ -1581,7 +2192,7 @@ ${finalPortionLines.trim()}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
                   <button 
                     onClick={() => {
-                      const { avgHpp, avgPriceVal, netProfitPerCup, avgPlatformCut, recStatusText, recStatusDesc, monthlyNetProfit, investmentVal, paybackText } = activeOutletFeasibilityData;
+                      const { avgHpp, avgPriceVal, netProfitPerCup, avgPlatformCut, recStatusText, recStatusDesc, monthlyNetProfit, investmentVal, paybackText, avgNormalPrice, avgDiskon, opexPerCup, netProfitAfterOpex } = activeOutletFeasibilityData;
                       const rec40 = avgHpp / (1 - 0.4);
                       const rec50 = avgHpp / (1 - 0.5);
                       const rec60 = avgHpp / (1 - 0.6);
@@ -1597,10 +2208,14 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
    - Waktu Balik Modal Riil: ${paybackText}
 
 2. UNIT ECONOMICS (RATA-RATA PER CUP):
-   - Rata-rata Harga Jual: ${fmtRp(avgPriceVal)}
+   - Rata-rata Harga Jual (Normal): ${fmtRp(avgNormalPrice)}
+   - Rata-rata Diskon Merchant: ${fmtRp(avgDiskon)}
+   - Rata-rata Harga Jual Efektif: ${fmtRp(avgPriceVal)}
    - Rata-rata Direct HPP (Bahan + Kemasan): ${fmtRp(avgHpp)}
    - Komisi Platform Online: ${fmtRp(avgPlatformCut)} (${avgPriceVal > 0 ? ((avgPlatformCut / avgPriceVal) * 100).toFixed(1) : 0}%)
-   - Margin Bersih per Cup: ${fmtRp(netProfitPerCup)} (${avgPriceVal > 0 ? ((netProfitPerCup / avgPriceVal) * 100).toFixed(1) : 0}%)
+   - Margin Kontribusi per Cup (Sebelum OPEX): ${fmtRp(netProfitPerCup)} (${avgPriceVal > 0 ? ((netProfitPerCup / avgPriceVal) * 100).toFixed(1) : 0}%)
+   - Alokasi Beban OPEX per Cup: ${fmtRp(opexPerCup)}
+   - Laba Bersih per Cup (Setelah OPEX): ${fmtRp(netProfitAfterOpex)} (${avgPriceVal > 0 ? ((netProfitAfterOpex / avgPriceVal) * 100).toFixed(1) : 0}%)
 
 3. REKOMENDASI HARGA JUAL SEHAT (BERDASARKAN TARGET MARGIN):
    - Target Margin 40% (Batas Bawah): ${fmtRp(Math.round(rec40))}
@@ -1705,17 +2320,45 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
                     <div className="label-xs" style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 6 }}>1. UNIT ECONOMICS (RATA-RATA GABUNGAN)</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 7, background: 'var(--bg-app)', padding: 12, borderRadius: 10, border: '1px solid var(--border-color)' }}>
                       {[
-                        { label: 'Harga Jual Rata-rata', val: fmtRp(feasibilityData.avgPriceVal), color: 'var(--color-text)' },
-                        { label: 'Direct HPP Rata-rata', val: fmtRp(feasibilityData.avgHpp), color: 'var(--color-text-muted)' },
+                        { label: 'Harga Jual Rata-rata (Normal)', val: fmtRp(feasibilityData.avgNormalPrice), color: 'var(--color-text)' },
+                        ...(feasibilityData.avgDiskon > 0 ? [{
+                          label: '↳ Diskon Merchant Rata-rata',
+                          val: `− ${fmtRp(feasibilityData.avgDiskon)}`,
+                          color: '#ef4444'
+                        }] : []),
+                        ...(feasibilityData.avgDiskon > 0 ? [{
+                          label: '= Harga Jual Efektif Rata-rata',
+                          val: fmtRp(feasibilityData.avgEffectivePrice),
+                          color: '#3b82f6',
+                          bold: true
+                        }] : []),
                         ...(feasibilityData.avgPlatformCut > 0 ? [{
-                          label: 'Platform Cut Rata-rata',
-                          val: `${fmtRp(feasibilityData.avgPlatformCut)} (${((feasibilityData.avgPlatformCut / Math.max(1, feasibilityData.avgPriceVal)) * 100).toFixed(1)}%)`,
+                          label: '↳ Komisi Platform Rata-rata',
+                          val: `− ${fmtRp(feasibilityData.avgPlatformCut)}`,
                           color: '#ef4444'
                         }] : []),
                         {
-                          label: 'Margin Bersih per Cup',
+                          label: '= Uang Masuk Rata-rata (Nett)',
+                          val: fmtRp(feasibilityData.avgNetRevenue),
+                          color: '#10b981',
+                          bold: true
+                        },
+                        { label: 'Direct HPP Rata-rata (Bahan+Kms)', val: fmtRp(feasibilityData.avgHpp), color: '#ea580c' },
+                        {
+                          label: 'Margin Kontribusi per Cup (Sebelum OPEX)',
                           val: `${fmtRp(feasibilityData.netProfitPerCup)} (${(feasibilityData.avgPriceVal > 0 ? (feasibilityData.netProfitPerCup / feasibilityData.avgPriceVal) * 100 : 0).toFixed(1)}%)`,
                           color: feasibilityData.netProfitPerCup > 0 ? '#10b981' : '#ef4444',
+                          bold: true
+                        },
+                        {
+                          label: '↳ Alokasi Beban OPEX per Cup',
+                          val: `− ${fmtRp(feasibilityData.opexPerCup)}`,
+                          color: '#ea580c'
+                        },
+                        {
+                          label: '= Laba Bersih per Cup (Setelah OPEX)',
+                          val: `${fmtRp(feasibilityData.netProfitAfterOpex)} (${(feasibilityData.avgPriceVal > 0 ? (feasibilityData.netProfitAfterOpex / feasibilityData.avgPriceVal) * 100 : 0).toFixed(1)}%)`,
+                          color: feasibilityData.netProfitAfterOpex > 0 ? '#10b981' : '#ef4444',
                           bold: true
                         },
                       ].map(({ label, val, color, bold }) => (

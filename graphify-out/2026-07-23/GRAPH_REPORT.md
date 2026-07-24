@@ -1,11 +1,11 @@
-# Graph Report - HPP-Calculator  (2026-07-24)
+# Graph Report - HPP-Calculator  (2026-07-23)
 
 ## Corpus Check
-- 54 files · ~62,861 words
+- 53 files · ~61,043 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 285 nodes · 439 edges · 36 communities (21 shown, 15 thin omitted)
+- 283 nodes · 419 edges · 35 communities (20 shown, 15 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
@@ -29,7 +29,6 @@
 - graphify-ponytail.md
 - rules/graphify.md
 - workflows/graphify.md
-- page.js
 - App Layout Rootlayout
 - App Page Home
 - Generated Client Index D Bepsettingssele
@@ -49,16 +48,16 @@
 - Generated Client Index D Getbepsettingsa
 
 ## God Nodes (most connected - your core abstractions)
-1. `num()` - 26 edges
-2. `fmtRp()` - 22 edges
-3. `uid()` - 19 edges
+1. `num()` - 24 edges
+2. `fmtRp()` - 20 edges
+3. `uid()` - 17 edges
 4. `Home()` - 13 edges
 5. `roundPrice()` - 12 edges
-6. `getPenyusutanBulanan()` - 12 edges
-7. `Icon()` - 10 edges
-8. `OpexAccumulator()` - 10 edges
-9. `FormatInput()` - 9 edges
-10. `MenuDatabase()` - 9 edges
+6. `OpexAccumulator()` - 10 edges
+7. `getPenyusutanBulanan()` - 10 edges
+8. `Icon()` - 9 edges
+9. `MenuDatabase()` - 9 edges
+10. `mkMenu()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Next.js Logo SVG` --conceptually_related_to--> `Next.js Project Setup`  [INFERRED]
@@ -67,10 +66,10 @@
   public/vercel.svg → README.md
 - `Graphify Integration Config` --references--> `Graphify Skill Definition`  [INFERRED]
   CLAUDE.md → .claude/skills/graphify/SKILL.md
-- `Home()` --calls--> `fmtRp()`  [EXTRACTED]
-  src/app/page.js → src/utils/hpp.js
-- `Home()` --calls--> `num()`  [EXTRACTED]
-  src/app/page.js → src/utils/hpp.js
+- `CashFlowRow()` --calls--> `fmtRp()`  [EXTRACTED]
+  src/components/PlatformCalculator.js → src/utils/hpp.js
+- `Graphify Skill Definition` --references--> `Graph Export Reference`  [EXTRACTED]
+  .claude/skills/graphify/SKILL.md → .claude/skills/graphify/references/exports.md
 
 ## Import Cycles
 - None detected.
@@ -78,7 +77,7 @@
 ## Hyperedges (group relationships)
 - **Graphify Skill Ecosystem** — claude_skills_graphify_skill, claude_skills_graphify_references_extraction_spec, claude_skills_graphify_references_query, claude_skills_graphify_references_update, claude_skills_graphify_references_exports [EXTRACTED 1.00]
 
-## Communities (36 total, 15 thin omitted)
+## Communities (35 total, 15 thin omitted)
 
 ### Community 0 - "Apple Design System"
 Cohesion: 0.50
@@ -108,13 +107,9 @@ Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent 
 Cohesion: 0.17
 Nodes (11): AntiGrafity System Prompt, CODE QUALITY, GRAPHIFY FIRST, IMPLEMENTATION RULES, NEVER, OUTPUT FORMAT, PATCH STRATEGY, PONYTAIL PRINCIPLES (+3 more)
 
-### Community 16 - "page.js"
-Cohesion: 0.25
-Nodes (19): Home(), ChannelPresetsModal(), MenuMetaModal(), ToastContainer(), DEFAULT_CHANNEL_PRESETS, loadChannelPresets(), loadDB(), loadOpexProfiles() (+11 more)
-
 ### Community 24 - "App Page Home"
-Cohesion: 0.25
-Nodes (21): BepCalculator(), FormatInput(), HppCalculator(), IngredientRow(), PackagingCard(), PackCalcModal(), SectionHeader(), EMOJI_MAP (+13 more)
+Cohesion: 0.17
+Nodes (39): Home(), BepCalculator(), ChannelPresetsModal(), FormatInput(), HppCalculator(), IngredientRow(), MenuMetaModal(), PackagingCard() (+31 more)
 
 ### Community 86 - "Generated Client Index D Bepsettingssele"
 Cohesion: 0.22

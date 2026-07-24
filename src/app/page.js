@@ -7,8 +7,9 @@ import HppCalculator from '../components/HppCalculator';
 import MenuDatabase from '../components/MenuDatabase';
 import OpexAccumulator from '../components/OpexAccumulator';
 import BepCalculator from '../components/BepCalculator';
+import ShopeeReverseEstimator from '../components/ShopeeReverseEstimator';
 import ChannelPresetsModal from '../components/ChannelPresetsModal';
-import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, loadOpexProfiles, saveOpexProfiles, mkOpexProfile, loadChannelPresets, saveChannelPresets } from '../utils/hpp';
+import { num, fmtRp, roundPrice, uid, mkMenu, loadDB, saveDB, getPenyusutanBulanan, loadOpexProfiles, saveOpexProfiles, mkOpexProfile, loadChannelPresets, saveChannelPresets, loadIngredients, saveIngredients, loadAssets, saveAssets } from '../utils/hpp';
 import * as XLSX from 'xlsx';
 
 export default function Home() {
@@ -25,6 +26,8 @@ export default function Home() {
   const [outlets, setOutlets] = useState([]);
   const [activeOutletId, setActiveOutletId] = useState(null);
   const [bepSettings, setBepSettings] = useState([]);
+  const [ingredients, setIngredients] = useState([]);
+  const [assets, setAssets] = useState([]);
 
 
   /* ── Toast helpers ── */
@@ -103,9 +106,28 @@ export default function Home() {
           throw new Error(dbProfiles.error || 'Format data opex tidak valid');
         }
 
+        // 4b. Load Ingredients
+        const ingRes = await fetch('/api/ingredients');
+        if (!ingRes.ok) throw new Error('Gagal memuat bahan baku dari server');
+        let dbIngredients = await ingRes.json();
+        if (dbIngredients.error || !Array.isArray(dbIngredients)) {
+          throw new Error(dbIngredients.error || 'Format data bahan tidak valid');
+        }
+
+        // 4c. Load Assets
+        const assetRes = await fetch('/api/assets');
+        if (!assetRes.ok) throw new Error('Gagal memuat aset dari server');
+        let dbAssets = await assetRes.json();
+        if (dbAssets.error || !Array.isArray(dbAssets)) {
+          throw new Error(dbAssets.error || 'Format data aset tidak valid');
+        }
+
         // 5. Fallback migrations (LocalStorage)
         const localMenus = loadDB();
         const localProfiles = loadOpexProfiles();
+        const localIngredients = loadIngredients();
+        const localAssets = loadAssets();
+        
         const databaseIsEmpty = (!dbMenus || dbMenus.length === 0) && (!dbProfiles || dbProfiles.length === 0);
         const localStorageHasData = (localMenus && localMenus.length > 0) || (localProfiles && localProfiles.length > 0);
 
@@ -170,6 +192,24 @@ export default function Home() {
           }
         }
 
+        // Migrate local ingredients/assets to Server DB if server DB is empty
+        if (dbIngredients.length === 0 && localIngredients.length > 0) {
+          dbIngredients = localIngredients.map(i => ({ ...i, outletId: i.outletId || initialOutletId }));
+          await fetch('/api/ingredients', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dbIngredients)
+          });
+        }
+        if (dbAssets.length === 0 && localAssets.length > 0) {
+          dbAssets = localAssets.map(a => ({ ...a, outletId: a.outletId || initialOutletId }));
+          await fetch('/api/assets', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dbAssets)
+          });
+        }
+
         setMenus(dbMenus);
         const activeOutletMenu = dbMenus.find(m => m.outletId === initialOutletId);
         setActiveId(activeOutletMenu?.id || null);
@@ -177,6 +217,9 @@ export default function Home() {
         setOpexProfiles(dbProfiles);
         const activeOutletProfile = dbProfiles.find(p => p.outletId === initialOutletId);
         setActiveProfileId(activeOutletProfile?.id || null);
+
+        setIngredients(dbIngredients);
+        setAssets(dbAssets);
 
         const loadedPresets = loadChannelPresets();
         setChannelPresets(loadedPresets);
@@ -196,6 +239,12 @@ export default function Home() {
         setOpexProfiles(loadedProfiles);
         setActiveProfileId(loadedProfiles[0]?.id || null);
 
+        const localIng = loadIngredients().map(i => ({ ...i, outletId: i.outletId || 'default-local-outlet' }));
+        setIngredients(localIng);
+
+        const localAst = loadAssets().map(a => ({ ...a, outletId: a.outletId || 'default-local-outlet' }));
+        setAssets(localAst);
+
         const loadedPresets = loadChannelPresets();
         setChannelPresets(loadedPresets);
         showToast('Menggunakan offline mode. Beberapa fitur tersimpan lokal.', 'alert');
@@ -203,7 +252,7 @@ export default function Home() {
     };
     
     initData();
-  }, []);
+  }, [showToast]);
 
   // Save to DB whenever menus change (automatic backup to LocalStorage)
   useEffect(() => {
@@ -218,6 +267,20 @@ export default function Home() {
       saveOpexProfiles(opexProfiles);
     }
   }, [opexProfiles, isMounted]);
+
+  // Save Ingredients whenever they change
+  useEffect(() => {
+    if (isMounted) {
+      saveIngredients(ingredients);
+    }
+  }, [ingredients, isMounted]);
+
+  // Save Assets whenever they change
+  useEffect(() => {
+    if (isMounted) {
+      saveAssets(assets);
+    }
+  }, [assets, isMounted]);
 
   // Save Channel Presets whenever they change
   useEffect(() => {
@@ -245,17 +308,37 @@ export default function Home() {
         });
         if (!opexRes.ok) throw new Error('Gagal menyimpan profil OPEX');
       }
+
+      // Sync Ingredients
+      const ingRes = await fetch('/api/ingredients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ingredients)
+      });
+      if (!ingRes.ok) throw new Error('Gagal menyimpan bahan baku');
+
+      // Sync Assets
+      const astRes = await fetch('/api/assets', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assets)
+      });
+      if (!astRes.ok) throw new Error('Gagal menyimpan aset');
       
       saveDB(menus);
       saveOpexProfiles(opexProfiles);
+      saveIngredients(ingredients);
+      saveAssets(assets);
       showToast('Tersimpan sukses ke database MariaDB!', 'success');
     } catch (error) {
       console.error("Save error:", error);
       showToast('Gagal menyimpan ke database. Data dicadangkan ke browser.', 'alert');
       saveDB(menus);
       saveOpexProfiles(opexProfiles);
+      saveIngredients(ingredients);
+      saveAssets(assets);
     }
-  }, [menus, opexProfiles, showToast]);
+  }, [menus, opexProfiles, ingredients, assets, showToast]);
 
   /* ── Outlet CRUD & BEP Settings Sync ── */
   const handleAddOutlet = useCallback(async (name, copyFromOutletId) => {
@@ -399,18 +482,38 @@ export default function Home() {
     showToast('Menu baru ditambahkan!', 'success');
   };
 
-  const deleteMenu = (id) => {
+  const deleteMenu = async (id) => {
     if (!window.confirm('Hapus menu ini dari database?')) return;
-    setMenus(prev => {
-      const next = prev.filter(m => m.id !== id);
-      if (id === activeId) {
-        // Fallback to active outlet's first menu
-        const outletMenus = next.filter(m => m.outletId === activeOutletId);
-        setActiveId(outletMenus.length > 0 ? outletMenus[0].id : null);
+    try {
+      // First ensure this menu exists on server by doing a save
+      const menuToDelete = menus.find(m => m.id === id);
+      if (menuToDelete) {
+        await fetch('/api/menus', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(menus)
+        });
       }
-      return next;
-    });
-    showToast('Menu dihapus', 'info');
+      const res = await fetch(`/api/menus?id=${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Gagal menghapus menu dari server');
+      }
+      setMenus(prev => {
+        const next = prev.filter(m => m.id !== id);
+        if (id === activeId) {
+          const outletMenus = next.filter(m => m.outletId === activeOutletId);
+          setActiveId(outletMenus.length > 0 ? outletMenus[0].id : null);
+        }
+        return next;
+      });
+      showToast('Menu dihapus dari database', 'info');
+    } catch (err) {
+      console.error("Delete menu error:", err);
+      showToast('Gagal menghapus menu dari database: ' + err.message, 'error');
+    }
   };
 
   const duplicateMenu = (id) => {
@@ -435,18 +538,36 @@ export default function Home() {
     setView('calculator');
   };
 
-  const deleteMenusBatch = useCallback((ids) => {
+  const deleteMenusBatch = useCallback(async (ids) => {
     if (!window.confirm(`Hapus ${ids.length} menu yang dipilih dari database?`)) return;
-    setMenus(prev => {
-      const next = prev.filter(m => !ids.includes(m.id));
-      if (ids.includes(activeId)) {
-        const outletMenus = next.filter(m => m.outletId === activeOutletId);
-        setActiveId(outletMenus.length > 0 ? outletMenus[0].id : null);
+    try {
+      // First sync all menus to server to ensure they exist
+      await fetch('/api/menus', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(menus)
+      });
+      const res = await fetch(`/api/menus?ids=${ids.join(',')}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Gagal menghapus menu dari server');
       }
-      return next;
-    });
-    showToast(`${ids.length} menu dihapus`, 'info');
-  }, [activeId, activeOutletId, showToast]);
+      setMenus(prev => {
+        const next = prev.filter(m => !ids.includes(m.id));
+        if (ids.includes(activeId)) {
+          const outletMenus = next.filter(m => m.outletId === activeOutletId);
+          setActiveId(outletMenus.length > 0 ? outletMenus[0].id : null);
+        }
+        return next;
+      });
+      showToast(`${ids.length} menu dihapus dari database`, 'info');
+    } catch (err) {
+      console.error("Bulk delete menu error:", err);
+      showToast('Gagal menghapus menu dari database: ' + err.message, 'error');
+    }
+  }, [menus, activeId, activeOutletId, showToast]);
 
   const handleExportSingleExcel = () => {
     if (!activeMenu) return;
@@ -774,6 +895,25 @@ ${finalPortionLines.trim()}
                 fontWeight: 600,
                 fontSize: 12,
                 height: 28,
+                background: view === 'shopee_estimator' ? 'var(--bg-card)' : 'transparent',
+                color: view === 'shopee_estimator' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                boxShadow: view === 'shopee_estimator' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.15s',
+                padding: '0 12px'
+              }}
+              onClick={() => setView('shopee_estimator')}
+            >
+              Dana Aktual Shopee
+            </button>
+            <button
+              className="btn btn-sm"
+              style={{
+                borderRadius: 'calc(var(--radius) - 2px)',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 12,
+                height: 28,
                 background: view === 'database' ? 'var(--bg-card)' : 'transparent',
                 color: view === 'database' ? 'var(--color-text)' : 'var(--color-text-muted)',
                 boxShadow: view === 'database' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
@@ -971,6 +1111,7 @@ ${finalPortionLines.trim()}
             channelPresets={channelPresets}
             activeProfile={activeProfile}
             onOpenChannelModal={() => setShowChannelModal(true)}
+            ingredients={ingredients}
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
@@ -1003,16 +1144,35 @@ ${finalPortionLines.trim()}
             setView('opex');
             showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
           }}
-          onDeleteProfile={(id) => {
-            setOpexProfiles(prev => {
-              const next = prev.filter(p => p.id !== id);
-              if (id === activeProfileId) {
-                const outletProfiles = next.filter(p => p.outletId === activeOutletId);
-                setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
+          onDeleteProfile={async (id) => {
+            if (!window.confirm('Hapus profil OPEX ini dari database?')) return;
+            try {
+              // Sync profiles to server first
+              await fetch('/api/opex', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(opexProfiles)
+              });
+              const res = await fetch(`/api/opex?id=${id}`, {
+                method: 'DELETE'
+              });
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Gagal menghapus profil dari server');
               }
-              return next;
-            });
-            showToast('Profil OPEX dihapus', 'info');
+              setOpexProfiles(prev => {
+                const next = prev.filter(p => p.id !== id);
+                if (id === activeProfileId) {
+                  const outletProfiles = next.filter(p => p.outletId === activeOutletId);
+                  setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
+                }
+                return next;
+              });
+              showToast('Profil OPEX dihapus dari database', 'info');
+            } catch (err) {
+              console.error("Delete opex profile error:", err);
+              showToast('Gagal menghapus profil OPEX: ' + err.message, 'error');
+            }
           }}
           outlets={outlets}
           activeOutletId={activeOutletId}
@@ -1025,6 +1185,10 @@ ${finalPortionLines.trim()}
           showToast={showToast}
           allMenus={menus}
           allOpexProfiles={opexProfiles}
+          ingredients={ingredients}
+          setIngredients={setIngredients}
+          assets={assets}
+          setAssets={setAssets}
         />
       )}
 
@@ -1046,16 +1210,35 @@ ${finalPortionLines.trim()}
             setActiveProfileId(newProfile.id);
             showToast(`Profil "${newProfile.name}" dibuat!`, 'success');
           }}
-          onDeleteProfile={(id) => {
-            setOpexProfiles(prev => {
-              const next = prev.filter(p => p.id !== id);
-              if (id === activeProfileId) {
-                const outletProfiles = next.filter(p => p.outletId === activeOutletId);
-                setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
+          onDeleteProfile={async (id) => {
+            if (!window.confirm('Hapus profil OPEX ini dari database?')) return;
+            try {
+              // Sync profiles to server first
+              await fetch('/api/opex', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(opexProfiles)
+              });
+              const res = await fetch(`/api/opex?id=${id}`, {
+                method: 'DELETE'
+              });
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Gagal menghapus profil dari server');
               }
-              return next;
-            });
-            showToast('Profil OPEX dihapus', 'info');
+              setOpexProfiles(prev => {
+                const next = prev.filter(p => p.id !== id);
+                if (id === activeProfileId) {
+                  const outletProfiles = next.filter(p => p.outletId === activeOutletId);
+                  setActiveProfileId(outletProfiles.length > 0 ? outletProfiles[0].id : null);
+                }
+                return next;
+              });
+              showToast('Profil OPEX dihapus dari database', 'info');
+            } catch (err) {
+              console.error("Delete opex profile error:", err);
+              showToast('Gagal menghapus profil OPEX: ' + err.message, 'error');
+            }
           }}
           onNavigateToCalculator={(menuId) => {
             setActiveId(menuId);
@@ -1068,6 +1251,9 @@ ${finalPortionLines.trim()}
           onOpenChannelModal={() => setShowChannelModal(true)}
           bepSettings={bepSettings}
           activeOutletId={activeOutletId}
+          assets={assets}
+          setAssets={setAssets}
+          ingredients={ingredients}
         />
       )}
 
@@ -1081,6 +1267,23 @@ ${finalPortionLines.trim()}
           activeOutletId={activeOutletId}
           onUpdateBepSettings={handleUpdateBepSettings}
           showToast={showToast}
+          assets={assets}
+          ingredients={ingredients}
+        />
+      )}
+
+      {view === 'shopee_estimator' && (
+        <ShopeeReverseEstimator
+          menus={menus}
+          opexProfiles={opexProfiles}
+          activeOutletId={activeOutletId}
+          activeProfileId={activeProfileId}
+          onUpdateProfile={(changes) => {
+            setOpexProfiles(prev => prev.map(p => p.id === activeProfileId ? { ...p, ...changes } : p));
+          }}
+          assets={assets}
+          setAssets={setAssets}
+          ingredients={ingredients}
         />
       )}
 

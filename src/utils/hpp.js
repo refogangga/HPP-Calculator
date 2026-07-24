@@ -294,18 +294,37 @@ export const saveOpexProfiles = (profiles) => {
 };
 
 /* ─── Depreciation Calculator ───────────────────────────── */
-export const getPenyusutanBulanan = (ops) => {
+export const getPenyusutanBulanan = (ops, assetsDb = []) => {
   if (!ops) return 0;
   if (!ops.usePenyusutan) return num(ops.penyusutan);
   const assets = ops.assets || (num(ops.assetTahun) ? [{ id: 'legacy', name: 'Aset Lama', harga: num(ops.assetHarga), tahun: num(ops.assetTahun), enabled: true }] : []);
   return assets.filter(a => a.enabled).reduce((sum, a) => {
-    return sum + (num(a.tahun) > 0 ? num(a.harga) / (num(a.tahun) * 12) : 0);
+    let harga = a.harga;
+    let tahun = a.tahun;
+    let isLarge = a.isLargeExpense;
+    if (a.assetId && Array.isArray(assetsDb)) {
+      const central = assetsDb.find(ca => ca.id === a.assetId);
+      if (central) {
+        harga = central.harga;
+        tahun = central.tahun;
+        isLarge = central.isLargeExpense;
+      }
+    }
+    if (isLarge) return sum;
+    return sum + (num(tahun) > 0 ? num(harga) / (num(tahun) * 12) : 0);
   }, 0);
 };
 
-export const getDirectHPP = (menu) => {
+export const getDirectHPP = (menu, ingredientsDb = []) => {
   if (!menu) return 0;
   const bb = (menu.ingredients || []).reduce((s, i) => {
+    if (i.ingredientId && Array.isArray(ingredientsDb)) {
+      const centralIng = ingredientsDb.find(ci => ci.id === i.ingredientId);
+      if (centralIng) {
+        if (!num(centralIng.ukuranKemasan)) return s;
+        return s + (num(centralIng.hargaBeli) / num(centralIng.ukuranKemasan)) * num(i.takaranPerCup);
+      }
+    }
     if (!num(i.ukuranKemasan)) return s;
     return s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup);
   }, 0);
@@ -317,7 +336,7 @@ export const calculatePlatformMetrics = (menu, hjOverride) => {
   const hpp = getDirectHPP(menu);
   const hj = hjOverride !== undefined && hjOverride !== null
     ? num(hjOverride)
-    : roundPrice(menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100));
+    : roundPrice(num(menu.margin) >= 100 ? 0 : hpp / (1 - num(menu.margin) / 100));
   
   const p = menu.platform || { enabled: false, commissionPct: 0, flatFee: 0, discountType: 'pct', discountValue: 0, commissionBasis: 'original' };
   
@@ -364,6 +383,41 @@ export const calculatePlatformMetrics = (menu, hjOverride) => {
     commissionPct: num(p.commissionPct),
     hasPlatform: true
   };
+};
+
+export const INGREDIENTS_KEY = 'hpp_ingredients_db_v1';
+export const ASSETS_KEY = 'hpp_assets_db_v1';
+
+export const loadIngredients = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(INGREDIENTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error("Failed to load ingredients database:", e);
+    return [];
+  }
+};
+
+export const saveIngredients = (items) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(INGREDIENTS_KEY, JSON.stringify(items));
+};
+
+export const loadAssets = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(ASSETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error("Failed to load assets database:", e);
+    return [];
+  }
+};
+
+export const saveAssets = (items) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ASSETS_KEY, JSON.stringify(items));
 };
 
 

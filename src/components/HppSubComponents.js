@@ -121,12 +121,37 @@ export function SectionHeader({ iconEmoji, iconBg, title, badgeText, badgeClass,
 }
 
 /* ─── Ingredient Row ─────────────────────────────────────── */
-export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit = 'cup' }) {
+export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit = 'cup', ingredientsDb = [] }) {
   const [showPackModal, setShowPackModal] = useState(false);
 
-  const perUnit = num(ing.ukuranKemasan) ? num(ing.hargaBeli) / num(ing.ukuranKemasan) : 0;
+  const isLinked = !!ing.ingredientId;
+  const centralIng = isLinked ? (ingredientsDb || []).find(ci => ci.id === ing.ingredientId) : null;
+
+  const hargaBeli = centralIng ? centralIng.hargaBeli : ing.hargaBeli;
+  const ukuranKemasan = centralIng ? centralIng.ukuranKemasan : ing.ukuranKemasan;
+  const unit = centralIng ? centralIng.unit : ing.unit;
+
+  const perUnit = num(ukuranKemasan) ? num(hargaBeli) / num(ukuranKemasan) : 0;
   const hpp = perUnit * num(ing.takaranPerCup);
   const upd = (f, v) => onUpdate(ing.id, f, v);
+
+  const handleNameChange = (val) => {
+    const found = (ingredientsDb || []).find(ci => ci.name.toLowerCase() === val.toLowerCase() && !ci.isPackaging);
+    if (found) {
+      onUpdate(ing.id, {
+        name: found.name,
+        ingredientId: found.id,
+        hargaBeli: found.hargaBeli,
+        ukuranKemasan: found.ukuranKemasan,
+        unit: found.unit
+      });
+    } else {
+      onUpdate(ing.id, {
+        name: val,
+        ingredientId: null
+      });
+    }
+  };
 
   return (
     <>
@@ -135,34 +160,69 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
         paddingBottom: 10, marginBottom: 10
       }}>
         <div className="ing-grid">
-          {/* Name */}
-          <input className="hpp-input sm" placeholder="Nama bahan…"
-            value={ing.name} onChange={e => upd('name', e.target.value)} />
+          {/* Name with Suggestions */}
+          <div>
+            <input
+              className="hpp-input sm"
+              placeholder="Nama bahan…"
+              value={ing.name}
+              onChange={e => handleNameChange(e.target.value)}
+              list={`ing-suggestions-${ing.id}`}
+            />
+            <datalist id={`ing-suggestions-${ing.id}`}>
+              {(ingredientsDb || []).filter(ci => !ci.isPackaging).map(ci => (
+                <option key={ci.id} value={ci.name} />
+              ))}
+            </datalist>
+          </div>
 
           {/* Harga beli */}
           <div className="input-prefix-wrap">
             <span className="prefix">Rp</span>
-            <FormatInput className="hpp-input sm" placeholder="0"
-              value={ing.hargaBeli || ''} onChange={v => upd('hargaBeli', v)} />
+            <FormatInput
+              className="hpp-input sm"
+              placeholder="0"
+              value={hargaBeli || ''}
+              onChange={v => upd('hargaBeli', v)}
+              disabled={isLinked}
+              style={isLinked ? { background: '#f1f5f9', color: '#64748b' } : {}}
+            />
           </div>
 
           {/* Ukuran kemasan */}
           <div className="input-prefix-wrap has-suffix">
-            <input className="hpp-input sm" type="number" placeholder="1000"
-              value={ing.ukuranKemasan || ''} onChange={e => upd('ukuranKemasan', e.target.value)} />
-            <span className="suffix">{ing.unit}</span>
+            <input
+              className="hpp-input sm"
+              type="number"
+              placeholder="1000"
+              value={ukuranKemasan || ''}
+              onChange={e => upd('ukuranKemasan', e.target.value)}
+              disabled={isLinked}
+              style={{
+                paddingRight: `${Math.max(24, (unit?.length || 0) * 6 + 12)}px`,
+                ...(isLinked ? { background: '#f1f5f9', color: '#64748b' } : {})
+              }}
+            />
+            <span className="suffix">{unit}</span>
           </div>
 
           {/* Satuan */}
-          <select className="hpp-input sm" value={ing.unit} onChange={e => upd('unit', e.target.value)}>
+          <select
+            className="hpp-input sm"
+            value={unit}
+            onChange={e => upd('unit', e.target.value)}
+            disabled={isLinked}
+            style={isLinked ? { background: '#f1f5f9', color: '#64748b' } : {}}
+          >
             {['ml', 'gr', 'ltr', 'kg', 'pcs', 'sdm', 'sdt', 'sachet', 'lembar'].map(u => <option key={u}>{u}</option>)}
           </select>
 
           {/* Takaran/cup */}
           <div className="input-prefix-wrap has-suffix">
             <input className="hpp-input sm" type="number" placeholder="0"
-              value={ing.takaranPerCup || ''} onChange={e => upd('takaranPerCup', e.target.value)} />
-            <span className="suffix">{ing.unit}</span>
+              value={ing.takaranPerCup || ''} onChange={e => upd('takaranPerCup', e.target.value)}
+              style={{ paddingRight: `${Math.max(24, (unit?.length || 0) * 6 + 12)}px` }} />
+            <span className="suffix">{unit}</span>
           </div>
 
           {/* HPP per cup result */}
@@ -187,15 +247,19 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
           {/* Pack calc button */}
           <button
             onClick={() => setShowPackModal(true)}
+            disabled={isLinked}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '3px 9px', borderRadius: 20,
-              border: '1px solid var(--border-color)', background: 'rgba(0, 102, 204, 0.08)',
-              color: 'var(--primary)', fontSize: 10, fontWeight: 700,
-              cursor: 'pointer', transition: 'all 0.15s',
+              border: '1px solid var(--border-color)',
+              background: isLinked ? '#f1f5f9' : 'rgba(0, 102, 204, 0.08)',
+              color: isLinked ? '#94a3b8' : 'var(--primary)',
+              fontSize: 10, fontWeight: 700,
+              cursor: isLinked ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s',
               fontFamily: 'Inter, sans-serif'
             }}
-            title="Hitung harga dari 1 pack/bundle"
+            title={isLinked ? "Di-lock karena terhubung database" : "Hitung harga dari 1 pack/bundle"}
           >
             <Icon name="package" size={10} /> Hitung dari Pack
           </button>
@@ -203,14 +267,14 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
           {/* Pack info if used */}
           {ing.packQty > 0 && ing.packPrice > 0 && (
             <span style={{ fontSize: 10, color: '#94a3b8' }}>
-              📦 {fmtRp(ing.packPrice)} / {ing.packQty} {ing.unit}
+              📦 {fmtRp(ing.packPrice)} / {ing.packQty} {unit}
             </span>
           )}
 
           {/* HPP hint */}
           {hpp > 0 && (
             <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 'auto' }}>
-              <span style={{ color: '#6366f1', fontWeight: 600 }}>{fmtRp(perUnit)}</span>/{ing.unit} × {num(ing.takaranPerCup)}{ing.unit}
+              <span style={{ color: '#6366f1', fontWeight: 600 }}>{fmtRp(perUnit)}</span>/{unit} × {num(ing.takaranPerCup)}{unit}
             </span>
           )}
         </div>
@@ -219,13 +283,13 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
       {showPackModal && (
         <PackCalcModal
           itemName={ing.name}
-          unitLabel={ing.unit}
+          unitLabel={unit}
           initialPackPrice={ing.packPrice}
           initialPackQty={ing.packQty}
           onClose={() => setShowPackModal(false)}
           onApply={(pricePerUnit, packPrice, packQty) => {
             onUpdate(ing.id, {
-              hargaBeli: Math.round(pricePerUnit * num(ing.ukuranKemasan)),
+              hargaBeli: Math.round(pricePerUnit * num(ukuranKemasan)),
               packPrice: packPrice,
               packQty: packQty
             });
@@ -237,26 +301,64 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
 }
 
 /* ─── Packaging Card ─────────────────────────────────────── */
-export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup' }) {
+export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup', ingredientsDb = [] }) {
   const [showPackModal, setShowPackModal] = useState(false);
   const upd = (f, v) => onUpdate(pkg.id, f, v);
+
+  const isLinked = !!pkg.ingredientId;
+  const centralIng = isLinked ? (ingredientsDb || []).find(ci => ci.id === pkg.ingredientId) : null;
+
+  const harga = centralIng 
+    ? (num(centralIng.ukuranKemasan) ? num(centralIng.hargaBeli) / num(centralIng.ukuranKemasan) : 0)
+    : pkg.harga;
+  const name = centralIng ? centralIng.name : pkg.name;
+  const unit = centralIng ? centralIng.unit : (pkg.unit || 'pcs');
+
+  const handleNameChange = (val) => {
+    const found = (ingredientsDb || []).find(ci => ci.name.toLowerCase() === val.toLowerCase() && ci.isPackaging);
+    if (found) {
+      onUpdate(pkg.id, {
+        name: found.name,
+        ingredientId: found.id,
+        harga: num(found.ukuranKemasan) ? num(found.hargaBeli) / num(found.ukuranKemasan) : 0,
+        unit: found.unit
+      });
+    } else {
+      onUpdate(pkg.id, {
+        name: val,
+        ingredientId: null
+      });
+    }
+  };
 
   return (
     <>
       <div className={`pkg-card ${pkg.enabled ? 'enabled' : 'disabled'} animate-fade-in`}>
         {/* Header: toggle + name + delete */}
         <div className="flex-between" style={{ marginBottom: 8 }}>
-          <label className="pkg-toggle" htmlFor={`pkg_${pkg.id}`} style={{ flex: 1, overflow: 'hidden' }}>
+          <label className="pkg-toggle" htmlFor={`pkg_${pkg.id}`} style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" id={`pkg_${pkg.id}`} checked={pkg.enabled}
               onChange={e => upd('enabled', e.target.checked)} />
             <div className="toggle-pill" />
-            <span style={{ fontSize: 14 }}>{pkg.icon}</span>
-            <input className="hpp-input" value={pkg.name} onChange={e => upd('name', e.target.value)}
+            <span style={{ fontSize: 14 }}>{pkg.icon || '📦'}</span>
+            
+            {/* Input name with suggestions */}
+            <input
+              className="hpp-input"
+              value={name}
+              onChange={e => handleNameChange(e.target.value)}
+              list={`pkg-suggestions-${pkg.id}`}
               style={{
                 border: 'none', background: 'transparent', padding: '2px 4px',
                 fontWeight: 600, fontSize: 12, color: '#334155', outline: 'none'
               }}
-              placeholder="Nama kemasan…" />
+              placeholder="Nama kemasan…"
+            />
+            <datalist id={`pkg-suggestions-${pkg.id}`}>
+              {(ingredientsDb || []).filter(ci => ci.isPackaging).map(ci => (
+                <option key={ci.id} value={ci.name} />
+              ))}
+            </datalist>
           </label>
           <button className="btn btn-danger" onClick={() => onRemove(pkg.id)}><Icon name="trash" size={11} /></button>
         </div>
@@ -265,12 +367,16 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup' }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 2 }}>
             <span style={{ fontSize: 11, color: '#94a3b8' }}>Harga/</span>
-            <select value={pkg.unit || 'pcs'} onChange={e => {
+            <select value={unit} onChange={e => {
               upd('unit', e.target.value);
               if (e.target.value === 'pcs' && !pkg.usage) upd('usage', 1);
             }}
-              disabled={!pkg.enabled}
-              style={{ fontSize: 11, border: 'none', background: 'transparent', color: '#6366f1', fontWeight: 700, padding: 0, cursor: 'pointer', outline: 'none' }}>
+              disabled={!pkg.enabled || isLinked}
+              style={{
+                fontSize: 11, border: 'none', background: 'transparent',
+                color: isLinked ? '#64748b' : '#6366f1',
+                fontWeight: 700, padding: 0, cursor: isLinked ? 'not-allowed' : 'pointer', outline: 'none'
+              }}>
               <option value="pcs">pcs</option>
               <option value="gr">gr</option>
               <option value="ml">ml</option>
@@ -281,8 +387,10 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup' }) {
           <div className="input-prefix-wrap" style={{ flex: 1 }}>
             <span className="prefix">Rp</span>
             <FormatInput className="hpp-input sm" placeholder="0"
-              value={pkg.harga || ''} onChange={v => upd('harga', v)}
-              disabled={!pkg.enabled} />
+              value={harga || ''} onChange={v => upd('harga', v)}
+              disabled={!pkg.enabled || isLinked}
+              style={isLinked ? { background: '#f1f5f9', color: '#64748b' } : {}}
+            />
           </div>
         </div>
 
@@ -292,7 +400,7 @@ export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup' }) {
           <input className="hpp-input sm" type="number" placeholder="1" step="any"
             value={pkg.usage !== undefined ? pkg.usage : 1} onChange={e => upd('usage', e.target.value)}
             disabled={!pkg.enabled} style={{ width: 60 }} />
-          <span style={{ fontSize: 11, color: '#94a3b8', width: 25 }}>{pkg.unit || 'pcs'}</span>
+          <span style={{ fontSize: 11, color: '#94a3b8', width: 25 }}>{unit}</span>
           
           {pkg.enabled && (
             <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: '#6366f1', marginLeft: 'auto' }}>

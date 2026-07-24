@@ -1,7 +1,7 @@
 # Graph Report - HPP-Calculator  (2026-07-24)
 
 ## Corpus Check
-- 54 files · ~62,861 words
+- 54 files · ~62,825 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

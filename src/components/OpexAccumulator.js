@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Icon } from './Icon';
 import FormatInput from './FormatInput';
 import { SectionHeader } from './HppSubComponents';
-import { num, fmtRp, roundPrice, uid, getPenyusutanBulanan, mkOpexProfile } from '../utils/hpp';
+import { num, fmtRp, roundPrice, uid, getPenyusutanBulanan, mkOpexProfile, loadChannelPresets } from '../utils/hpp';
 
 export default function OpexAccumulator({
   menus,
@@ -20,7 +20,10 @@ export default function OpexAccumulator({
   channelPresets = [],
   onOpenChannelModal,
   bepSettings = [],
-  activeOutletId
+  activeOutletId,
+  assets = [],
+  setAssets,
+  ingredients = []
 }) {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Semua');
@@ -45,7 +48,7 @@ export default function OpexAccumulator({
 
   const handleDiscountChange = (menu, field, value) => {
     const currentPlatform = menu.platform || {
-      enabled: true,
+      enabled: false,
       name: 'Offline / Dine-In',
       commissionPct: 0,
       flatFee: 0,
@@ -53,11 +56,18 @@ export default function OpexAccumulator({
       discountValue: 0,
       commissionBasis: 'original'
     };
+    
+    const parsedVal = field === 'discountValue' ? num(value) : value;
     const updatedPlatform = {
       ...currentPlatform,
-      enabled: (field === 'discountValue' ? num(value) > 0 : (currentPlatform.discountValue > 0)) || currentPlatform.commissionPct > 0 || currentPlatform.flatFee > 0 || currentPlatform.enabled,
-      [field]: value
+      [field]: parsedVal
     };
+    
+    updatedPlatform.enabled = 
+      num(updatedPlatform.commissionPct) > 0 || 
+      num(updatedPlatform.flatFee) > 0 || 
+      num(updatedPlatform.discountValue) > 0;
+
     if (onUpdateMenu) {
       onUpdateMenu(menu.id, { platform: updatedPlatform });
     }
@@ -91,6 +101,19 @@ export default function OpexAccumulator({
     return opexProfiles.find(p => p.id === activeProfileId) || opexProfiles[0] || mkOpexProfile();
   }, [opexProfiles, activeProfileId]);
 
+  const activePresetsList = useMemo(() => {
+    return channelPresets && channelPresets.length > 0 ? channelPresets : loadChannelPresets();
+  }, [channelPresets]);
+
+  const getPlatformColors = useCallback((platformName) => {
+    const preset = activePresetsList.find(p => p.name.toLowerCase() === platformName.toLowerCase()) || 
+                   activePresetsList.find(p => p.id === 'offline');
+    return {
+      background: preset?.colorLight || '#f8fafc',
+      color: preset?.color || '#64748b'
+    };
+  }, [activePresetsList]);
+
   // Current active BEP settings
   const currentBep = useMemo(() => {
     const s = (bepSettings || []).find(b => b.outletId === activeOutletId) || {};
@@ -107,7 +130,8 @@ export default function OpexAccumulator({
 
   // Get selected menus in this profile
   const selectedMenus = useMemo(() => {
-    return menus.filter(m => activeProfile.selectedMenuIds?.includes(m.id));
+    const hasSelected = Array.isArray(activeProfile.selectedMenuIds) && activeProfile.selectedMenuIds.length > 0;
+    return hasSelected ? menus.filter(m => activeProfile.selectedMenuIds.includes(m.id)) : menus;
   }, [menus, activeProfile.selectedMenuIds]);
 
   // Get active (enabled) menus in this profile
@@ -116,26 +140,26 @@ export default function OpexAccumulator({
   }, [selectedMenus, activeProfile.disabledMenuIds]);
 
   /* ─── Direct HPP & Pricing Calculations ─── */
-  const getDirectHPP = (menu) => {
+  const getDirectHPP = useCallback((menu) => {
     const bb = menu.ingredients.reduce((s, i) => {
       if (!num(i.ukuranKemasan)) return s;
       return s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup);
     }, 0);
     const km = menu.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
     return bb + km;
-  };
+  }, []);
 
-  const getSellingPrice = (menu) => {
+  const getSellingPrice = useCallback((menu) => {
     if (activeProfile.menuPrices && activeProfile.menuPrices[menu.id] !== undefined) {
       return activeProfile.menuPrices[menu.id];
     }
     const hpp = getDirectHPP(menu);
-    const hj = menu.margin >= 100 ? 0 : hpp / (1 - menu.margin / 100);
+    const hj = num(menu.margin) >= 100 ? 0 : hpp / (1 - num(menu.margin) / 100);
     return roundPrice(hj);
-  };
+  }, [activeProfile.menuPrices, getDirectHPP]);
 
   /* ── Platform-aware calculations per menu ──────────── */
-  const getPlatformCalc = (menu) => {
+  const getPlatformCalc = useCallback((menu) => {
     const hj = getSellingPrice(menu);
     const hpp = getDirectHPP(menu);
     const p = menu.platform;
@@ -170,7 +194,7 @@ export default function OpexAccumulator({
       commissionPct: num(p?.commissionPct),
       hasPlatform: !!(p && p.enabled),
     };
-  };
+  }, [getSellingPrice, getDirectHPP]);
 
   const handlePriceChange = (menu, newPriceVal) => {
     const currentPrices = { ...activeProfile.menuPrices || {} };
@@ -187,12 +211,12 @@ export default function OpexAccumulator({
   /* ─── Volume Balancing Logic ─── */
 
   // Helper to get active volume of a menu item in this profile
-  const getMenuVolume = (menuId, fallbackVal = 100) => {
+  const getMenuVolume = useCallback((menuId, fallbackVal = 100) => {
     if (activeProfile.menuVolumes && activeProfile.menuVolumes[menuId] !== undefined) {
       return activeProfile.menuVolumes[menuId];
     }
     return fallbackVal;
-  };
+  }, [activeProfile.menuVolumes]);
 
   const handleVolumeChange = (menuId, newVolVal) => {
     const targetVol = Math.max(0, parseInt(newVolVal) || 0);
@@ -333,18 +357,18 @@ export default function OpexAccumulator({
     onUpdateProfile({ expenses: updated });
   };
 
-  const addAsset = () => {
-    const updated = [...(activeProfile.assets || []), { id: uid(), name: 'Aset Baru', harga: 0, tahun: 5, enabled: true, category: 'Semua' }];
-    onUpdateProfile({ assets: updated });
-  };
+  const regularCentralAssets = useMemo(() => {
+    return (assets || []).filter(ca => ca.outletId === activeOutletId && !ca.isLargeExpense);
+  }, [assets, activeOutletId]);
 
-  const updateAsset = (id, field, value) => {
-    const updated = activeProfile.assets.map(a => a.id === id ? { ...a, [field]: value } : a);
-    onUpdateProfile({ assets: updated });
-  };
-
-  const removeAsset = (id) => {
-    const updated = activeProfile.assets.filter(a => a.id !== id);
+  const handleToggleAssetSelection = (caId) => {
+    const isSelected = (activeProfile.assets || []).some(a => a.assetId === caId);
+    let updated;
+    if (isSelected) {
+      updated = (activeProfile.assets || []).filter(a => a.assetId !== caId);
+    } else {
+      updated = [...(activeProfile.assets || []), { id: uid(), assetId: caId, enabled: true }];
+    }
     onUpdateProfile({ assets: updated });
   };
 
@@ -354,8 +378,8 @@ export default function OpexAccumulator({
   }, [activeProfile.expenses]);
 
   const totalAssetDepreciation = useMemo(() => {
-    return getPenyusutanBulanan(activeProfile);
-  }, [activeProfile]);
+    return getPenyusutanBulanan(activeProfile, assets);
+  }, [activeProfile, assets]);
 
   const totalOpexVal = useMemo(() => {
     if (currentBep.manualOpex !== null) {
@@ -420,7 +444,7 @@ export default function OpexAccumulator({
       avgHpp,
       avgContributionMargin
     };
-  }, [activeMenus, activeProfile.menuVolumes, totalOpexVal, currentBep.manualPrice, currentBep.manualMargin]);
+  }, [activeMenus, totalOpexVal, currentBep.manualPrice, currentBep.manualMargin, getMenuVolume, getPlatformCalc]);
 
   const calculatedInvestment = useMemo(() => {
     if (!activeProfile) return 0;
@@ -509,7 +533,7 @@ export default function OpexAccumulator({
       ...val,
       netProfit: val.margin - val.opex
     }));
-  }, [activeMenus, activeProfile, financialSummary.totalVolume]);
+  }, [activeMenus, activeProfile, financialSummary.totalVolume, getMenuVolume, getSellingPrice, getDirectHPP]);
 
   const filteredMenus = useMemo(() => {
     return selectedMenus.filter(m => {
@@ -717,7 +741,8 @@ export default function OpexAccumulator({
                     </span>
                   </div>
 
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
+                  <div style={{ overflowX: 'auto', width: '100%' }}>
+                    <table style={{ minWidth: isSimpleView ? 850 : 1250, width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid var(--border-color)', color: '#475569', fontWeight: 700, background: 'var(--bg-app)', fontSize: 11 }}>
                         <th style={{ padding: '8px 4px', width: 28, textAlign: 'center' }}>
@@ -728,62 +753,86 @@ export default function OpexAccumulator({
                             style={{ cursor: 'pointer' }}
                           />
                         </th>
-                        <th style={{ padding: '8px 8px', minWidth: 140 }} title="Nama produk masakan atau minuman yang Anda daftarkan.">
-                          Nama Menu ℹ️
+                        <th style={{ padding: '8px 8px', minWidth: 140 }}>
+                          <span className="relative-tooltip" data-tooltip="Nama produk masakan atau minuman yang Anda daftarkan.">
+                            Nama Menu
+                          </span>
                         </th>
-                        <th style={{ padding: '8px 8px', width: 105, textAlign: 'right' }} title="Harga jual reguler produk sebelum dikenakan diskon promosi.">
-                          Harga Normal ℹ️
+                        <th style={{ padding: '8px 8px', width: 125, textAlign: 'center' }}>
+                          <span className="relative-tooltip" data-tooltip="Harga jual reguler produk sebelum dikenakan diskon promosi.">
+                            Harga Normal
+                          </span>
                         </th>
                         
-                        {!isSimpleView && (
-                          <th style={{ padding: '8px 8px', width: 120, textAlign: 'right' }} title="Nominal potongan harga yang Anda berikan untuk promosi.">
-                            Diskon Merchant ℹ️
-                          </th>
-                        )}
+                        <th style={{ padding: '8px 8px', width: 135, textAlign: 'center' }}>
+                          <span className="relative-tooltip" data-tooltip="Nominal potongan harga yang Anda berikan untuk promosi.">
+                            Diskon
+                          </span>
+                        </th>
 
-                        <th style={{ padding: '8px 8px', width: 125, textAlign: 'right', whiteSpace: 'nowrap' }} title="Harga final yang dibayarkan oleh pembeli setelah dipotong diskon.">
-                          Customer Membayar ℹ️
+                        <th style={{ padding: '8px 8px', width: 125, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span className="relative-tooltip align-right" data-tooltip="Harga final yang dibayarkan oleh pembeli setelah dipotong diskon.">
+                            Cust. Bayar
+                          </span>
                         </th>
 
                         {!isSimpleView && (
-                          <th style={{ padding: '8px 8px', width: 120, textAlign: 'right' }} title="Potongan biaya komisi persentase & flat fee yang diambil oleh platform online.">
-                            Komisi Platform ℹ️
+                          <th style={{ padding: '8px 8px', width: 120, textAlign: 'right' }}>
+                            <span className="relative-tooltip align-right" data-tooltip="Potongan biaya komisi persentase & flat fee yang diambil oleh platform online.">
+                              Komisi
+                            </span>
                           </th>
                         )}
 
-                        <th style={{ padding: '8px 8px', width: 120, textAlign: 'right', whiteSpace: 'nowrap' }} title="Nominal bersih yang ditransfer platform ke rekening Anda setelah dipotong komisi.">
-                          Uang Masuk Merchant ℹ️
+                        <th style={{ padding: '8px 8px', width: 120, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span className="relative-tooltip align-right" data-tooltip="Nominal bersih yang ditransfer platform ke rekening Anda setelah dipotong komisi.">
+                            Uang Masuk
+                          </span>
                         </th>
 
                         {!isSimpleView && (
                           <>
-                            <th style={{ padding: '8px 8px', width: 105, textAlign: 'right' }} title="Total biaya modal bahan baku dan kemasan untuk memproduksi 1 unit.">
-                              Direct HPP ℹ️
+                            <th style={{ padding: '8px 8px', width: 105, textAlign: 'right' }}>
+                              <span className="relative-tooltip align-right" data-tooltip="Total biaya modal bahan baku dan kemasan untuk memproduksi 1 unit.">
+                                Direct HPP
+                              </span>
                             </th>
-                            <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }} title="Keuntungan kotor per unit setelah dikurangi biaya modal (HPP).">
-                              Laba Stlh HPP ℹ️
+                            <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }}>
+                              <span className="relative-tooltip align-right" data-tooltip="Keuntungan kotor per unit setelah dikurangi biaya modal (HPP).">
+                                Laba Kotor
+                              </span>
                             </th>
-                            <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }} title="Alokasi beban operasional bulanan (listrik, sewa, gaji, penyusutan) rata-rata per unit.">
-                              Alokasi Overhead ℹ️
+                            <th style={{ padding: '8px 8px', width: 110, textAlign: 'right' }}>
+                              <span className="relative-tooltip align-right" data-tooltip="Alokasi beban operasional bulanan (listrik, sewa, gaji, penyusutan) rata-rata per unit.">
+                                Overhead
+                              </span>
                             </th>
                           </>
                         )}
 
-                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }} title="Keuntungan bersih akhir per unit setelah dikurangi biaya HPP dan biaya operasional.">
-                          Laba Bersih/Cup ℹ️
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span className="relative-tooltip align-right" data-tooltip="Keuntungan bersih akhir per unit setelah dikurangi biaya HPP dan biaya operasional.">
+                            Laba Bersih
+                          </span>
                         </th>
 
                         {!isSimpleView && (
-                          <th style={{ padding: '8px 8px', width: 100, textAlign: 'right' }} title="Rasio keuntungan bersih terhadap harga yang dibayar customer.">
-                            Margin Bersih ℹ️
+                          <th style={{ padding: '8px 8px', width: 100, textAlign: 'right' }}>
+                            <span className="relative-tooltip align-right" data-tooltip="Rasio keuntungan bersih terhadap harga yang dibayar customer.">
+                              Margin
+                            </span>
                           </th>
                         )}
 
-                        <th style={{ padding: '8px 8px', width: 75, textAlign: 'center' }} title="Estimasi volume penjualan produk dalam sebulan.">
-                          Volume ℹ️
+                        <th style={{ padding: '8px 8px', width: 105, textAlign: 'center' }}>
+                          <span className="relative-tooltip" data-tooltip="Estimasi volume penjualan produk dalam sebulan.">
+                            Volume
+                          </span>
                         </th>
-                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }} title="Total laba bersih bulanan yang disumbangkan oleh menu ini (Laba Bersih/Cup × Volume).">
-                          Total Kontribusi ℹ️
+                        <th style={{ padding: '8px 8px', width: 110, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span className="relative-tooltip align-right" data-tooltip="Total laba bersih bulanan yang disumbangkan oleh menu ini (Laba Bersih/Cup × Volume).">
+                            Total Laba
+                          </span>
                         </th>
                         <th style={{ padding: '8px 4px', width: 35, textAlign: 'center' }}>Aksi</th>
                       </tr>
@@ -858,24 +907,26 @@ export default function OpexAccumulator({
                                     {pc.hasPlatform ? (
                                       <span style={{
                                         fontSize: 9, padding: '1px 5px', borderRadius: 8,
-                                        background: '#fff1ef', color: '#ee4d2d', fontWeight: 700
+                                        background: getPlatformColors(pc.platformName).background,
+                                        color: getPlatformColors(pc.platformName).color,
+                                        fontWeight: 700
                                       }}>
-                                        🏪 {pc.platformName} ({pc.commissionPct}%)
+                                        {pc.platformName} ({pc.commissionPct}%)
                                       </span>
                                     ) : (
-                                      <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>🏬 Direct</span>
+                                      <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>Direct</span>
                                     )}
                                   </div>
                                 </div>
                               </td>
 
                               {/* Harga Normal */}
-                              <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                                <div className="input-prefix-wrap sm" style={{ maxWidth: 90, marginLeft: 'auto' }}>
-                                  <span className="prefix" style={{ fontSize: 9 }}>Rp</span>
+                              <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                <div className="input-prefix-wrap sm" style={{ width: 105, minWidth: 105, margin: '0 auto' }}>
+                                  <span className="prefix">Rp</span>
                                   <FormatInput
-                                    className="hpp-input sm center"
-                                    style={{ paddingLeft: 18, fontWeight: 600 }}
+                                    className="hpp-input sm"
+                                    style={{ fontWeight: 600, textAlign: 'center' }}
                                     value={pc.hargaJual}
                                     onChange={val => handlePriceChange(menu, val)}
                                     disabled={!isEnabled}
@@ -884,45 +935,44 @@ export default function OpexAccumulator({
                               </td>
 
                               {/* Diskon Merchant */}
-                              {!isSimpleView && (
-                                <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDiscountChange(menu, 'discountType', menu.platform?.discountType === 'nominal' ? 'pct' : 'nominal')}
-                                      disabled={!isEnabled}
-                                      style={{
-                                        padding: '2px 5px',
-                                        fontSize: 9,
-                                        fontWeight: 800,
-                                        borderRadius: 5,
-                                        border: '1px solid var(--border-color)',
-                                        background: menu.platform?.discountType === 'nominal' ? '#e0e7ff' : '#fef3c7',
-                                        color: menu.platform?.discountType === 'nominal' ? '#4338ca' : '#b45309',
-                                        cursor: 'pointer'
-                                      }}
-                                    >
-                                      {menu.platform?.discountType === 'nominal' ? 'Rp' : '%'}
-                                    </button>
+                              <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDiscountChange(menu, 'discountType', menu.platform?.discountType === 'nominal' ? 'pct' : 'nominal')}
+                                    disabled={!isEnabled}
+                                    style={{
+                                      padding: '2px 5px',
+                                      fontSize: 9,
+                                      fontWeight: 800,
+                                      borderRadius: 5,
+                                      border: '1px solid var(--border-color)',
+                                      background: menu.platform?.discountType === 'nominal' ? '#e0e7ff' : '#fef3c7',
+                                      color: menu.platform?.discountType === 'nominal' ? '#4338ca' : '#b45309',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {menu.platform?.discountType === 'nominal' ? 'Rp' : '%'}
+                                  </button>
 
-                                    <div className="input-prefix-wrap sm" style={{ maxWidth: 75 }}>
-                                      {menu.platform?.discountType === 'nominal' && <span className="prefix" style={{ fontSize: 9 }}>Rp</span>}
-                                      <FormatInput
-                                        className="hpp-input sm center"
-                                        style={{
-                                          paddingLeft: menu.platform?.discountType === 'nominal' ? 18 : 6,
-                                          borderColor: pc.diskonNominal > 0 ? '#f59e0b' : 'var(--border-color)',
-                                          fontWeight: pc.diskonNominal > 0 ? 700 : 400,
-                                          color: pc.diskonNominal > 0 ? '#b45309' : 'var(--color-text)'
-                                        }}
-                                        value={menu.platform?.discountValue || 0}
-                                        onChange={val => handleDiscountChange(menu, 'discountValue', val)}
-                                        disabled={!isEnabled}
-                                      />
-                                    </div>
+                                  <div className="input-prefix-wrap sm" style={{ width: 90, minWidth: 90 }}>
+                                    {menu.platform?.discountType === 'nominal' && <span className="prefix">Rp</span>}
+                                    <FormatInput
+                                      className="hpp-input sm"
+                                      style={{
+                                        paddingLeft: menu.platform?.discountType === 'nominal' ? 28 : 8,
+                                        borderColor: pc.diskonNominal > 0 ? '#f59e0b' : 'var(--border-color)',
+                                        fontWeight: pc.diskonNominal > 0 ? 700 : 400,
+                                        color: pc.diskonNominal > 0 ? '#b45309' : 'var(--color-text)',
+                                        textAlign: 'center'
+                                      }}
+                                      value={menu.platform?.discountValue || 0}
+                                      onChange={val => handleDiscountChange(menu, 'discountValue', val)}
+                                      disabled={!isEnabled}
+                                    />
                                   </div>
-                                </td>
-                              )}
+                                </div>
+                              </td>
 
                               {/* Customer Membayar */}
                               <td className="mono" style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap', color: '#3b82f6', fontWeight: 700 }}>
@@ -1012,7 +1062,7 @@ export default function OpexAccumulator({
                             {/* Timeline Cash Flow Accordion */}
                             {isRowExpanded && (
                               <tr onClick={(e) => e.stopPropagation()}>
-                                <td colSpan={isSimpleView ? 9 : 15} style={{ padding: '16px 20px', background: '#fafafa', borderBottom: '1px solid var(--border-color)', cursor: 'default' }}>
+                                <td colSpan={isSimpleView ? 10 : 15} style={{ padding: '16px 20px', background: '#fafafa', borderBottom: '1px solid var(--border-color)', cursor: 'default' }}>
                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
                                     {/* Timeline Flow */}
                                     <div>
@@ -1149,6 +1199,7 @@ export default function OpexAccumulator({
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -1328,14 +1379,7 @@ export default function OpexAccumulator({
             <SectionHeader
               iconEmoji="tool" iconBg="#ecfdf5"
               title="Penyusutan Aset & Peralatan"
-              badgeText="PENYUSUTAN" badgeClass="badge-emerald"
-              actions={
-                activeProfile.usePenyusutan && (
-                  <button className="btn btn-primary btn-sm" onClick={addAsset}>
-                    <Icon name="plus" size={11} /> Tambah Aset
-                  </button>
-                )
-              }
+              badgeText="DATABASE ASET" badgeClass="badge-emerald"
             />
             <div className="section-body">
               <div className="flex-between bg-accent-green" style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 8, border: '1px solid' }}>
@@ -1355,107 +1399,50 @@ export default function OpexAccumulator({
               </div>
 
               {activeProfile.usePenyusutan ? (
-                (!activeProfile.assets || activeProfile.assets.length === 0) ? (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: 13 }}>
-                    Belum ada aset peralatan ditambahkan di profil ini.
+                (regularCentralAssets.length === 0) ? (
+                  <div style={{ textAlign: 'center', padding: '24px 12px', color: '#94a3b8', fontSize: 12, border: '1px dashed var(--border-color)', borderRadius: 8 }}>
+                    Belum ada aset operasional reguler tercatat di Database. Silakan tambah data di tab <strong>Data {"->"} Aset &amp; Belanja</strong>.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {activeProfile.assets.map((aset) => {
-                      const blnVal = num(aset.tahun) > 0 ? num(aset.harga) / (num(aset.tahun) * 12) : 0;
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                      Pilih (centang) aset dari database untuk dibebankan penyusutannya pada profil ini:
+                    </div>
+                    {regularCentralAssets.map((ca) => {
+                      const isSelected = (activeProfile.assets || []).some(a => a.assetId === ca.id);
+                      const blnVal = num(ca.tahun) > 0 ? num(ca.harga) / (num(ca.tahun) * 12) : 0;
                       return (
                         <div
-                          key={aset.id}
+                          key={ca.id}
                           style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 120px 120px 70px 110px auto',
-                            gap: 8,
+                            display: 'flex',
                             alignItems: 'center',
-                            background: aset.enabled ? 'var(--bg-card)' : 'var(--bg-app)',
-                            opacity: aset.enabled ? 1 : 0.6,
-                            padding: '8px 12px',
+                            gap: 12,
+                            background: isSelected ? 'var(--bg-card)' : 'var(--bg-app)',
+                            opacity: isSelected ? 1 : 0.7,
+                            padding: '10px 14px',
                             borderRadius: 8,
-                            border: '1px solid var(--border-color)',
-                            transition: 'opacity 0.15s'
+                            border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border-color)'}`,
+                            transition: 'all 0.15s'
                           }}
                         >
-                          <div>
-                            <label className="label-sm" style={{ display: 'block', marginBottom: 2 }}>Nama Aset</label>
-                            <input
-                              className="hpp-input sm"
-                              value={aset.name}
-                              onChange={e => updateAsset(aset.id, 'name', e.target.value)}
-                              placeholder="Mesin Espresso, Blender, Sewa..."
-                              style={{ fontWeight: 600 }}
-                              disabled={!aset.enabled}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="label-sm" style={{ display: 'block', marginBottom: 2 }}>Kategori Alokasi</label>
-                            <select
-                              className="hpp-input sm"
-                              value={aset.category || 'Semua'}
-                              onChange={e => updateAsset(aset.id, 'category', e.target.value)}
-                              style={{ fontWeight: 500 }}
-                              disabled={!aset.enabled}
-                            >
-                              {opexCategories.map(c => (
-                                <option key={c} value={c}>{c === 'Semua' ? 'Semua (Bagi Rata)' : c}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="label-sm" style={{ display: 'block', marginBottom: 2 }}>Harga Beli</label>
-                            <div className="input-prefix-wrap">
-                              <span className="prefix">Rp</span>
-                              <FormatInput
-                                className="hpp-input sm"
-                                placeholder="0"
-                                value={aset.harga || ''}
-                                onChange={v => updateAsset(aset.id, 'harga', v)}
-                                disabled={!aset.enabled}
-                              />
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleAssetSelection(ca.id)}
+                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13 }}>{ca.name}</div>
+                            <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                              Kategori: {ca.category || 'Semua'} &bull; Umur: {ca.tahun} Tahun
                             </div>
                           </div>
-
-                          <div>
-                            <label className="label-sm" style={{ display: 'block', marginBottom: 2 }}>Umur (Thn)</label>
-                            <input
-                              className="hpp-input sm center"
-                              type="number"
-                              placeholder="5"
-                              value={aset.tahun || ''}
-                              onChange={e => updateAsset(aset.id, 'tahun', e.target.value)}
-                              disabled={!aset.enabled}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="label-sm" style={{ display: 'block', marginBottom: 2, textAlign: 'right' }}>Depresiasi/Bln</label>
-                            <div style={{ padding: '5px 8px', background: aset.enabled ? 'var(--bg-card)' : 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: 6, fontSize: 11, fontWeight: 700, textAlign: 'right', height: 29, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                              <span className="mono">{fmtRp(blnVal)}</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: 600, fontSize: 12 }}>{fmtRp(ca.harga)}</div>
+                            <div style={{ fontSize: 10, color: '#10b981', fontWeight: 600, marginTop: 2 }}>
+                              Depresiasi: {fmtRp(blnVal)}/bln
                             </div>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 15 }}>
-                            <label className="pkg-toggle" style={{ transform: 'scale(0.8)', margin: 0 }}>
-                              <input
-                                type="checkbox"
-                                checked={aset.enabled}
-                                onChange={e => updateAsset(aset.id, 'enabled', e.target.checked)}
-                              />
-                              <div className="toggle-pill" />
-                            </label>
-                            <button
-                              className="btn btn-danger"
-                              onClick={() => removeAsset(aset.id)}
-                              title="Hapus"
-                              style={{ height: 29, width: 29, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            >
-                              <Icon name="trash" size={11} />
-                            </button>
                           </div>
                         </div>
                       );

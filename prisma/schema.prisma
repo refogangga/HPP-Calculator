@@ -14,6 +14,8 @@ model Outlet {
   menus        Menu[]
   opexProfiles OpexProfile[]
   bepSettings  BepSettings?
+  ingredients  Ingredient[]
+  assets       Asset[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -28,10 +30,38 @@ model Menu {
   ingredients Json     // Menyimpan array bahan baku
   packaging   Json     // Menyimpan array kemasan
   ops         Json?    // Menyimpan opsi operasional
+  platform    Json?    // Menyimpan pengaturan potongan platform
   outletId    String?
   outlet      Outlet?  @relation(fields: [outletId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Ingredient {
+  id            String   @id @default(uuid())
+  name          String
+  hargaBeli     Float    @default(0)
+  ukuranKemasan Float    @default(1000)
+  unit          String   @default("gr")
+  isPackaging   Boolean  @default(false)
+  outletId      String?
+  outlet        Outlet?  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Asset {
+  id             String   @id @default(uuid())
+  name           String
+  harga          Float    @default(0)
+  tahun          Float    @default(5)
+  enabled        Boolean  @default(true)
+  category       String   @default("Semua")
+  isLargeExpense Boolean  @default(false)
+  outletId       String?
+  outlet         Outlet?  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 // Tabel untuk menyimpan data Profil OPEX simulasi

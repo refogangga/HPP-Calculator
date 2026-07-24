@@ -181,16 +181,16 @@ body {
 }
 
 .label-xs {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   color: #94a3b8;
 }
 
 .label-sm {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: #475569;
 }
 
@@ -201,7 +201,7 @@ body {
   border: 1px solid var(--border-color-input);
   border-radius: var(--radius);
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-family: var(--font-family);
   color: var(--color-text);
   background: var(--bg-input);
@@ -238,8 +238,9 @@ select.hpp-input {
 }
 
 .hpp-input.sm {
-  padding: 6px 10px;
+  padding: 4px 8px;
   font-size: 12px;
+  min-width: 60px;
 }
 
 .hpp-input.center {
@@ -257,6 +258,9 @@ select.hpp-input {
 .input-prefix-wrap {
   position: relative;
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
 }
 
 .input-prefix-wrap .prefix {
@@ -264,10 +268,10 @@ select.hpp-input {
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 12px;
+  font-size: 13px;
   color: #71717a;
   pointer-events: none;
-  z-index: 1;
+  z-index: 10;
 }
 
 .input-prefix-wrap .suffix {
@@ -275,22 +279,39 @@ select.hpp-input {
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 11px;
+  font-size: 12px;
   color: #71717a;
   pointer-events: none;
-  z-index: 1;
+  z-index: 10;
 }
 
 .input-prefix-wrap input,
-.input-prefix-wrap .hpp-input,
+.input-prefix-wrap .hpp-input {
+  padding-left: 32px;
+}
+
 .input-prefix-wrap .hpp-input.sm {
   padding-left: 28px;
 }
 
 .input-prefix-wrap.has-suffix input,
-.input-prefix-wrap.has-suffix .hpp-input,
+.input-prefix-wrap.has-suffix .hpp-input {
+  padding-right: 32px;
+}
+
 .input-prefix-wrap.has-suffix .hpp-input.sm {
-  padding-right: 24px;
+  padding-right: 28px;
+}
+
+/* Specific adjustment for sm input prefix alignment to prevent overlapping */
+.input-prefix-wrap:has(.hpp-input.sm) .prefix {
+  left: 8px;
+  font-size: 11px;
+}
+
+.input-prefix-wrap.has-suffix:has(.hpp-input.sm) .suffix {
+  right: 8px;
+  font-size: 10px;
 }
 
 /* ── Slider ──────────────────────────────────────────────── */
@@ -384,6 +405,7 @@ input:checked+.toggle-pill::after {
   white-space: nowrap;
   outline: none;
   user-select: none;
+  height: 36px;
 }
 
 .btn:active {
@@ -392,7 +414,7 @@ input:checked+.toggle-pill::after {
 
 .btn-primary {
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   background: var(--primary);
   color: #fff;
 }
@@ -403,7 +425,7 @@ input:checked+.toggle-pill::after {
 
 .btn-ghost {
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   background: transparent;
   border: 1px solid var(--border-color);
   color: var(--color-text);
@@ -416,7 +438,7 @@ input:checked+.toggle-pill::after {
 
 .btn-add {
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   border: 1.5px dashed var(--border-color);
   background: var(--bg-card);
   color: var(--color-text);
@@ -445,7 +467,7 @@ input:checked+.toggle-pill::after {
 
 .btn-success {
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   background: #10b981;
   color: #fff;
 }
@@ -456,7 +478,7 @@ input:checked+.toggle-pill::after {
 
 .btn-warning {
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   background: #f59e0b;
   color: #fff;
 }
@@ -496,7 +518,7 @@ input:checked+.toggle-pill::after {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 20px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-card);
 }
@@ -514,11 +536,11 @@ input:checked+.toggle-pill::after {
 }
 
 .section-body {
-  padding: 20px;
+  padding: 24px;
 }
 
 .section-footer {
-  padding: 14px 20px;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -530,7 +552,7 @@ input:checked+.toggle-pill::after {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 24px;
   color: var(--color-text);
   position: relative;
   overflow: hidden;
@@ -556,13 +578,13 @@ input:checked+.toggle-pill::after {
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
   border: 1.5px solid #a7f3d0;
   border-radius: 14px;
-  padding: 16px;
+  padding: 20px;
 }
 
 /* Metric small card */
 .metric-card {
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -574,7 +596,7 @@ input:checked+.toggle-pill::after {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 13px 28px;
+  padding: 16px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -607,8 +629,8 @@ input:checked+.toggle-pill::after {
 
 .tab-item {
   flex: 1;
-  padding: 7px 12px;
-  font-size: 12px;
+  padding: 6px 12px;
+  font-size: 13px;
   font-weight: 600;
   border: none;
   border-radius: 8px;
@@ -646,7 +668,7 @@ input:checked+.toggle-pill::after {
 }
 
 .menu-sidebar-item {
-  padding: 10px 14px;
+  padding: 10px 16px;
   border: none;
   background: transparent;
   font-family: 'Inter', sans-serif;
@@ -681,15 +703,15 @@ input:checked+.toggle-pill::after {
 /* ── Ingredients Table ───────────────────────────────────── */
 .ing-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 0.8fr 85px 85px 28px;
-  gap: 7px;
+  grid-template-columns: 1.4fr 1fr 1fr 65px 1.1fr 95px 32px;
+  gap: 8px;
   align-items: center;
 }
 
 .ing-grid-header {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 0.8fr 85px 85px 28px;
-  gap: 7px;
+  grid-template-columns: 1.4fr 1fr 1fr 65px 1.1fr 95px 32px;
+  gap: 8px;
   padding: 4px 0 8px;
   font-size: 10px;
   font-weight: 700;
@@ -800,9 +822,9 @@ input:checked+.toggle-pill::after {
   background: var(--bg-card);
   color: var(--color-text);
   border: 1px solid var(--border-color);
-  padding: 12px 18px;
+  padding: 12px 16px;
   border-radius: var(--radius);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   display: flex;
@@ -838,7 +860,7 @@ input:checked+.toggle-pill::after {
 /* ── Packaging card ──────────────────────────────────────── */
 .pkg-card {
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 12px 16px;
   transition: all 0.2s;
 }
 
@@ -858,7 +880,7 @@ input:checked+.toggle-pill::after {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -950,7 +972,7 @@ input:checked+.toggle-pill::after {
   background: linear-gradient(135deg, #eef2ff, #e0e7ff);
   border: 2px solid #a5b4fc;
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   text-align: center;
   margin-top: 16px;
 }
@@ -960,6 +982,11 @@ input:checked+.toggle-pill::after {
   font-weight: 900;
   color: #4f46e5;
   letter-spacing: -0.03em;
+}
+
+.main-grid {
+  padding: 24px 32px !important;
+  gap: 24px !important;
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
@@ -1218,14 +1245,14 @@ table th {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 16px 20px;
   gap: 12px;
   border-bottom: 1px dashed transparent;
   transition: border-color 0.2s;
 }
 
 .platform-body {
-  padding: 16px 18px;
+  padding: 20px;
   background: #fffaf9;
   border-top: 1px dashed #fecaca;
 }
@@ -1279,7 +1306,7 @@ table th {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
@@ -1327,14 +1354,14 @@ table th {
   background: linear-gradient(135deg, #fff1f2, #fef2f2);
   border: 1.5px solid #fecaca;
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 16px;
 }
 
 /* Cash Flow Breakdown Box */
 .platform-cashflow-box {
   background: linear-gradient(135deg, #1e293b 0%, #1a0d0a 100%);
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   color: #fff;
   position: relative;
   overflow: hidden;
@@ -1377,7 +1404,7 @@ table th {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 24px;
   color: var(--color-text);
   position: relative;
   overflow: hidden;
@@ -1532,4 +1559,83 @@ table th {
   html {
     @apply font-sans;
   }
+}
+
+/* Custom tooltips with standard hover delay */
+.relative-tooltip {
+  position: relative;
+  cursor: help;
+  display: inline-block;
+}
+
+/* Tooltip Body */
+.relative-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+  width: 220px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  transition-delay: 0s;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+/* Tooltip Arrow pointing up */
+.relative-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border: 5px solid transparent;
+  border-bottom-color: rgba(15, 23, 42, 0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  transition-delay: 0s;
+  z-index: 999;
+}
+
+/* Hover States */
+.relative-tooltip:hover::after,
+.relative-tooltip:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: 0.3s;
+}
+
+/* Right-aligned variant */
+.relative-tooltip.align-right::after {
+  left: auto;
+  right: 0;
+  transform: translateY(4px);
+}
+
+.relative-tooltip.align-right::before {
+  left: auto;
+  right: 15px;
+  transform: translateY(4px);
+}
+
+.relative-tooltip.align-right:hover::after {
+  transform: translateY(0);
+}
+
+.relative-tooltip.align-right:hover::before {
+  transform: translateY(0);
 }

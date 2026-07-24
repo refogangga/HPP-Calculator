@@ -7,7 +7,7 @@ import { SectionHeader, IngredientRow, PackagingCard } from './HppSubComponents'
 import PlatformCalculator from './PlatformCalculator';
 import { num, fmtRp, roundPrice, uid, getPenyusutanBulanan, mkPlatform } from '../utils/hpp';
 
-export default function HppCalculator({ menu, onUpdate, showToast, channelPresets, activeProfile, onOpenChannelModal }) {
+export default function HppCalculator({ menu, onUpdate, showToast, channelPresets, activeProfile, onOpenChannelModal, ingredients: ingredientsDb = [] }) {
   const { ingredients, packaging, ops, margin, targetUnit = 'cup', pcsPerPortion = 1, subUnitLabel = 'pcs', platform } = menu;
   const activePlatform = platform || mkPlatform();
 
@@ -31,12 +31,30 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
   /* ── Calculations ── */
   const hppBahanBaku = useMemo(() =>
     ingredients.reduce((sum, ing) => {
-      if (!num(ing.ukuranKemasan)) return sum;
-      return sum + (num(ing.hargaBeli) / num(ing.ukuranKemasan)) * num(ing.takaranPerCup);
-    }, 0), [ingredients]);
+      let hb = ing.hargaBeli;
+      let uk = ing.ukuranKemasan;
+      if (ing.ingredientId) {
+        const central = (ingredientsDb || []).find(ci => ci.id === ing.ingredientId);
+        if (central) {
+          hb = central.hargaBeli;
+          uk = central.ukuranKemasan;
+        }
+      }
+      if (!num(uk)) return sum;
+      return sum + (num(hb) / num(uk)) * num(ing.takaranPerCup);
+    }, 0), [ingredients, ingredientsDb]);
 
   const hppKemasan = useMemo(() =>
-    packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0), [packaging]);
+    packaging.filter(p => p.enabled).reduce((s, p) => {
+      let h = p.harga;
+      if (p.ingredientId) {
+        const central = (ingredientsDb || []).find(ci => ci.id === p.ingredientId);
+        if (central) {
+          h = num(central.ukuranKemasan) ? num(central.hargaBeli) / num(central.ukuranKemasan) : 0;
+        }
+      }
+      return s + (num(h) * num(p.usage !== undefined ? p.usage : 1));
+    }, 0), [packaging, ingredientsDb]);
 
   const totalHPP = useMemo(() => hppBahanBaku + hppKemasan, [hppBahanBaku, hppKemasan]);
 
@@ -112,7 +130,7 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
 
             {ingredients.map((ing, idx) => (
               <IngredientRow key={ing.id} ing={ing} idx={idx} total={ingredients.length}
-                onUpdate={updateIng} onRemove={removeIng} targetUnit={targetUnit} />
+                onUpdate={updateIng} onRemove={removeIng} targetUnit={targetUnit} ingredientsDb={ingredientsDb} />
             ))}
 
             <button className="btn btn-add" onClick={addIng} style={{ marginTop: 8 }}>
@@ -135,7 +153,7 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
           <div className="section-body">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: 10 }}>
               {packaging.map(pkg => (
-                <PackagingCard key={pkg.id} pkg={pkg} onUpdate={updatePkg} onRemove={removePkg} targetUnit={targetUnit} />
+                <PackagingCard key={pkg.id} pkg={pkg} onUpdate={updatePkg} onRemove={removePkg} targetUnit={targetUnit} ingredientsDb={ingredientsDb} />
               ))}
             </div>
             <button className="btn btn-add" onClick={addPkg} style={{ marginTop: 10 }}>
@@ -200,127 +218,6 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
         </div>
       </div>
       <div className="result-sticky" style={{ position: 'sticky', top: 90 }}>
-
-        {/* Total HPP dark card */}
-        <div className="result-dark-card">
-          <div className="label-xs" style={{ color: 'var(--color-text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Icon name={menu.emoji || 'coffee'} size={14} color="var(--primary)" /> {menu.name || 'Menu'}
-          </div>
-
-          {[
-            { dot: '#6366f1', label: 'Bahan Baku', val: hppBahanBaku, valColor: 'var(--color-text)' },
-            { dot: '#f97316', label: 'Kemasan', val: hppKemasan, valColor: 'var(--color-text)' },
-          ].map(({ dot, label, val, valColor }) => (
-            <div key={label} className="result-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 12 }}>
-              <div className="flex-center gap-2">
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
-                <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
-              </div>
-              <span className="mono" style={{ fontWeight: 700, fontSize: 13, color: valColor }}>{fmtRp(val)}</span>
-            </div>
-          ))}
-
-          <div className="flex-between" style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 600 }}>TOTAL HPP / {targetUnit.toUpperCase()}</span>
-            <div style={{ background: 'var(--primary)', borderRadius: 'var(--radius)', padding: '5px 14px' }}>
-              <span className="mono" style={{ fontWeight: 900, fontSize: 18, color: '#fff' }}>{fmtRp(totalHPP)}</span>
-            </div>
-          </div>
-          {pcsPerPortion > 1 && (
-            <div className="flex-between" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-color)', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>TOTAL HPP / {subUnitLabel.toUpperCase()}</span>
-              <span className="mono" style={{ fontWeight: 800, fontSize: 13, color: 'var(--color-text)' }}>{fmtRp(totalHPP / pcsPerPortion)}</span>
-            </div>
-          )}
-
-          {totalHPP > 0 && (
-            <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginBottom: 5 }}>Komposisi HPP</div>
-              <div className="progress-bar" style={{ display: 'flex', height: 8, borderRadius: 9999, background: '#f4f4f5', overflow: 'hidden' }}>
-                <div className="progress-segment" style={{ width: `${pct.bb}%`, background: '#6366f1' }} />
-                <div className="progress-segment" style={{ width: `${pct.km}%`, background: '#f97316' }} />
-              </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 5, fontSize: 10, color: 'var(--color-text-muted)' }}>
-                <span>• {pct.bb.toFixed(0)}% Bahan</span>
-                <span>• {pct.km.toFixed(0)}% Kemasan</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── Platform Breakdown Card (right panel) ── */}
-        {activePlatform.enabled && hargaJualBulat > 0 && (
-          <div className="platform-breakdown-card animate-fade-in">
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Icon name="chart" size={13} color="var(--color-text-muted)" /> Ringkasan Profitabilitas Realistis
-            </div>
-
-            {/* 4-segment bar */}
-            <div style={{ marginBottom: 12 }}>
-              <div className="progress-bar" style={{ height: 10, borderRadius: 9999, background: '#f4f4f5', overflow: 'hidden', display: 'flex' }}>
-                <div className="progress-segment" style={{ width: `${pctBreakdown.hpp}%`, background: '#6366f1' }} />
-                <div className="progress-segment" style={{ width: `${pctBreakdown.diskon}%`, background: '#f59e0b' }} />
-                <div className="progress-segment" style={{ width: `${pctBreakdown.platform}%`, background: '#ef4444' }} />
-                <div className="progress-segment" style={{
-                  width: `${pctBreakdown.profit}%`,
-                  background: netProfit >= 0 ? '#10b981' : '#6b7280'
-                }} />
-              </div>
-              <div style={{ display: 'flex', gap: 6, marginTop: 5, fontSize: 9, flexWrap: 'wrap', color: 'var(--color-text-muted)' }}>
-                <span style={{ color: '#6366f1', fontWeight: 600 }}>• {pctBreakdown.hpp.toFixed(0)}% HPP</span>
-                {diskonNominal > 0 && <span style={{ color: '#f59e0b', fontWeight: 600 }}>• {pctBreakdown.diskon.toFixed(0)}% Diskon</span>}
-                <span style={{ color: '#ef4444', fontWeight: 600 }}>• {pctBreakdown.platform.toFixed(0)}% Platform</span>
-                <span style={{ color: netProfit >= 0 ? '#10b981' : '#6b7280', fontWeight: 600 }}>
-                  • {pctBreakdown.profit.toFixed(0)}% Profit
-                </span>
-              </div>
-            </div>
-
-            {/* Summary rows */}
-            {[
-              { label: 'Harga Jual', val: hargaJualBulat, color: 'var(--color-text)' },
-              ...(diskonNominal > 0 ? [{ label: `− Diskon Merchant`, val: diskonNominal, color: '#d97706' }] : []),
-              { label: `− Komisi ${activePlatform.name}`, val: totalKomisi, color: '#dc2626' },
-              { label: '= Nett Revenue', val: revenueBersih, color: 'var(--color-text)', bold: true },
-              { label: `− HPP (Bahan + Kemasan)`, val: totalHPP, color: 'var(--color-text-muted)' },
-            ].map(({ label, val, color, bold }) => (
-              <div key={label} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '5px 0', borderBottom: '1px dashed var(--border-color)'
-              }}>
-                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
-                <span className="mono" style={{ fontSize: 12, fontWeight: bold ? 800 : 600, color }}>{fmtRp(val)}</span>
-              </div>
-            ))}
-
-            {/* Net Profit Final */}
-            <div style={{
-              marginTop: 10, padding: '10px 12px', borderRadius: 'var(--radius)',
-              background: netProfit >= 0 ? '#f0fdf4' : '#fef2f2',
-              border: `1px solid ${netProfit >= 0 ? '#bbf7d0' : '#fecaca'}`,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: netProfit >= 0 ? '#16a34a' : '#dc2626', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name={netProfit >= 0 ? "checkCircle" : "alert"} size={12} color={netProfit >= 0 ? "#16a34a" : "#dc2626"} />
-                    {netProfit >= 0 ? 'PROFIT BERSIH FINAL' : 'MERUGI'}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
-                    Margin bersih: {marginPct.toFixed(1)}%
-                    {marginPct > 20 ? ' — Sehat' : marginPct > 0 ? ' — Tipis' : ' — Rugi'}
-                  </div>
-                </div>
-                <div className="mono" style={{
-                  fontSize: 20, fontWeight: 900,
-                  color: netProfit >= 0 ? '#16a34a' : '#dc2626',
-                  letterSpacing: '-0.02em'
-                }}>
-                  {fmtRp(netProfit)}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Pricing */}
         <div className="section-card" style={{ marginBottom: 14 }}>
@@ -451,9 +348,86 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
               </div>
             )}
 
-
           </div>
         </div>
+
+
+
+        {/* ── Platform Breakdown Card (right panel) ── */}
+        {activePlatform.enabled && hargaJualBulat > 0 && (
+          <div className="platform-breakdown-card animate-fade-in">
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="chart" size={13} color="var(--color-text-muted)" /> Ringkasan Profitabilitas Realistis
+            </div>
+
+            {/* 4-segment bar */}
+            <div style={{ marginBottom: 12 }}>
+              <div className="progress-bar" style={{ height: 10, borderRadius: 9999, background: '#f4f4f5', overflow: 'hidden', display: 'flex' }}>
+                <div className="progress-segment" style={{ width: `${pctBreakdown.hpp}%`, background: '#6366f1' }} />
+                <div className="progress-segment" style={{ width: `${pctBreakdown.diskon}%`, background: '#f59e0b' }} />
+                <div className="progress-segment" style={{ width: `${pctBreakdown.platform}%`, background: '#ef4444' }} />
+                <div className="progress-segment" style={{
+                  width: `${pctBreakdown.profit}%`,
+                  background: netProfit >= 0 ? '#10b981' : '#6b7280'
+                }} />
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginTop: 5, fontSize: 9, flexWrap: 'wrap', color: 'var(--color-text-muted)' }}>
+                <span style={{ color: '#6366f1', fontWeight: 600 }}>• {pctBreakdown.hpp.toFixed(0)}% HPP</span>
+                {diskonNominal > 0 && <span style={{ color: '#f59e0b', fontWeight: 600 }}>• {pctBreakdown.diskon.toFixed(0)}% Diskon</span>}
+                <span style={{ color: '#ef4444', fontWeight: 600 }}>• {pctBreakdown.platform.toFixed(0)}% Platform</span>
+                <span style={{ color: netProfit >= 0 ? '#10b981' : '#6b7280', fontWeight: 600 }}>
+                  • {pctBreakdown.profit.toFixed(0)}% Profit
+                </span>
+              </div>
+            </div>
+
+            {/* Summary rows */}
+            {[
+              { label: 'Harga Jual', val: hargaJualBulat, color: 'var(--color-text)' },
+              ...(diskonNominal > 0 ? [{ label: `− Diskon Merchant`, val: diskonNominal, color: '#d97706' }] : []),
+              { label: `− Komisi ${activePlatform.name}`, val: totalKomisi, color: '#dc2626' },
+              { label: '= Nett Revenue', val: revenueBersih, color: 'var(--color-text)', bold: true },
+              { label: `− HPP (Bahan + Kemasan)`, val: totalHPP, color: 'var(--color-text-muted)' },
+            ].map(({ label, val, color, bold }) => (
+              <div key={label} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '5px 0', borderBottom: '1px dashed var(--border-color)'
+              }}>
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: bold ? 600 : 400 }}>{label}</span>
+                <span className="mono" style={{ fontSize: 12, fontWeight: bold ? 800 : 600, color }}>{fmtRp(val)}</span>
+              </div>
+            ))}
+
+            {/* Net Profit Final */}
+            <div style={{
+              marginTop: 10, padding: '10px 12px', borderRadius: 'var(--radius)',
+              background: netProfit >= 0 ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${netProfit >= 0 ? '#bbf7d0' : '#fecaca'}`,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: netProfit >= 0 ? '#16a34a' : '#dc2626', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name={netProfit >= 0 ? "checkCircle" : "alert"} size={12} color={netProfit >= 0 ? "#16a34a" : "#dc2626"} />
+                    {netProfit >= 0 ? 'PROFIT BERSIH FINAL' : 'MERUGI'}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                    Margin bersih: {marginPct.toFixed(1)}%
+                    {marginPct > 20 ? ' — Sehat' : marginPct > 0 ? ' — Tipis' : ' — Rugi'}
+                  </div>
+                </div>
+                <div className="mono" style={{
+                  fontSize: 20, fontWeight: 900,
+                  color: netProfit >= 0 ? '#16a34a' : '#dc2626',
+                  letterSpacing: '-0.02em'
+                }}>
+                  {fmtRp(netProfit)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+
 
         {/* Info */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '12px 14px' }}>

@@ -6522,7 +6522,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ShopeeReverseEstimator.js",
-      "source_location": "L242",
+      "source_location": "L236",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_shopeereverseestimator_shopeereverseestimator",

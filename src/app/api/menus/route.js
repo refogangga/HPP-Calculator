@@ -26,6 +26,7 @@ export async function POST(request) {
         ingredients: body.ingredients || [],
         packaging: body.packaging || [],
         ops: body.ops || {},
+        platform: body.platform || null,
         outletId: body.outletId || null
       }
     });
@@ -79,6 +80,7 @@ export async function PUT(request) {
             ingredients: m.ingredients || [],
             packaging: m.packaging || [],
             ops: m.ops || {},
+            platform: m.platform || null,
             outletId: m.outletId || null
           },
           create: {
@@ -90,6 +92,7 @@ export async function PUT(request) {
             ingredients: m.ingredients || [],
             packaging: m.packaging || [],
             ops: m.ops || {},
+            platform: m.platform || null,
             outletId: m.outletId || null
           }
         })
@@ -113,6 +116,7 @@ export async function PUT(request) {
         ingredients: body.ingredients,
         packaging: body.packaging,
         ops: body.ops,
+        platform: body.platform !== undefined ? body.platform : undefined,
         outletId: body.outletId !== undefined ? body.outletId : undefined
       }
     });

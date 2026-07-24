@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Icon } from './Icon';
 import FormatInput from './FormatInput';
 import { num, fmtRp, roundPrice, getPenyusutanBulanan } from '../utils/hpp';
@@ -13,7 +13,9 @@ export default function BepCalculator({
   bepSettings = [],
   activeOutletId,
   onUpdateBepSettings,
-  showToast
+  showToast,
+  assets = [],
+  ingredients = []
 }) {
   const [operationalDays, setOperationalDays] = useState(30);
   const [manualOpex, setManualOpex] = useState(null);
@@ -60,7 +62,8 @@ export default function BepCalculator({
   // Selected menus inside active profile
   const selectedMenus = useMemo(() => {
     if (!activeProfile) return [];
-    return menus.filter(m => activeProfile.selectedMenuIds?.includes(m.id));
+    const hasSelected = Array.isArray(activeProfile.selectedMenuIds) && activeProfile.selectedMenuIds.length > 0;
+    return hasSelected ? menus.filter(m => activeProfile.selectedMenuIds.includes(m.id)) : menus;
   }, [menus, activeProfile]);
 
   // Enabled menus in simulation
@@ -73,13 +76,40 @@ export default function BepCalculator({
   const calculatedOpex = useMemo(() => {
     if (!activeProfile) return 0;
     const expenses = (activeProfile.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0);
-    const assetDepr = getPenyusutanBulanan(activeProfile);
+    const assetDepr = getPenyusutanBulanan(activeProfile, assets);
     return expenses + assetDepr;
-  }, [activeProfile]);
+  }, [activeProfile, assets]);
+
+  const getDirectHPP = useCallback((menu) => {
+    const bb = menu.ingredients.reduce((s, i) => {
+      let hb = i.hargaBeli;
+      let uk = i.ukuranKemasan;
+      if (i.ingredientId) {
+        const central = (ingredients || []).find(ci => ci.id === i.ingredientId);
+        if (central) {
+          hb = central.hargaBeli;
+          uk = central.ukuranKemasan;
+        }
+      }
+      if (!num(uk)) return s;
+      return s + (num(hb) / num(uk)) * num(i.takaranPerCup);
+    }, 0);
+    const km = menu.packaging.filter(p => p.enabled).reduce((s, p) => {
+      let h = p.harga;
+      if (p.ingredientId) {
+        const central = (ingredients || []).find(ci => ci.id === p.ingredientId);
+        if (central) {
+          h = num(central.ukuranKemasan) ? num(central.hargaBeli) / num(central.ukuranKemasan) : 0;
+        }
+      }
+      return s + (num(h) * num(p.usage !== undefined ? p.usage : 1));
+    }, 0);
+    return bb + km;
+  }, [ingredients]);
 
   // Get current platform calculations helper
-  const getPlatformCalc = (menu) => {
-    const hj = roundPrice(menu.margin >= 100 ? 0 : getDirectHPP(menu) / (1 - menu.margin / 100));
+  const getPlatformCalc = useCallback((menu) => {
+    const hj = roundPrice(num(menu.margin) >= 100 ? 0 : getDirectHPP(menu) / (1 - num(menu.margin) / 100));
     const hpp = getDirectHPP(menu);
     const platform = menu.platform || { enabled: false, commissionPct: 0, flatFee: 0, discountType: 'pct', discountValue: 0, commissionBasis: 'original' };
     
@@ -103,23 +133,14 @@ export default function BepCalculator({
       diskonNominal,
       netProfit: revenueBersih - hpp
     };
-  };
+  }, [getDirectHPP]);
 
-  const getDirectHPP = (menu) => {
-    const bb = menu.ingredients.reduce((s, i) => {
-      if (!num(i.ukuranKemasan)) return s;
-      return s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup);
-    }, 0);
-    const km = menu.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
-    return bb + km;
-  };
-
-  const getMenuVolume = (menuId, defaultVal) => {
+  const getMenuVolume = useCallback((menuId, defaultVal) => {
     if (activeProfile?.menuVolumes && activeProfile.menuVolumes[menuId] !== undefined) {
       return num(activeProfile.menuVolumes[menuId]);
     }
     return num(defaultVal);
-  };
+  }, [activeProfile]);
 
   // Calculate default values based on actual database menus
   const defaultMetrics = useMemo(() => {
@@ -151,14 +172,14 @@ export default function BepCalculator({
       avgPlatformCut: avgPlatformCut || 0,
       totalVolume
     };
-  }, [activeMenus, activeProfile]);
+  }, [activeMenus, getMenuVolume, getPlatformCalc]);
 
   // Synchronize state when defaults change
   useEffect(() => {
     if (actualVolume === null && defaultMetrics.totalVolume > 0) {
       setActualVolume(defaultMetrics.totalVolume);
     }
-  }, [defaultMetrics.totalVolume]);
+  }, [defaultMetrics.totalVolume, actualVolume]);
 
   // Values used in calculation (either overwritten or calculated)
   const opexVal = manualOpex !== null ? num(manualOpex) : calculatedOpex;
@@ -185,8 +206,17 @@ export default function BepCalculator({
 
   const calculatedInvestment = useMemo(() => {
     if (!activeProfile) return 0;
-    return (activeProfile.assets || []).reduce((sum, asset) => sum + num(asset.harga), 0);
-  }, [activeProfile]);
+    return (activeProfile.assets || []).reduce((sum, a) => {
+      const central = (assets || []).find(ca => ca.id === a.assetId);
+      if (central && !central.isLargeExpense) {
+        return sum + num(central.harga);
+      }
+      if (!a.assetId && !a.isLargeExpense && a.harga) {
+        return sum + num(a.harga);
+      }
+      return sum;
+    }, 0);
+  }, [activeProfile, assets]);
 
   const investmentVal = manualInvestment !== null ? num(manualInvestment) : calculatedInvestment;
 
@@ -395,7 +425,7 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
               </div>
               {manualOpex === null && (
                 <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                  Total pos overhead ({fmtRp((activeProfile?.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0))}) + penyusutan ({fmtRp(getPenyusutanBulanan(activeProfile))})
+                  Total pos overhead ({fmtRp((activeProfile?.expenses || []).reduce((sum, exp) => sum + num(exp.value), 0))}) + penyusutan ({fmtRp(getPenyusutanBulanan(activeProfile, assets))})
                 </div>
               )}
             </div>
@@ -975,6 +1005,7 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
                 const actualPct = Math.min(100, (actualVolumeHarian / maxVal) * 100);
                 const opexPct = Math.min(100, (bepHarian / maxVal) * 100);
                 const investPct = Math.min(100, (targetLimit / maxVal) * 100);
+                const labelsClose = investmentVal > 0 && (investPct - opexPct < 16);
 
                 let fillBg = '#ef4444';
                 if (actualVolumeHarian >= targetLimit) fillBg = '#10b981';
@@ -1079,15 +1110,16 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
                     </div>
 
                     {/* Milestone labels */}
-                    <div style={{ position: 'relative', height: 25, fontSize: 9, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                      <div style={{ position: 'absolute', left: 0 }}>0</div>
+                    <div style={{ position: 'relative', height: labelsClose ? 38 : 25, fontSize: 9, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      <div style={{ position: 'absolute', left: 0, top: 0 }}>0</div>
                       <div style={{
                         position: 'absolute',
                         left: `${opexPct}%`,
                         transform: 'translateX(-50%)',
                         textAlign: 'center',
                         color: '#f43f5e',
-                        fontWeight: 700
+                        fontWeight: 700,
+                        top: 0
                       }}>
                         BEP Opex: {bepHarian}
                       </div>
@@ -1098,12 +1130,13 @@ Tanggal Laporan: ${new Date().toLocaleDateString('id-ID')}
                           transform: 'translateX(-50%)',
                           textAlign: 'center',
                           color: '#3b82f6',
-                          fontWeight: 700
+                          fontWeight: 700,
+                          top: labelsClose ? 13 : 0
                         }}>
                           BEP Invest: {goalSeek.requiredCupDay}
                         </div>
                       )}
-                      <div style={{ position: 'absolute', right: 0 }}>{Math.round(maxVal)}</div>
+                      <div style={{ position: 'absolute', right: 0, top: 0 }}>{Math.round(maxVal)}</div>
                     </div>
                   </div>
                 );
