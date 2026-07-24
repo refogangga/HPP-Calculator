@@ -230,6 +230,9 @@ export default function ShopeeReverseEstimator({
                   />
                   <span style={{ fontSize: 14, fontWeight: 700 }}>%</span>
                 </div>
+                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 6, fontWeight: 500 }}>
+                  Preset aktif: <span style={{ color: '#ee4d2d', fontWeight: 700 }}>Shopee Campaign Premium+</span> (Komisi 24% &amp; Diskon 26%)
+                </div>
               </div>
 
               {/* Read-Only: Rata-rata HPP per Cup (Auto-pull) */}

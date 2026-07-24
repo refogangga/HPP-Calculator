@@ -458,168 +458,279 @@ export function IngredientRow({ ing, idx, total, onUpdate, onRemove, targetUnit 
   );
 }
 
-/* ─── Packaging Card ─────────────────────────────────────── */
-export function PackagingCard({ pkg, onUpdate, onRemove, targetUnit = 'cup', ingredientsDb = [], onNavigate }) {
-  const upd = (f, v) => onUpdate(pkg.id, f, v);
+/* ─── Packaging Row ──────────────────────────────────────── */
+export function PackagingRow({ pkg, idx, total, onUpdate, onRemove, targetUnit = 'cup', ingredientsDb = [], onNavigate }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   const isLinked = !!pkg.ingredientId;
   const centralIng = isLinked ? (ingredientsDb || []).find(ci => ci.id === pkg.ingredientId) : null;
 
-  const harga = centralIng 
-    ? (num(centralIng.ukuranKemasan) ? num(centralIng.hargaBeli) / num(centralIng.ukuranKemasan) : 0)
-    : pkg.harga;
-  const name = centralIng ? centralIng.name : pkg.name;
+  const hargaBeli = centralIng ? centralIng.hargaBeli : (pkg.hargaBeli !== undefined ? pkg.hargaBeli : pkg.harga);
+  const ukuranKemasan = centralIng ? centralIng.ukuranKemasan : (pkg.ukuranKemasan !== undefined ? pkg.ukuranKemasan : 1);
   const unit = centralIng ? centralIng.unit : (pkg.unit || 'pcs');
+
+  const perUnit = centralIng 
+    ? (num(centralIng.ukuranKemasan) ? num(centralIng.hargaBeli) / num(centralIng.ukuranKemasan) : 0)
+    : num(pkg.harga);
+  const hpp = perUnit * num(pkg.usage);
+
+  const handleHargaBeliChange = (val) => {
+    const hb = num(val);
+    const uk = num(ukuranKemasan);
+    onUpdate(pkg.id, {
+      hargaBeli: val,
+      harga: uk ? hb / uk : 0
+    });
+  };
+
+  const handleUkuranKemasanChange = (val) => {
+    const hb = num(hargaBeli);
+    const uk = num(val);
+    onUpdate(pkg.id, {
+      ukuranKemasan: val,
+      harga: uk ? hb / uk : 0
+    });
+  };
+
+  const handleNameChange = (val) => {
+    const found = (ingredientsDb || []).find(ci => ci.name.toLowerCase() === val.toLowerCase() && !!ci.isPackaging);
+    if (found) {
+      onUpdate(pkg.id, {
+        name: found.name,
+        ingredientId: found.id,
+        hargaBeli: found.hargaBeli,
+        ukuranKemasan: found.ukuranKemasan,
+        harga: num(found.ukuranKemasan) ? num(found.hargaBeli) / num(found.ukuranKemasan) : 0,
+        unit: found.unit
+      });
+    } else {
+      onUpdate(pkg.id, {
+        name: val,
+        ingredientId: null
+      });
+    }
+  };
+
+  const suggestions = useMemo(() => {
+    const list = (ingredientsDb || []).filter(ci => !!ci.isPackaging);
+    if (!pkg.name) return list.slice(0, 8);
+    return list
+      .filter(ci => ci.name.toLowerCase().includes(pkg.name.toLowerCase()))
+      .slice(0, 10);
+  }, [pkg.name, ingredientsDb]);
 
   return (
     <>
-      <div
-        style={{
-          border: '1px solid #e2e8f0',
-          background: pkg.enabled ? '#fff' : '#f8fafc',
-          padding: 14,
-          borderRadius: 10,
-          opacity: pkg.enabled ? 1 : 0.65,
-          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
-          transition: 'all 0.15s',
-          position: 'relative'
-        }}
-        className="animate-fade-in"
-      >
-        {/* Toggle + Name + Delete */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', marginBottom: 10, gap: 8 }}>
+      <div className="animate-fade-in" style={{
+        borderBottom: idx < total - 1 ? '1px solid #f1f5f9' : 'none',
+        paddingBottom: 12, marginBottom: 12,
+        position: 'relative',
+        zIndex: isOpen ? 50 : 1
+      }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1.5fr 1.2fr 1.5fr 1.5fr 36px', gap: 10, alignItems: 'center' }}>
           
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, cursor: 'pointer', overflow: 'hidden' }}>
-            <input
-              type="checkbox"
-              checked={pkg.enabled}
-              onChange={e => upd('enabled', e.target.checked)}
-              style={{ accentColor: '#4f46e5', cursor: 'pointer', width: 14, height: 14 }}
-            />
-            <span style={{ fontSize: 13 }}>{pkg.icon || '📦'}</span>
-            
-            <div style={{ position: 'relative', flex: 1 }}>
+          {/* 1. Nama Item (Suggestion autocomplete) */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '100%' }}>
+              <input
+                className="hpp-input sm"
+                placeholder="Nama item kemasan…"
+                value={pkg.name}
+                onChange={e => {
+                  handleNameChange(e.target.value);
+                  setIsOpen(true);
+                }}
+                onFocus={() => setIsOpen(true)}
+                onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+                style={{ fontSize: 11.5, height: 32, border: '1px solid #cbd5e1', borderRadius: 6, width: '100%', paddingLeft: isLinked ? 22 : 8 }}
+              />
               {isLinked && (
-                <span title="Terhubung ke Database Master" style={{ position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 10 }}>
-                  <Icon name="lock" size={9} color="#6366f1" />
+                <span title="Terhubung ke Database Master" style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+                  <Icon name="lock" size={10} color="#6366f1" />
                 </span>
               )}
-              <select
-                className="hpp-input sm"
-                value={pkg.ingredientId || ''}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (!val) {
-                    onUpdate(pkg.id, {
-                      name: '',
-                      ingredientId: null,
-                      harga: 0,
-                      unit: 'pcs'
-                    });
-                  } else {
-                    const ci = (ingredientsDb || []).find(x => x.id === val);
-                    if (ci) {
-                      onUpdate(pkg.id, {
-                        name: ci.name,
-                        ingredientId: ci.id,
-                        harga: num(ci.ukuranKemasan) ? num(ci.hargaBeli) / num(ci.ukuranKemasan) : 0,
-                        unit: ci.unit
-                      });
-                    }
-                  }
-                }}
-                style={{
-                  border: 'none', background: 'transparent', fontWeight: 700, fontSize: 12,
-                  color: '#1e293b', outline: 'none', width: '100%', cursor: 'pointer',
-                  paddingLeft: isLinked ? 18 : 6
-                }}
-              >
-                <option value="">-- Pilih Kemasan --</option>
-                {ingredientsDb
-                  .filter(ci => !!ci.isPackaging)
-                  .map(ci => (
-                    <option key={ci.id} value={ci.id}>
-                      {ci.name}
-                    </option>
-                  ))
-                }
-              </select>
+
+              {/* Custom Dropdown Suggestions */}
+              {isOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: '#fff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: 8,
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  zIndex: 999,
+                  maxHeight: 180,
+                  overflowY: 'auto',
+                  marginTop: 4,
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  {suggestions.map(ci => (
+                    <div
+                      key={ci.id}
+                      onClick={() => {
+                        onUpdate(pkg.id, {
+                          name: ci.name,
+                          ingredientId: ci.id,
+                          hargaBeli: ci.hargaBeli,
+                          ukuranKemasan: ci.ukuranKemasan,
+                          harga: num(ci.ukuranKemasan) ? num(ci.hargaBeli) / num(ci.ukuranKemasan) : 0,
+                          unit: ci.unit
+                        });
+                        setIsOpen(false);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        fontSize: 11.5,
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #f1f5f9',
+                        fontWeight: 600,
+                        color: '#334155',
+                        textAlign: 'left'
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {ci.name} ({ci.ukuranKemasan} {ci.unit} — {fmtRp(ci.hargaBeli)})
+                    </div>
+                  ))}
+                  <div
+                    onClick={() => {
+                      if (onNavigate) {
+                        onNavigate('database', 'ingredients');
+                      }
+                      setIsOpen(false);
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      fontSize: 11.5,
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      color: '#4f46e5',
+                      background: '#f5f3ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      textAlign: 'left'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = '#ede9fe'}
+                    onMouseOut={e => e.currentTarget.style.background = '#f5f3ff'}
+                  >
+                    <Icon name="plus" size={12} color="#4f46e5" />
+                    Tambah Kemasan Baru ke Database...
+                  </div>
+                </div>
+              )}
             </div>
-          </label>
-
-          <button
-            onClick={() => onRemove(pkg.id)}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: 2 }}
-            title="Hapus"
-          >
-            <Icon name="trash" size={11} />
-          </button>
-        </div>
-
-        {/* Harga per Unit */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#64748b' }}>
-            <span>Harga/</span>
-            <select
-              value={unit}
-              onChange={e => {
-                upd('unit', e.target.value);
-                if (e.target.value === 'pcs' && !pkg.usage) upd('usage', 1);
-              }}
-              disabled={!pkg.enabled || isLinked}
-              style={{
-                fontSize: 11, border: 'none', background: 'transparent',
-                color: isLinked ? '#64748b' : '#4f46e5',
-                fontWeight: 700, padding: 0, outline: 'none', cursor: 'pointer'
-              }}
-            >
-              <option value="pcs">pcs</option>
-              <option value="gr">gr</option>
-              <option value="ml">ml</option>
-              <option value="cm">cm</option>
-            </select>
-            <span>:</span>
           </div>
 
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
+          {/* 2. Harga Beli */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <span style={{ position: 'absolute', left: 8, fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>Rp</span>
             <FormatInput
               className="hpp-input sm"
               placeholder="0"
-              value={harga || ''}
-              onChange={v => upd('harga', v)}
-              disabled={!pkg.enabled || isLinked}
+              value={hargaBeli || ''}
+              onChange={handleHargaBeliChange}
+              disabled={isLinked}
               style={{
-                fontSize: 11.5, height: 28, border: '1px solid #cbd5e1', borderRadius: 6, width: '100%',
-                paddingLeft: 22,
-                ...((!pkg.enabled || isLinked) ? { background: '#f8fafc', color: '#94a3b8', borderColor: '#e2e8f0' } : {})
+                fontSize: 11.5, height: 32, border: '1px solid #cbd5e1', borderRadius: 6, width: '100%',
+                paddingLeft: 24,
+                ...(isLinked ? { background: '#f8fafc', color: '#94a3b8', borderColor: '#e2e8f0' } : {})
               }}
             />
           </div>
-        </div>
 
-        {/* Pemakaian per cup */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Pakai/{targetUnit}:</span>
-          <input
+          {/* 3. Kemasan (Isi pack) */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              className="hpp-input sm"
+              type="number"
+              placeholder="1"
+              value={ukuranKemasan || ''}
+              onChange={e => handleUkuranKemasanChange(e.target.value)}
+              disabled={isLinked}
+              style={{
+                fontSize: 11.5, height: 32, border: '1px solid #cbd5e1', borderRadius: 6, width: '100%',
+                paddingRight: 40,
+                ...(isLinked ? { background: '#f8fafc', color: '#94a3b8', borderColor: '#e2e8f0' } : {})
+              }}
+            />
+            <span style={{ position: 'absolute', right: 8, fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{unit}</span>
+          </div>
+
+          {/* 4. Satuan */}
+          <select
             className="hpp-input sm"
-            type="number"
-            placeholder="1"
-            step="any"
-            value={pkg.usage !== undefined ? pkg.usage : 1}
-            onChange={e => upd('usage', e.target.value)}
-            disabled={!pkg.enabled}
-            style={{ width: 55, height: 28, fontSize: 11.5, border: '1px solid #cbd5e1', borderRadius: 6, textAlign: 'center' }}
-          />
-          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{unit}</span>
-          
-          {pkg.enabled && (
-            <span className="mono" style={{ fontSize: 12, fontWeight: 800, color: '#4f46e5', marginLeft: 'auto' }}>
-              {fmtRp(num(harga) * num(pkg.usage !== undefined ? pkg.usage : 1))}
-            </span>
-          )}
+            value={unit}
+            onChange={e => onUpdate(pkg.id, 'unit', e.target.value)}
+            disabled={isLinked}
+            style={{
+              fontSize: 11.5, height: 32, border: '1px solid #cbd5e1', borderRadius: 6, width: '100%',
+              padding: '0 4px',
+              ...(isLinked ? { background: '#f8fafc', color: '#94a3b8', borderColor: '#e2e8f0', appearance: 'none' } : {})
+            }}
+          >
+            {['pcs', 'gr', 'ml', 'cm', 'kg'].map(u => <option key={u}>{u}</option>)}
+          </select>
+
+          {/* 5. Takaran per Cup */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              className="hpp-input sm"
+              type="number"
+              placeholder="1"
+              value={pkg.usage || ''}
+              onChange={e => onUpdate(pkg.id, 'usage', e.target.value)}
+              style={{ fontSize: 11.5, height: 32, border: '1px solid #cbd5e1', borderRadius: 6, width: '100%', paddingRight: 40 }}
+            />
+            <span style={{ position: 'absolute', right: 8, fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{unit}</span>
+          </div>
+
+          {/* 6. HPP Result */}
+          <div style={{
+            background: hpp > 0 ? '#fff7ed' : '#f8fafc',
+            border: `1px solid ${hpp > 0 ? '#fed7aa' : '#e2e8f0'}`,
+            borderRadius: 6,
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            padding: '0 10px',
+            fontSize: 11.5,
+            fontWeight: 700,
+            color: hpp > 0 ? '#ea580c' : '#94a3b8'
+          }} className="mono">
+            {hpp > 0 ? fmtRp(hpp) : '—'}
+          </div>
+
+          {/* 7. Action delete */}
+          <button
+            onClick={() => onRemove(pkg.id)}
+            style={{
+              height: 32, width: 32, borderRadius: 6, border: 'none', background: '#fef2f2',
+              color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s'
+            }}
+            onMouseOver={e => e.currentTarget.style.background = '#fee2e2'}
+            onMouseOut={e => e.currentTarget.style.background = '#fef2f2'}
+            title="Hapus"
+          >
+            <Icon name="trash" size={12} />
+          </button>
         </div>
 
+        {/* Sub Info Row */}
+        {hpp > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, paddingLeft: 2 }}>
+            <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 'auto', fontWeight: 500 }}>
+              Konversi: <span style={{ color: '#ea580c', fontWeight: 700 }}>{fmtRp(perUnit)}</span>/{unit}
+            </span>
+          </div>
+        )}
       </div>
     </>
   );

@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { Icon } from './Icon';
 import FormatInput from './FormatInput';
-import { SectionHeader, IngredientRow, PackagingCard } from './HppSubComponents';
+import { SectionHeader, IngredientRow, PackagingRow } from './HppSubComponents';
 import PlatformCalculator from './PlatformCalculator';
 import { num, fmtRp, roundPrice, uid, getPenyusutanBulanan, mkPlatform } from '../utils/hpp';
 
@@ -24,7 +24,7 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
   const updateIng = (id, f, v) => setIng(p => p.map(i => i.id === id ? (typeof f === 'object' ? { ...i, ...f } : { ...i, [f]: v }) : i));
   const removeIng = (id) => setIng(p => p.filter(i => i.id !== id));
 
-  const addPkg = () => setPkg(p => [...p, { id: uid(), name: '', icon: '📦', enabled: true, harga: 0, packQty: 0, packPrice: 0, usage: 1 }]);
+  const addPkg = () => setPkg(p => [...p, { id: uid(), name: '', enabled: true, hargaBeli: 0, ukuranKemasan: 1, unit: 'pcs', usage: 1 }]);
   const updatePkg = (id, f, v) => setPkg(p => p.map(x => x.id === id ? (typeof f === 'object' ? { ...x, ...f } : { ...x, [f]: v }) : x));
   const removePkg = (id) => setPkg(p => p.filter(x => x.id !== id));
 
@@ -45,7 +45,7 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
     }, 0), [ingredients, ingredientsDb]);
 
   const hppKemasan = useMemo(() =>
-    packaging.filter(p => p.enabled).reduce((s, p) => {
+    packaging.reduce((s, p) => {
       let h = p.harga;
       if (p.ingredientId) {
         const central = (ingredientsDb || []).find(ci => ci.id === p.ingredientId);
@@ -144,21 +144,44 @@ export default function HppCalculator({ menu, onUpdate, showToast, channelPreset
           <div style={{ padding: 20 }}>
             {packaging.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 12.5 }}>
-                Belum ada item kemasan terdaftar.
+                Belum ada item kemasan terdaftar. Klik tombol di bawah untuk menambah kemasan.
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12, marginBottom: 14 }}>
-                {packaging.map(pkg => (
-                  <PackagingCard key={pkg.id} pkg={pkg} onUpdate={updatePkg} onRemove={removePkg} targetUnit={targetUnit} ingredientsDb={ingredientsDb}
-                    onNavigate={onNavigate} />
-                ))}
-              </div>
+              <>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1.5fr 1.5fr 1.2fr 1.5fr 1.5fr 36px',
+                  gap: 10,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  color: '#64748b',
+                  paddingBottom: 8,
+                  borderBottom: '1px solid #e2e8f0',
+                  marginBottom: 12
+                }}>
+                  <span>Nama Item</span>
+                  <span>Harga Beli</span>
+                  <span>Kemasan</span>
+                  <span>Satuan</span>
+                  <span>Takaran/{targetUnit}</span>
+                  <span style={{ textAlign: 'right' }}>HPP/{targetUnit}</span>
+                  <span></span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {packaging.map((pkg, idx) => (
+                    <PackagingRow key={pkg.id} pkg={pkg} idx={idx} total={packaging.length} onUpdate={updatePkg} onRemove={removePkg} targetUnit={targetUnit} ingredientsDb={ingredientsDb}
+                      onNavigate={onNavigate} />
+                  ))}
+                </div>
+              </>
             )}
             
             <button
               onClick={addPkg}
               style={{
-                padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1',
+                marginTop: 8, padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1',
                 background: '#fff', color: '#475569', fontSize: 12, fontWeight: 700, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
               }}

@@ -32,9 +32,9 @@ export const DEFAULT_CHANNEL_PRESETS = [
     commissionBasis: 'original', isDefault: true
   },
   {
-    id: 'shopeefood', name: 'ShopeeFood', emoji: '🛍️',
+    id: 'shopeefood', name: 'ShopeeFood (Campaign Premium+)', emoji: '🛍️',
     color: '#ee4d2d', colorLight: '#fff1ef', colorBorder: '#ffa590',
-    commissionPct: 20, flatFee: 0, discountType: 'pct', discountValue: 0,
+    commissionPct: 24, flatFee: 0, discountType: 'pct', discountValue: 26,
     commissionBasis: 'original', isDefault: true
   },
   {
@@ -80,7 +80,19 @@ export const loadChannelPresets = () => {
     if (!raw) return DEFAULT_CHANNEL_PRESETS;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_CHANNEL_PRESETS;
-    return parsed;
+    
+    // Automatically migrate/update default ShopeeFood preset to new Campaign Premium+ defaults
+    return parsed.map(p => {
+      if (p.id === 'shopeefood' && p.isDefault && (p.commissionPct === 20 || p.commissionPct === 24) && (p.discountValue === 0 || p.discountValue === 26)) {
+        return {
+          ...p,
+          name: 'ShopeeFood (Campaign Premium+)',
+          commissionPct: 24,
+          discountValue: 26
+        };
+      }
+      return p;
+    });
   } catch (err) {
     console.error("Failed to load channel presets:", err);
     return DEFAULT_CHANNEL_PRESETS;

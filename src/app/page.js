@@ -608,7 +608,7 @@ export default function Home() {
     const subUnitLabel = m.subUnitLabel || 'pcs';
 
     const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
-    const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
+    const km = m.packaging.reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
     const hpp = bb + km;
     const hargaJual = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
     const hargaJualBulat = roundPrice(hargaJual);
@@ -659,15 +659,22 @@ export default function Home() {
     details.push({});
 
     details.push({ A: '2. BIAYA KEMASAN' });
-    details.push({ A: 'Nama Item', B: 'Harga Satuan', C: 'Pemakaian', D: 'Satuan', E: '', F: 'HPP/Cup' });
-    m.packaging.filter(p => p.enabled).forEach(p => {
+    details.push({ A: 'Nama Item', B: 'Harga Beli', C: 'Isi Kemasan', D: 'Satuan', E: 'Takaran/Cup', F: 'HPP/Cup' });
+    m.packaging.forEach(p => {
+      let hb = p.hargaBeli;
+      let uk = p.ukuranKemasan;
+      if (hb === undefined) {
+        hb = p.harga || 0;
+        uk = 1;
+      }
+      const perUnit = num(uk) ? num(hb) / num(uk) : 0;
       details.push({
         A: p.name,
-        B: num(p.harga),
-        C: num(p.usage !== undefined ? p.usage : 1),
+        B: num(hb),
+        C: num(uk),
         D: p.unit || 'pcs',
-        E: '',
-        F: num(p.harga) * num(p.usage !== undefined ? p.usage : 1)
+        E: num(p.usage !== undefined ? p.usage : 1),
+        F: perUnit * num(p.usage !== undefined ? p.usage : 1)
       });
     });
     details.push({ A: 'Sub-total Kemasan', F: km });
@@ -704,7 +711,10 @@ export default function Home() {
       const perUnit = num(ing.ukuranKemasan) ? num(ing.hargaBeli) / num(ing.ukuranKemasan) : 0;
       return `  ${(ing.name || '-').padEnd(22)} ${fmtRp(perUnit * num(ing.takaranPerCup))}`;
     }).join('\n');
-    const pkgLines = m.packaging.filter(p => p.enabled).map(p => `  ${p.name.padEnd(22)} ${fmtRp(p.harga)}`).join('\n');
+    const pkgLines = m.packaging.map(p => {
+      const perUnit = num(p.harga);
+      return `  ${(p.name || '-').padEnd(22)} ${fmtRp(perUnit * num(p.usage !== undefined ? p.usage : 1))}`;
+    }).join('\n');
 
     const targetUnit = m.targetUnit || 'cup';
     const pcsPerPortion = m.pcsPerPortion || 1;
@@ -712,7 +722,7 @@ export default function Home() {
 
     // Recalculate for print
     const bb = m.ingredients.reduce((s, i) => num(i.ukuranKemasan) ? s + (num(i.hargaBeli) / num(i.ukuranKemasan)) * num(i.takaranPerCup) : s, 0);
-    const km = m.packaging.filter(p => p.enabled).reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
+    const km = m.packaging.reduce((s, p) => s + (num(p.harga) * num(p.usage !== undefined ? p.usage : 1)), 0);
     
     const hpp = bb + km;
     const hj = m.margin >= 100 ? 0 : hpp / (1 - m.margin / 100);
@@ -978,9 +988,6 @@ ${finalPortionLines.trim()}
             </h1>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowChannelModal(true)} title="Preset Channel Penjualan">
-              <Icon name="store" size={12} /> Preset Channel
-            </button>
             {view === 'calculator' && activeMenu && (
               <>
                 <button className="btn btn-ghost btn-sm" onClick={() => setShowMeta(true)}>
